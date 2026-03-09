@@ -1,5 +1,5 @@
-import { Lock, Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import MarkdownEditor from "./components/MarkdownEditor";
 
 const EMPTY_UNLOCK_DIGITS = ["", "", "", ""];
 
@@ -382,32 +382,19 @@ export default function App() {
   const appReady = view === "app";
 
   return (
-    <div className="h-screen w-screen p-3 text-neutral-900 dark:text-neutral-100">
+    <div className="h-screen w-screen text-neutral-900 dark:text-neutral-100">
       {appReady ? (
-        <div className="">
-          <header className="flex justify-end p-2" style={{ WebkitAppRegion: "drag" }}>
-          
-            <div className="flex items-center gap-4" style={{ WebkitAppRegion: "no-drag" }}>
-            
-              <button className="text-neutral-400 hover:text-neutral-200" type="button" onClick={() => setSettingsOpen(true)}>
-                <Settings size={14} />
-              </button>
-              <button className="text-neutral-400 hover:text-neutral-200" type="button" onClick={() => void lockApp()}>
-              <Lock size={14}/>
-              </button>
-            </div>
-          </header>
-
-          <main className="grid min-h-0 grid-cols-1 md:grid-cols-[220px_1fr]">
+        <div className="h-full">
+          <main className="grid h-full min-h-0 grid-cols-1 md:grid-cols-[220px_1fr]">
             <aside className="sidebar">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Notes</h2>
+                <h2 className="text-sm font-semibold"></h2>
                 <button type="button" className="primary-button   text-sm" onClick={() => void createNote()}>
                   New
                 </button>
               </div>
 
-              <ul className="scroll-list  h-screen flex flex-col">
+              <ul className="scroll-list min-h-0 flex-1 flex flex-col">
                 {notes.map((note) => {
                   const isActive = note.id === activeId;
                   const visibleTitle = isActive ? draftTitle : note.title;
@@ -431,12 +418,21 @@ export default function App() {
                   );
                 })}
               </ul>
+
+              <div className="flex items-center gap-2">
+                <button className="ghost-button flex-1 text-xs" type="button" onClick={() => setSettingsOpen(true)}>
+                  Settings
+                </button>
+                <button className="ghost-button flex-1 text-xs" type="button" onClick={() => void lockApp()}>
+                  Lock
+                </button>
+              </div>
             </aside>
 
             <section className="editor">
               <div className="editor-header">
                 <input
-                  className="bg-transparent outline-none placeholder:text-white/50 h-11 w-full text-xl px-1  "
+                  className="note-title-input text-white/90 bg-transparent outline-none placeholder:text-white/50 h-11 w-full text-2xl px-1"
                   value={draftTitle}
                   maxLength={120}
                   placeholder="Untitled"
@@ -446,13 +442,8 @@ export default function App() {
                   Delete
                 </button>
               </div>
-              <div className="min-h-0">
-                <textarea
-                  className="editor-textarea"
-                  value={draftContent}
-                  placeholder="Write in markdown..."
-                  onChange={(event) => setDraftContent(event.target.value)}
-                />
+              <div className="min-h-0 h-full">
+                <MarkdownEditor value={draftContent} placeholder="Write in markdown..." onChange={setDraftContent} />
               </div>
             </section>
           </main>

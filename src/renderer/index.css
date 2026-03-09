@@ -47,7 +47,7 @@
   }
 
   .glass-input {
-    @apply border border-white/20 bg-white/70 text-neutral-900 outline-none transition focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 dark:border-white/10 dark:bg-neutral-800/70 dark:text-neutral-100;
+    @apply border-white/20 bg-white/70 text-neutral-900 outline-none transition focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 dark:border-white/10 dark:bg-neutral-800/70 dark:text-neutral-100;
   }
 
   .primary-button {
@@ -80,11 +80,54 @@
   }
 
   .editor-header {
-    @apply grid grid-cols-[1fr_auto] gap-2  p-3 dark:border-white/10;
+    @apply grid grid-cols-[1fr_auto] gap-2  p-3 ;
+  }
+
+  .note-title-input {
+    font-family: "Cormorant Garamond", "Times New Roman", serif;
+    font-weight: 500;
+    letter-spacing: 0.005em;
   }
 
   .editor-textarea {
     @apply h-full w-full resize-none border-0 bg-transparent p-4 text-[15px] leading-6 outline-none;
+  }
+
+  .markdown-editor-shell {
+    @apply h-full min-h-0 ;
+  }
+
+  .markdown-editor-body {
+    @apply relative h-full min-h-0;
+  }
+
+  .markdown-input {
+    @apply h-full w-full resize-none border-0 bg-transparent px-4 pb-8 pt-4 text-[16px] leading-7 outline-none;
+    font-family: "Source Sans 3", "Avenir Next", "SF Pro Text", "Segoe UI", sans-serif;
+  }
+
+  .slash-command-menu {
+    @apply absolute left-4 top-4 z-20 max-h-72 w-72 overflow-auto rounded-xl border border-white/20 bg-white/95 p-1 shadow-xl backdrop-blur dark:border-white/10 dark:bg-neutral-900/95;
+  }
+
+  .slash-command-item {
+    @apply flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-sm transition hover:bg-blue-500/10;
+  }
+
+  .slash-command-item-active {
+    @apply bg-blue-500/15;
+  }
+
+  .slash-command-label {
+    @apply inline-flex items-center gap-2;
+  }
+
+  .slash-command-meta {
+    @apply text-xs opacity-60;
+  }
+
+  .slash-command-empty {
+    @apply px-2 py-3 text-sm opacity-60;
   }
 
   .otp-input {
@@ -95,4 +138,3 @@
     @apply fixed inset-0 grid place-items-center bg-black/25 p-5 backdrop-blur-sm;
   }
 }
-
