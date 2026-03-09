@@ -23,9 +23,7 @@
   }
 
   .dark body {
-    background:
-    
-      linear-gradient(135deg, #171717 0%, #0f0f0f 100%);
+    background: #0f0f0f;
   }
 }
 
@@ -47,7 +45,7 @@
   }
 
   .glass-input {
-    @apply border-white/20 bg-white/70 text-neutral-900 outline-none transition focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 dark:border-white/10 dark:bg-neutral-800/70 dark:text-neutral-100;
+    @apply border-white/20 bg-white/70 text-neutral-900 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-600 dark:border-white/10 dark:bg-neutral-800/70 dark:text-neutral-100;
   }
 
   .primary-button {
@@ -80,7 +78,7 @@
   }
 
   .editor-header {
-    @apply grid grid-cols-[1fr_auto] gap-2  p-3 ;
+    @apply grid grid-cols-[1fr_auto]  ;
   }
 
   .note-title-input {
@@ -90,7 +88,7 @@
   }
 
   .editor-textarea {
-    @apply h-full w-full resize-none border-0 bg-transparent p-4 text-[15px] leading-6 outline-none;
+    @apply h-full w-full resize-none border-0 bg-transparent  text-[15px] leading-6 outline-none;
   }
 
   .markdown-editor-shell {
@@ -131,7 +129,7 @@
   }
 
   .otp-input {
-    @apply glass-input h-10 w-12 rounded-xl text-center text-2xl font-semibold tracking-wider;
+    @apply glass-input  h-10 w-10 rounded-xl text-center text-2xl font-semibold tracking-wider;
   }
 
   .modal-overlay {

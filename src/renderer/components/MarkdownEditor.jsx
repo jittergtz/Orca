@@ -580,11 +580,11 @@ export default function MarkdownEditor({ value, onChange, placeholder }) {
   );
 
   return (
-    <div className="markdown-editor-shell">
-      <div className="markdown-editor-body">
+    <div className="markdown-editor-shell ">
+      <div className="markdown-editor-body ">
         <textarea
           ref={textareaRef}
-          className="editor-textarea markdown-input"
+          className="editor-textarea  px-1 markdown-input placeholder:text-neutral-500 dark:placeholder:text-neutral-400" 
           value={value}
           placeholder={placeholder}
           onChange={onEditorChange}

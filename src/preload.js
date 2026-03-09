@@ -17,7 +17,9 @@ contextBridge.exposeInMainWorld("orca", {
     getTheme: () => ipcRenderer.invoke("settings:get-theme"),
     setTheme: (mode) => ipcRenderer.invoke("settings:set-theme", mode),
     getEffectiveTheme: () => ipcRenderer.invoke("settings:get-effective-theme"),
-    changePin: (currentPin, nextPin) => ipcRenderer.invoke("settings:change-pin", currentPin, nextPin)
+    changePin: (currentPin, nextPin) => ipcRenderer.invoke("settings:change-pin", currentPin, nextPin),
+    setPinEnabled: (enabled) => ipcRenderer.invoke("settings:set-pin-enabled", enabled),
+    verifyPin: (pin) => ipcRenderer.invoke("settings:verify-pin", pin)
   },
   onSystemThemeChanged: (callback) => {
     const listener = (_event, value) => callback(value);

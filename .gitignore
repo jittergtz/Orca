@@ -1,4 +1,30 @@
+# Dependencies
 node_modules
-dist
+
+# Logs
 *.log
 
+# Environment variables
+.env
+.env.*
+
+# Build outputs
+dist
+dist-electron
+build/
+release/
+out/
+
+# Electron / ASAR
+*.asar
+*.asar.unpacked
+
+# Application Packages and Binaries
+*.app
+*.dmg
+*.zip
+*.tar.gz
+Orca Notes*
+
+# OS X / macOS
+.DS_Store

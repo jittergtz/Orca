@@ -1,4 +1,4 @@
-{
+  {
   "name": "orca-notes",
   "version": "1.0.0",
   "description": "Private local desktop notes app with PIN lock",
@@ -6,8 +6,12 @@
   "scripts": {
     "build": "vite build",
     "start": "npm run build && electron .",
-    "dev": "vite build && electron .",
-    "dev:ui": "vite"
+    "dev": "electron . --dev",
+    "dev:ui": "vite",
+    "package:mac": "npm run build && electron-builder --mac",
+    "package:win": "npm run build && electron-builder --win",
+    "package:linux": "npm run build && electron-builder --linux",
+    "package:all": "npm run build && electron-builder -mwl"
   },
   "keywords": [
     "electron",
@@ -27,8 +31,31 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "electron": "^36.0.0",
+    "electron-builder": "^26.8.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "vite": "^5.4.10"
+  },
+  "build": {
+    "appId": "com.orcanotes.app",
+    "productName": "Orca Notes",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "src/main.js",
+      "src/preload.js"
+    ],
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "icon": "build/icon.png"
+    }
   }
 }

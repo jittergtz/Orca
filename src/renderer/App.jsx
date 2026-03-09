@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Settings, Lock, PanelLeft, Trash } from "lucide-react";
 import MarkdownEditor from "./components/MarkdownEditor";
+import Sidebar from "./components/Sidebar";
 
 const EMPTY_UNLOCK_DIGITS = ["", "", "", ""];
 
@@ -11,15 +13,6 @@ function sortNotes(notes) {
   return [...notes].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
-function formatUpdatedAt(timestamp) {
-  return new Date(timestamp).toLocaleString([], {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
 export default function App() {
   const [view, setView] = useState("loading");
   const [theme, setTheme] = useState("system");
@@ -28,6 +21,7 @@ export default function App() {
   const [activeId, setActiveId] = useState(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftContent, setDraftContent] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const [setupPin, setSetupPin] = useState("");
   const [setupPinConfirm, setSetupPinConfirm] = useState("");
@@ -41,6 +35,10 @@ export default function App() {
   const [nextPinConfirm, setNextPinConfirm] = useState("");
   const [pinChangeError, setPinChangeError] = useState("");
 
+  const [settingsCategory, setSettingsCategory] = useState("profile");
+  const [pinEnabled, setPinEnabled] = useState(true);
+  const [pinChangeStep, setPinChangeStep] = useState(1);
+
   const unlockInputRefs = useRef([]);
   const setupPinRef = useRef(null);
   const saveTimeoutRef = useRef(null);
@@ -50,6 +48,17 @@ export default function App() {
 
   const resolvedTheme = theme === "system" ? systemTheme : theme;
   const activeNote = useMemo(() => notes.find((note) => note.id === activeId) || null, [notes, activeId]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setSidebarOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     notesRef.current = notes;
@@ -130,7 +139,9 @@ export default function App() {
           return;
         }
 
-        if (authStatus.unlocked) {
+        setPinEnabled(authStatus.pinEnabled);
+
+        if (authStatus.unlocked || !authStatus.pinEnabled) {
           await enterApp();
           return;
         }
@@ -379,71 +390,116 @@ export default function App() {
     await window.orca.settings.setTheme(value);
   };
 
+  const togglePinEnabled = async () => {
+    const nextState = !pinEnabled;
+    try {
+      await window.orca.settings.setPinEnabled(nextState);
+      setPinEnabled(nextState);
+    } catch {
+      setPinChangeError("Could not update PIN settings.");
+    }
+  };
+
+  const verifyCurrentPin = async (event) => {
+    event.preventDefault();
+    setPinChangeError("");
+    if (!isValidPin(currentPin)) {
+      setPinChangeError("PIN must be exactly 4 digits.");
+      return;
+    }
+    try {
+      const result = await window.orca.settings.verifyPin(currentPin);
+      if (!result.ok) {
+        setPinChangeError("Incorrect current PIN.");
+        return;
+      }
+      setPinChangeStep(2);
+    } catch {
+      setPinChangeError("Error verifying PIN.");
+    }
+  };
+
   const appReady = view === "app";
 
   return (
     <div className="h-screen w-screen text-neutral-900 dark:text-neutral-100">
       {appReady ? (
-        <div className="h-full">
-          <main className="grid h-full min-h-0 grid-cols-1 md:grid-cols-[220px_1fr]">
-            <aside className="sidebar">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold"></h2>
-                <button type="button" className="primary-button   text-sm" onClick={() => void createNote()}>
-                  New
+        <div className="h-full flex flex-col relative">
+          <header 
+            className="h-[40px] flex-shrink-0 flex items-center justify-between px-3 pl-[72px]  border-white/20 dark:border-white/10"
+            style={{ WebkitAppRegion: 'drag' }}
+          >
+            <div className="flex items-center" style={{ WebkitAppRegion: 'no-drag' }}>
+              <button 
+                className="p-1.5 rounded-md text-neutral-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+                onClick={() => setSidebarOpen(prev => !prev)}
+                title="Toggle Sidebar (Cmd+B)"
+              >
+                <PanelLeft size={15} strokeWidth={2.5} />
+              </button>
+            </div>
+            <div className="flex items-center gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
+              {activeNote && (
+                <button 
+                  className="p-1.5 rounded-md text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+                  onClick={() => void deleteActiveNote()}
+                  title="Delete Note"
+                >
+                  <Trash size={15} strokeWidth={2.5} />
                 </button>
-              </div>
+              )}
+              <button 
+                className="p-1.5 rounded-md text-neutral-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+                onClick={() => setSettingsOpen(true)}
+                title="Settings"
+              >
+                <Settings size={15} strokeWidth={2.5} />
+              </button>
+              <button 
+                className="p-1.5 rounded-md text-neutral-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+                onClick={() => void lockApp()}
+                title="Lock"
+              >
+                <Lock size={15} strokeWidth={2.5} />
+              </button>
+            </div>
+          </header>
 
-              <ul className="scroll-list min-h-0 flex-1 flex flex-col">
-                {notes.map((note) => {
-                  const isActive = note.id === activeId;
-                  const visibleTitle = isActive ? draftTitle : note.title;
-                  const visibleContent = isActive ? draftContent : note.content;
-                  return (
-                    <li key={note.id}>
-                      <button
-                        type="button"
-                        className={`note-item ${isActive ? "note-item-active" : ""}`}
-                        onClick={() => setActiveId(note.id)}
-                      >
-                        <h3 className="truncate text-sm font-semibold">{(visibleTitle || "Untitled").trim() || "Untitled"}</h3>
-                        <p className=" truncate text-xs opacity-90">
-                          {visibleContent?.replace(/\n/g, " ").trim() || "Empty note"}
-                        </p>
-                        <time className="mt-1 block text-[10px] opacity-60">
-                          {formatUpdatedAt(note.updatedAt || note.createdAt)}
-                        </time>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+          <main className="flex flex-1 min-h-0 w-full">
+            <Sidebar 
+              notes={notes}
+              activeId={activeId}
+              draftTitle={draftTitle}
+              draftContent={draftContent}
+              setActiveId={setActiveId}
+              createNote={createNote}
+              isOpen={sidebarOpen}
+            />
 
-              <div className="flex items-center gap-2">
-                <button className="ghost-button flex-1 text-xs" type="button" onClick={() => setSettingsOpen(true)}>
-                  Settings
-                </button>
-                <button className="ghost-button flex-1 text-xs" type="button" onClick={() => void lockApp()}>
-                  Lock
-                </button>
-              </div>
-            </aside>
-
-            <section className="editor">
+            <section className="editor flex justify-center w-full">
+              <div className=" max-w-xl w-full  ">
               <div className="editor-header">
-                <input
-                  className="note-title-input text-white/90 bg-transparent outline-none placeholder:text-white/50 h-11 w-full text-2xl px-1"
+                <textarea
+                  className="note-title-input text-black dark:text-white bg-transparent outline-none dark:placeholder:text-white/50 placeholder:text-black/80 w-full text-[28px] px-1 resize-none overflow-hidden block min-h-[44px]"
                   value={draftTitle}
                   maxLength={120}
+                  rows={1}
                   placeholder="Untitled"
-                  onChange={(event) => setDraftTitle(event.target.value)}
+                  onChange={(event) => {
+                    setDraftTitle(event.target.value.replace(/\n/g, " "));
+                    event.target.style.height = "auto";
+                    event.target.style.height = `${event.target.scrollHeight}px`;
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                    }
+                  }}
                 />
-                <button className="ghost-button text-red-500 dark:text-red-400" type="button" onClick={() => void deleteActiveNote()}>
-                  Delete
-                </button>
               </div>
-              <div className="min-h-0 h-full">
+              <div className="min-h-0  h-full">
                 <MarkdownEditor value={draftContent} placeholder="Write in markdown..." onChange={setDraftContent} />
+              </div>
               </div>
             </section>
           </main>
@@ -524,68 +580,149 @@ export default function App() {
       )}
 
       {settingsOpen ? (
-        <div className="modal-overlay">
-          <div className="glass-card max-w-md">
-            <h2 className="text-xl font-semibold">Security Settings</h2>
-            <p className="mt-2 text-sm opacity-80">Change your 4-digit app PIN.</p>
-            <form className="mt-5 grid gap-3" onSubmit={submitPinChange}>
-              <label className="grid gap-1 text-sm">
-                Current PIN
-                <input
-                  className="glass-input h-11 rounded-xl px-3"
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={currentPin}
-                  onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                />
-              </label>
-              <label className="grid gap-1 text-sm">
-                New PIN
-                <input
-                  className="glass-input h-11 rounded-xl px-3"
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={nextPin}
-                  onChange={(event) => setNextPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                />
-              </label>
-              <label className="grid gap-1 text-sm">
-                Confirm New PIN
-                <input
-                  className="glass-input h-11 rounded-xl px-3"
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={nextPinConfirm}
-                  onChange={(event) => setNextPinConfirm(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                />
-              </label>
-              <p className="min-h-5 text-sm text-red-500 dark:text-red-400">{pinChangeError}</p>
-              <div className="flex justify-end gap-2">
-                <button className="ghost-button" type="button" onClick={() => setSettingsOpen(false)}>
-                  Close
-                </button>
-                <button className="primary-button" type="submit">
-                  Update PIN
-                </button>
-              </div>
-            </form>
-            <label className="flex items-center gap-2 text-xs">
-                Theme
-                <select
-                  className="glass-input h-8 w-28 rounded-lg px-2 text-sm"
-                  value={theme}
-                  onChange={(event) => {
-                    void changeTheme(event.target.value);
+        <div className="modal-overlay flex items-center justify-center p-4">
+          <div className="glass-card w-full max-w-3xl flex overflow-hidden p-0 h-[500px]">
+            {/* Sidebar */}
+            <div className="w-48 border-r border-neutral-200 dark:border-white/10 p-4 flex flex-col gap-2">
+              <h2 className="text-sm font-semibold mb-2 px-2 text-neutral-500 dark:text-white/50 uppercase tracking-wider">Settings</h2>
+              {["profile", "pin", "themes", "api-key"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setSettingsCategory(cat);
+                    setPinChangeError("");
+                    setPinChangeStep(1);
+                    setCurrentPin("");
+                    setNextPin("");
+                    setNextPinConfirm("");
                   }}
+                  className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    settingsCategory === cat
+                      ? "bg-neutral-200 dark:bg-white/10 text-neutral-900 dark:text-white"
+                      : "text-neutral-500 dark:text-white/60 hover:bg-neutral-100 dark:hover:bg-white/5 hover:text-neutral-900 dark:hover:text-white"
+                  }`}
                 >
-                  <option value="system">System</option>
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                </select>
-              </label>
+                  {cat === "api-key" ? "API Key" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 p-6 flex flex-col relative overflow-y-auto">
+              <button 
+                className="absolute top-4 right-4 text-neutral-400 dark:text-white/40 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                onClick={() => setSettingsOpen(false)}
+              >
+                Close
+              </button>
+
+              {settingsCategory === "profile" && (
+                <div>
+                  <h2 className="text-xl font-semibold">Profile Settings</h2>
+                  <p className="mt-2 text-sm opacity-80">Profile management coming soon.</p>
+                </div>
+              )}
+
+              {settingsCategory === "themes" && (
+                <div>
+                  <h2 className="text-xl font-semibold">Appearance</h2>
+                  <p className="mt-2 text-sm opacity-80 mb-6">Customize how Orca Notes looks.</p>
+                  
+                  <label className="flex items-center gap-3 text-sm flex-row">
+                    <span>Theme mode:</span>
+                    <select
+                      className="glass-input h-9 w-32 rounded-lg px-2 text-sm outline-none"
+                      value={theme}
+                      onChange={(event) => void changeTheme(event.target.value)}
+                    >
+                      <option value="system">System</option>
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                    </select>
+                  </label>
+                </div>
+              )}
+
+              {settingsCategory === "api-key" && (
+                <div>
+                  <h2 className="text-xl font-semibold">API Keys</h2>
+                  <p className="mt-2 text-sm opacity-80">API configuration coming soon.</p>
+                </div>
+              )}
+
+              {settingsCategory === "pin" && (
+                <div>
+                  <h2 className="text-xl font-semibold">Security Settings</h2>
+                  <p className="mt-2 text-sm opacity-80 mb-6">Manage your application lock and PIN.</p>
+                  
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-neutral-100 dark:bg-white/5 mb-8">
+                    <div>
+                      <h3 className="font-medium">Require PIN on Startup</h3>
+                      <p className="text-xs text-neutral-500 dark:text-white/60 mt-1">If enabled, you must enter your PIN to open your notes.</p>
+                    </div>
+                    <button 
+                      onClick={() => void togglePinEnabled()}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${pinEnabled ? 'bg-blue-500' : 'bg-neutral-300 dark:bg-white/20'}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${pinEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+
+                  <div className="pt-2 border-t border-neutral-200 dark:border-white/10 pl-1 pr-1">
+                    <h3 className="font-medium mb-4">Change PIN</h3>
+                    
+                    {pinChangeStep === 1 ? (
+                      <form className="max-w-xs grid gap-3" onSubmit={verifyCurrentPin}>
+                        <label className="grid gap-1 text-sm">
+                          Current PIN
+                          <input
+                            className="glass-input h-11 rounded-xl px-3"
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={4}
+                            value={currentPin}
+                            onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                          />
+                        </label>
+                        <button className="primary-button h-11 mt-2" type="submit">
+                          Continue
+                        </button>
+                        <p className="min-h-5 text-sm text-red-500 dark:text-red-400 mt-1">{pinChangeError}</p>
+                      </form>
+                    ) : (
+                      <form className="max-w-xs grid gap-3" onSubmit={submitPinChange}>
+                        <label className="grid gap-1 text-sm">
+                          New PIN
+                          <input
+                            className="glass-input h-11 rounded-xl px-3"
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={4}
+                            value={nextPin}
+                            onChange={(event) => setNextPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                          />
+                        </label>
+                        <label className="grid gap-1 text-sm">
+                          Confirm New PIN
+                          <input
+                            className="glass-input h-11 rounded-xl px-3"
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={4}
+                            value={nextPinConfirm}
+                            onChange={(event) => setNextPinConfirm(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                          />
+                        </label>
+                        <button className="primary-button h-11 mt-2" type="submit">
+                          Update PIN
+                        </button>
+                        <p className="min-h-5 text-sm text-red-500 dark:text-red-400 mt-1">{pinChangeError}</p>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       ) : null}

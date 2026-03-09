@@ -7,10 +7,14 @@ let mainWindow = null;
 let sessionUnlocked = false;
 
 const THEME_MODES = new Set(["system", "light", "dark"]);
+const isDev = process.env.NODE_ENV === "development" || process.argv.includes("--dev");
 
 function rendererUrl() {
-  if (!app.isPackaged) {
-    return process.env.VITE_DEV_SERVER_URL || "http://localhost:5173";
+  if (process.env.VITE_DEV_SERVER_URL) {
+    return process.env.VITE_DEV_SERVER_URL;
+  }
+  if (isDev) {
+    return "http://localhost:5173";
   }
   return null;
 }
@@ -23,7 +27,8 @@ function defaultState() {
   return {
     security: {
       pinHash: "",
-      salt: ""
+      salt: "",
+      pinEnabled: true
     },
     preferences: {
       theme: "system"
@@ -75,6 +80,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 980,
     height: 660,
+    icon: path.join(__dirname, "..", "build", "icon.png"),
     minWidth: 400,
     minHeight: 450,
     titleBarStyle: "hiddenInset",
@@ -104,8 +110,15 @@ function createWindow() {
 function registerIpc() {
   ipcMain.handle("auth:get-status", () => {
     const state = readState();
+    const pinEnabled = state.security.pinEnabled !== false;
+
+    if (!pinEnabled && state.security.pinHash) {
+      sessionUnlocked = true;
+    }
+
     return {
       hasPin: Boolean(state.security.pinHash && state.security.salt),
+      pinEnabled,
       unlocked: sessionUnlocked
     };
   });
@@ -177,6 +190,31 @@ function registerIpc() {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("theme:system-changed", nativeTheme.shouldUseDarkColors ? "dark" : "light");
     }
+  });
+
+  ipcMain.handle("settings:set-pin-enabled", (_event, enabled) => {
+    requireUnlocked();
+    const state = readState();
+    if (!state.security.pinHash) {
+      throw new Error("PIN_NOT_SET");
+    }
+    state.security.pinEnabled = Boolean(enabled);
+    writeState(state);
+    return { ok: true };
+  });
+
+  ipcMain.handle("settings:verify-pin", (_event, pin) => {
+    if (!validatePin(pin)) {
+      return { ok: false, error: "PIN_INVALID" };
+    }
+    const state = readState();
+    if (!state.security.pinHash || !state.security.salt) {
+      return { ok: false, error: "PIN_NOT_SET" };
+    }
+    if (hashPin(pin, state.security.salt) !== state.security.pinHash) {
+      return { ok: false, error: "PIN_INCORRECT" };
+    }
+    return { ok: true };
   });
 
   ipcMain.handle("settings:change-pin", (_event, currentPin, nextPin) => {
