@@ -1,0 +1,34 @@
+{
+  "name": "orca-notes",
+  "version": "1.0.0",
+  "description": "Private local desktop notes app with PIN lock",
+  "main": "src/main.js",
+  "scripts": {
+    "build": "vite build",
+    "start": "npm run build && electron .",
+    "dev": "vite build && electron .",
+    "dev:ui": "vite"
+  },
+  "keywords": [
+    "electron",
+    "notes",
+    "markdown",
+    "privacy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "lucide": "^0.577.0",
+    "lucide-react": "^0.577.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^36.0.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.4.10"
+  }
+}

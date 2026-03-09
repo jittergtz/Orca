@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+
+  body {
+    font-family: "Avenir Next", "SF Pro Text", "Segoe UI", sans-serif;
+    @apply m-0 overflow-hidden;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(133, 194, 255, 0.5), transparent 32%),
+      radial-gradient(circle at 86% 85%, rgba(253, 197, 158, 0.42), transparent 35%),
+      linear-gradient(135deg, #f1f4fa 0%, #cedbeb 100%);
+  }
+
+  .dark body {
+    background:
+    
+      linear-gradient(135deg, #171717 0%, #0f0f0f 100%);
+  }
+}
+
+@layer components {
+  .glass-shell {
+    @apply grid h-full grid-rows-[auto_1fr] overflow-hidden rounded-2xl border border-white/20 bg-white/80 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/80;
+  }
+
+  .topbar {
+    @apply flex min-h-[58px] items-center justify-between gap-3 border-b border-white/20 px-4 py-2 pl-20 dark:border-white/10;
+  }
+
+  .auth-layer {
+    @apply grid h-full place-items-center rounded-2xl border border-white/20 bg-white/30 p-6 backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/40;
+  }
+
+  .glass-card {
+    @apply w-full rounded-2xl border border-white/20 bg-white/80 p-6 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/80;
+  }
+
+  .glass-input {
+    @apply border border-white/20 bg-white/70 text-neutral-900 outline-none transition focus:border-blue-400/70 focus:ring-2 focus:ring-blue-400/20 dark:border-white/10 dark:bg-neutral-800/70 dark:text-neutral-100;
+  }
+
+  .primary-button {
+    @apply rounded-lg border border-blue-500/40 bg-blue-600 px-3 py-1 text-white transition hover:brightness-110;
+  }
+
+  .ghost-button {
+    @apply rounded-xl border border-white/20 bg-white/50 px-3 py-2 text-sm transition hover:brightness-105 dark:border-white/10 dark:bg-neutral-800/60;
+  }
+
+  .sidebar {
+    @apply grid min-h-0 grid-rows-[auto_1fr] gap-3 border-r border-white/20 p-3 dark:border-white/10;
+  }
+
+  .scroll-list {
+    @apply grid gap-2 overflow-auto p-0;
+    list-style: none;
+  }
+
+  .note-item {
+    @apply w-full rounded-xl border border-transparent bg-white/40 p-3 text-left transition hover:border-blue-400/50 dark:bg-black/35;
+  }
+
+  .note-item-active {
+    @apply border-blue-400/80 bg-blue-400/15;
+  }
+
+  .editor {
+    @apply grid min-h-0 grid-rows-[auto_1fr];
+  }
+
+  .editor-header {
+    @apply grid grid-cols-[1fr_auto] gap-2  p-3 dark:border-white/10;
+  }
+
+  .editor-textarea {
+    @apply h-full w-full resize-none border-0 bg-transparent p-4 text-[15px] leading-6 outline-none;
+  }
+
+  .otp-input {
+    @apply glass-input h-10 w-12 rounded-xl text-center text-2xl font-semibold tracking-wider;
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 grid place-items-center bg-black/25 p-5 backdrop-blur-sm;
+  }
+}
+
