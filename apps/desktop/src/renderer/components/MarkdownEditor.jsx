@@ -337,7 +337,7 @@ export default function MarkdownEditor({ value, onChange, placeholder }) {
 
   return (
     <div className="markdown-editor-shell flex flex-col h-full relative">
-      <div className="markdown-editor-body flex-1 min-h-0 relative h-full w-full overflow-y-auto px-4 pb-8 pt-4">
+      <div className="markdown-editor-body flex-1 min-h-0 relative h-full w-full overflow-y-auto pb-8 pt-4">
         <EditorContent editor={editor} className="h-full focus:outline-none" />
 
         {slashMenuOpen && editor?.isFocused ? (

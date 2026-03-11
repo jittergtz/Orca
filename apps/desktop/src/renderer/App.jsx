@@ -429,9 +429,9 @@ export default function App() {
             className="h-[40px] flex-shrink-0 flex items-center justify-between px-3 pl-[72px]  border-white/20 dark:border-white/10"
             style={{ WebkitAppRegion: 'drag' }}
           >
-            <div className="flex items-center pt-2" style={{ WebkitAppRegion: 'no-drag' }}>
+            <div className="flex items-center " style={{ WebkitAppRegion: 'no-drag' }}>
               <button 
-                className="p-2  border border-white/30 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+                className="p-1  rounded-full  dark:text-neutral-400 text-neutral-700 hover:text-black dark:hover:text-white/90 transition-colors flex items-center justify-center auto-cols-auto"
                 onClick={() => setSidebarOpen(prev => !prev)}
                 title="Toggle Sidebar (Cmd+B)"
               >
@@ -478,7 +478,7 @@ export default function App() {
 
             <section className="editor flex justify-center w-full">
               <div className=" max-w-xl w-full  ">
-              <div className="editor-header">
+              <div className="editor-header ">
                 <textarea
                   className="note-title-input text-black dark:text-white bg-transparent outline-none dark:placeholder:text-white/50 placeholder:text-black/80 w-full text-[28px] px-1 resize-none overflow-hidden block min-h-[44px]"
                   value={draftTitle}

@@ -1,21 +1,56 @@
 # Dependencies
 node_modules
+.pnp
+.pnp.js
 
-# Logs
-*.log
+# Testing
+coverage
+
+# Next.js
+.next/
+out/
+build/
 
 # Environment variables
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env.*
 
-# Build outputs
+# Turbo
+.turbo/
+
+# Vite
+.vite/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Mac
+.DS_Store
+*.AppleDouble
+.LSOverride
+
+# Electron / ASAR / Build Outputs
 dist
 dist-electron
-build/
 release/
-out/
-
-# Electron / ASAR
 *.asar
 *.asar.unpacked
 
@@ -25,6 +60,3 @@ out/
 *.zip
 *.tar.gz
 Orca Notes*
-
-# OS X / macOS
-.DS_Store

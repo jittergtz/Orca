@@ -1,31 +1,78 @@
-# Orca Notes
+# Newsflow Monorepo
 
-Desktop-only private notes app built with Electron + React + Tailwind.
+Welcome to the internal source code repository for Orca. This project is structured as a [Turborepo](https://turbo.build/) monorepo containing multiple applications and shared packages.
 
-## Features
+## Workspace Structure
 
-- Local-only note storage in Electron `userData` (no cloud sync)
-- 4-digit PIN lock required each app start
-- First launch PIN setup flow
-- PIN change in Settings (requires current PIN)
-- Markdown note editing in a single writing pane
-- Apple Notes style layout (note list + active note editor)
-- System / light / dark mode switch
-- Minimal glass / blur interface
-- Hidden inset title bar (traffic lights only on macOS)
+### Apps
+- `apps/desktop`: The core, private local desktop application built with Electron, React, and Vite  Orca.
+- `apps/web`: The Next.js 14 App Router landing page with Stripe and Supabase integration.
+- `apps/worker`: A Node.js background service that pulls news via Perplexity, summarizes it with GPT-4o-mini, and orchestrates jobs with BullMQ and node-cron.
 
-## Run
+### Packages
+- `packages/db`: Shared database schemas and Supabase client definitions.
+- `packages/ai`: Vercel AI SDK wrappers and prompts.
+- `packages/config`: Shared application constants and types.
 
+## Getting Started
+
+### Prerequisites
+- Node.js 20+
+- npm (v11+)
+
+### 1. Install Dependencies
+Run from the root directory to install dependencies for all workspaces:
 ```bash
 npm install
-npm start
 ```
 
-## Project Structure
+### 2. Environment Variables
+Copy the `.env.example` file to `.env` in the root:
+```bash
+cp .env.example .env
+```
+Fill out the required API keys (Supabase, Stripe, OpenAI, Perplexity, etc.) to ensure all services function.
 
-- `src/main.js`: Electron main process, secure local data handling, IPC
-- `src/preload.js`: safe renderer API bridge
-- `index.html`: Vite entry HTML
-- `src/renderer/App.jsx`: React app logic and UI
-- `src/renderer/index.css`: Tailwind + custom glassmorphism styles
-- `vite.config.js`: frontend build config for Electron file loading
+## Available Commands
+
+Turborepo gives us the ability to run scripts across the entire monorepo simultaneously.
+
+### Development
+Start the dev servers for all apps in parallel:
+```bash
+npm run dev
+```
+> Running `npm run dev` in the root will start the Next.js dev server, compile background service TypeScript, and launch the Electron application locally.
+
+### Building
+Build all applications and packages in the correct dependency order:
+```bash
+npm run build
+```
+
+### Linting
+Run linting across all supported packages and applications:
+```bash
+npm run lint
+```
+
+## Running Specific Applications
+
+If you only want to work on a specific part of the codebase, you can pass a filter to Turborepo.
+
+**Web Only:**
+```bash
+npx turbo run dev --filter=@newsflow/web
+```
+
+**Desktop App Only:**
+```bash
+npx turbo run dev --filter=@newsflow/desktop
+```
+
+**Background Worker Only:**
+```bash
+npx turbo run dev --filter=@newsflow/worker
+```
+
+*Note: As long as cross-package dependencies are met, Turborepo will automatically ensure local `@newsflow/*` packages are built if needed.*
