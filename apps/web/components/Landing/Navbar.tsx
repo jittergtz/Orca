@@ -32,7 +32,7 @@ function Navbar() {
 
   const navLinks = [
     { name: 'Product', href: '/product' },
-    { name: 'Terms', href: '/product' },
+    { name: 'Terms', href: '/terms' },
     { name: 'Privacy', href: '/privacy' },
     { name: 'Pricing', href: '/pricing' },
   ];
@@ -44,7 +44,8 @@ function Navbar() {
           scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm' : 'bg-transparent'
         }`}
       >
-        <div className='h-16 flex items-center justify-between w-full max-w-7xl px-5 lg:px-8'>
+        <div className='h-16 flex items-center justify-between w-full  max-w-7xl px-5 lg:px-8'>
+          <div className='flex gap-10 items-center'>
           {/* Logo */}
           <Link href="/" className='flex items-center z-50'>
             <h1 className='text-black text-2xl font-serif font-semibold tracking-tight'>Orca</h1>
@@ -59,6 +60,7 @@ function Navbar() {
                 </Link>
               ))}
             </div>
+          </div>
           </div>
 
           {/* Desktop Right Actions & Mobile Toggle */}
@@ -93,14 +95,14 @@ function Navbar() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: '-100%' }}
+            initial={{ opacity: 0, y: '0' }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: '-100%' }}
+            exit={{ opacity: 0, y: '0' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className='fixed inset-0 z-40 bg-white/95 backdrop-blur-xl md:hidden overflow-y-auto flex flex-col justify-center'
+            className='fixed inset w-full  z-40 bg-white/20 border rounded-[40px] backdrop-blur-xl md:hidden overflow-y-auto flex flex-col justify-center'
           >
-            <div className='flex flex-col items-center justify-center min-h-screen p-5'>
-              <div className='flex flex-col items-center gap-8 w-full max-w-sm'>
+            <div className='flex flex-col items-center mt-10  justify-start min-h-screen p-5'>
+              <div className='flex flex-col items-center gap-8 w-full  max-w-sm'>
                 {navLinks.map((link, i) => (
                   <motion.div
                     key={link.name}
@@ -110,7 +112,7 @@ function Navbar() {
                   >
                     <Link 
                       href={link.href} 
-                      className='text-2xl font-medium text-neutral-800 hover:text-black transition-colors'
+                      className='text-2xl text-neutral-800  hover:text-black transition-colors'
                       onClick={() => setIsOpen(false)}
                     >
                       {link.name}
@@ -124,8 +126,8 @@ function Navbar() {
                   transition={{ delay: 0.1 + navLinks.length * 0.05 }}
                 >
                   <Link 
-                    href="/product" 
-                    className='text-2xl font-medium text-neutral-800 hover:text-black transition-colors'
+                    href="/mission" 
+                    className='text-2xl  text-neutral-800 hover:text-black transition-colors'
                     onClick={() => setIsOpen(false)}
                   >
                     Mission
@@ -136,11 +138,11 @@ function Navbar() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + (navLinks.length + 1) * 0.05 }}
-                  className='w-full pt-8 mt-4 border-t border-gray-100 flex flex-col items-center'
+                  className='w-full pt-8  border-t border-gray-300 flex flex-col items-center'
                 >
                   <Link 
                     href="/product" 
-                    className='w-full text-center bg-black text-white px-6 py-4 rounded-2xl text-lg font-medium hover:bg-neutral-800 transition-all active:scale-95'
+                    className='w-full text-center bg-black text-white px-6 py-4 rounded-full text-lg  hover:bg-neutral-800 transition-all active:scale-95'
                     onClick={() => setIsOpen(false)}
                   >
                     Get Started
