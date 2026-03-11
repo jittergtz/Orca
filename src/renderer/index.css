@@ -23,7 +23,9 @@
   }
 
   .dark body {
-    background: #0f0f0f;
+    background: 
+    
+  #101010 
   }
 }
 
@@ -102,6 +104,17 @@
   .markdown-input {
     @apply h-full w-full resize-none border-0 bg-transparent px-4 pb-8 pt-4 text-[16px] leading-7 outline-none;
     font-family: "Source Sans 3", "Avenir Next", "SF Pro Text", "Segoe UI", sans-serif;
+  }
+
+  /* TipTap specific styles */
+  .tiptap p.is-editor-empty:first-child::before {
+    @apply text-neutral-500 dark:text-neutral-400 float-left h-0 pointer-events-none;
+    content: attr(data-placeholder);
+  }
+
+  .tiptap-editor {
+    font-family: "Source Sans 3", "Avenir Next", "SF Pro Text", "Segoe UI", sans-serif;
+    @apply text-[16px] leading-7;
   }
 
   .slash-command-menu {

@@ -429,38 +429,38 @@ export default function App() {
             className="h-[40px] flex-shrink-0 flex items-center justify-between px-3 pl-[72px]  border-white/20 dark:border-white/10"
             style={{ WebkitAppRegion: 'drag' }}
           >
-            <div className="flex items-center" style={{ WebkitAppRegion: 'no-drag' }}>
+            <div className="flex items-center pt-2" style={{ WebkitAppRegion: 'no-drag' }}>
               <button 
-                className="p-1.5 rounded-md text-neutral-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+                className="p-2  border border-white/30 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
                 onClick={() => setSidebarOpen(prev => !prev)}
                 title="Toggle Sidebar (Cmd+B)"
               >
                 <PanelLeft size={15} strokeWidth={2.5} />
               </button>
             </div>
-            <div className="flex items-center gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
+            <div className="flex items-center pt-2 gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
               {activeNote && (
                 <button 
-                  className="p-1.5 rounded-md text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+                  className="p-2 border border-white/30 rounded-full    text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
                   onClick={() => void deleteActiveNote()}
                   title="Delete Note"
                 >
-                  <Trash size={15} strokeWidth={2.5} />
+                  <Trash size={15} strokeWidth={2} />
                 </button>
               )}
               <button 
-                className="p-1.5 rounded-md text-neutral-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+                className="p-2  border border-white/30 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
                 onClick={() => setSettingsOpen(true)}
                 title="Settings"
               >
-                <Settings size={15} strokeWidth={2.5} />
+                <Settings size={15} strokeWidth={2} />
               </button>
               <button 
-                className="p-1.5 rounded-md text-neutral-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+                className="p-2  border border-white/30 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
                 onClick={() => void lockApp()}
                 title="Lock"
               >
-                <Lock size={15} strokeWidth={2.5} />
+                <Lock size={15} strokeWidth={2} />
               </button>
             </div>
           </header>

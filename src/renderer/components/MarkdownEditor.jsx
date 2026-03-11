@@ -11,156 +11,24 @@ import {
   MessageSquareQuote,
   Strikethrough
 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
+import { Markdown } from "tiptap-markdown";
 
-function wrapSelection(text, start, end, prefix, suffix = prefix, fallback = "text") {
-  const selected = text.slice(start, end);
-  const hasSelection = selected.length > 0;
-  const token = hasSelection ? selected : fallback;
-  const next = `${text.slice(0, start)}${prefix}${token}${suffix}${text.slice(end)}`;
-  const selectionStart = start + prefix.length;
-  const selectionEnd = selectionStart + token.length;
-
-  return {
-    value: next,
-    selectionStart,
-    selectionEnd
-  };
-}
-
-function transformSelectedLines(text, start, end, lineTransform) {
-  const blockStart = text.lastIndexOf("\n", Math.max(start - 1, 0)) + 1;
-  const endBoundary = text.indexOf("\n", end);
-  const blockEnd = endBoundary === -1 ? text.length : endBoundary;
-  const selectedBlock = text.slice(blockStart, blockEnd);
-  const transformedBlock = lineTransform(selectedBlock.split("\n")).join("\n");
-
-  return {
-    value: `${text.slice(0, blockStart)}${transformedBlock}${text.slice(blockEnd)}`,
-    selectionStart: blockStart,
-    selectionEnd: blockStart + transformedBlock.length
-  };
-}
-
-function continueMarkdownLine(text, caret) {
-  const lineStart = text.lastIndexOf("\n", Math.max(caret - 1, 0)) + 1;
-  const lineEndIndex = text.indexOf("\n", caret);
-  const lineEnd = lineEndIndex === -1 ? text.length : lineEndIndex;
-  const line = text.slice(lineStart, lineEnd);
-
-  if (caret !== lineEnd) {
-    return null;
-  }
-
-  const taskMatch = line.match(/^(\s*[-*+]\s+\[[ xX]\]\s)(.*)$/);
-  if (taskMatch) {
-    const prefix = taskMatch[1];
-    const content = taskMatch[2];
-    if (!content.trim()) {
-      return {
-        value: `${text.slice(0, lineStart)}${text.slice(lineEnd)}`,
-        selectionStart: lineStart,
-        selectionEnd: lineStart
-      };
-    }
-
-    const insertText = `\n${prefix}`;
-    return {
-      value: `${text.slice(0, caret)}${insertText}${text.slice(caret)}`,
-      selectionStart: caret + insertText.length,
-      selectionEnd: caret + insertText.length
-    };
-  }
-
-  const bulletMatch = line.match(/^(\s*[-*+]\s)(.*)$/);
-  if (bulletMatch) {
-    const prefix = bulletMatch[1];
-    const content = bulletMatch[2];
-    if (!content.trim()) {
-      return {
-        value: `${text.slice(0, lineStart)}${text.slice(lineEnd)}`,
-        selectionStart: lineStart,
-        selectionEnd: lineStart
-      };
-    }
-
-    const insertText = `\n${prefix}`;
-    return {
-      value: `${text.slice(0, caret)}${insertText}${text.slice(caret)}`,
-      selectionStart: caret + insertText.length,
-      selectionEnd: caret + insertText.length
-    };
-  }
-
-  const orderedMatch = line.match(/^(\s*)(\d+)(\.\s)(.*)$/);
-  if (orderedMatch) {
-    const indent = orderedMatch[1];
-    const current = Number(orderedMatch[2]);
-    const marker = orderedMatch[3];
-    const content = orderedMatch[4];
-    if (!content.trim()) {
-      return {
-        value: `${text.slice(0, lineStart)}${text.slice(lineEnd)}`,
-        selectionStart: lineStart,
-        selectionEnd: lineStart
-      };
-    }
-
-    const insertText = `\n${indent}${current + 1}${marker}`;
-    return {
-      value: `${text.slice(0, caret)}${insertText}${text.slice(caret)}`,
-      selectionStart: caret + insertText.length,
-      selectionEnd: caret + insertText.length
-    };
-  }
-
-  const quoteMatch = line.match(/^(\s*>\s?)(.*)$/);
-  if (quoteMatch) {
-    const prefix = quoteMatch[1];
-    const content = quoteMatch[2];
-    if (!content.trim()) {
-      return {
-        value: `${text.slice(0, lineStart)}${text.slice(lineEnd)}`,
-        selectionStart: lineStart,
-        selectionEnd: lineStart
-      };
-    }
-
-    const insertText = `\n${prefix}`;
-    return {
-      value: `${text.slice(0, caret)}${insertText}${text.slice(caret)}`,
-      selectionStart: caret + insertText.length,
-      selectionEnd: caret + insertText.length
-    };
-  }
-
-  return null;
-}
-
-function indentSelectedLines(text, start, end, unindent = false) {
-  return transformSelectedLines(text, start, end, (lines) => {
-    return lines.map((line) => {
-      if (!unindent) {
-        return `  ${line}`;
-      }
-
-      if (line.startsWith("  ")) {
-        return line.slice(2);
-      }
-
-      if (line.startsWith("\t")) {
-        return line.slice(1);
-      }
-
-      return line;
-    });
-  });
-}
-
-function getSlashCommandContext(text, caret) {
-  const lineStart = text.lastIndexOf("\n", Math.max(caret - 1, 0)) + 1;
-  const segment = text.slice(lineStart, caret);
-  const match = segment.match(/(^|\s)\/([a-z0-9-]*)$/i);
+function getSlashCommandContext(editor) {
+  const { state } = editor;
+  const { selection } = state;
+  const { $from } = selection;
+  
+  // Find the text from the start of the current block to the cursor
+  const textBefore = $from.parent.textBetween(0, $from.parentOffset, null, '\n');
+  
+  // Match a slash followed by any alphanumeric characters at the end of the line
+  const match = textBefore.match(/(^|\s)\/([a-z0-9-]*)$/i);
 
   if (!match) {
     return null;
@@ -170,8 +38,8 @@ function getSlashCommandContext(text, caret) {
   const slashOffset = (match.index || 0) + leadingLength;
 
   return {
-    start: lineStart + slashOffset,
-    end: caret,
+    start: $from.start() + slashOffset,
+    end: $from.pos,
     query: (match[2] || "").toLowerCase()
   };
 }
@@ -256,122 +124,55 @@ const MARKDOWN_COMMANDS = [
   }
 ];
 
-function applyMarkdownAction(action, text, start, end) {
+function applyTipTapAction(editor, action, contextStart, contextEnd) {
+  const chain = editor.chain().focus();
+  
+  // If triggered from slash menu, delete the /command text first
+  if (contextStart !== undefined && contextEnd !== undefined) {
+    chain.deleteRange({ from: contextStart, to: contextEnd });
+  }
+
   switch (action) {
     case "heading-1":
-      return transformSelectedLines(text, start, end, (lines) => {
-        return lines.map((line, index) => {
-          if (index > 0) {
-            return line;
-          }
-
-          const normalized = line.replace(/^\s*#{1,6}\s+/, "");
-          return line.trimStart().startsWith("# ") ? normalized : `# ${normalized || "Heading"}`;
-        });
-      });
+      chain.toggleHeading({ level: 1 }).run();
+      break;
     case "heading-2":
-      return transformSelectedLines(text, start, end, (lines) => {
-        return lines.map((line, index) => {
-          if (index > 0) {
-            return line;
-          }
-
-          const normalized = line.replace(/^\s*#{1,6}\s+/, "");
-          return line.trimStart().startsWith("## ") ? normalized : `## ${normalized || "Heading"}`;
-        });
-      });
+      chain.toggleHeading({ level: 2 }).run();
+      break;
     case "bold":
-      return wrapSelection(text, start, end, "**", "**", "bold");
+      chain.toggleBold().run();
+      break;
     case "italic":
-      return wrapSelection(text, start, end, "*", "*", "italic");
+      chain.toggleItalic().run();
+      break;
     case "strike":
-      return wrapSelection(text, start, end, "~~", "~~", "strike");
-    case "code": {
-      const selected = text.slice(start, end);
-      if (selected.includes("\n")) {
-        return wrapSelection(text, start, end, "```\n", "\n```", "code");
+      chain.toggleStrike().run();
+      break;
+    case "code":
+      // Basic heuristic: if there's a selection spanning multiple lines, make it a block
+      if (!editor.state.selection.empty && editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, '\n').includes('\n')) {
+        chain.toggleCodeBlock().run();
+      } else {
+        chain.toggleCode().run();
       }
-      return wrapSelection(text, start, end, "`", "`", "code");
-    }
+      break;
     case "quote":
-      return transformSelectedLines(text, start, end, (lines) => {
-        const allQuoted = lines.every((line) => !line.trim() || /^\s*>\s?/.test(line));
-        return lines.map((line) => {
-          if (!line.trim()) {
-            return line;
-          }
-          return allQuoted ? line.replace(/^\s*>\s?/, "") : `> ${line}`;
-        });
-      });
+      chain.toggleBlockquote().run();
+      break;
     case "bullets":
-      return transformSelectedLines(text, start, end, (lines) => {
-        const allBulleted = lines.every((line) => !line.trim() || /^\s*[-*+]\s+/.test(line));
-        return lines.map((line) => {
-          if (!line.trim()) {
-            return line;
-          }
-          if (allBulleted) {
-            return line.replace(/^\s*[-*+]\s+/, "");
-          }
-          return line.replace(/^\s*/, (indent) => `${indent}- `);
-        });
-      });
+      chain.toggleBulletList().run();
+      break;
     case "ordered":
-      return transformSelectedLines(text, start, end, (lines) => {
-        const allOrdered = lines.every((line) => !line.trim() || /^\s*\d+\.\s+/.test(line));
-        let order = 1;
-        return lines.map((line) => {
-          if (!line.trim()) {
-            return line;
-          }
-          if (allOrdered) {
-            return line.replace(/^\s*\d+\.\s+/, "");
-          }
-          const indent = line.match(/^\s*/)?.[0] || "";
-          const next = line.trimStart().replace(/^([-*+]|\d+\.)\s+/, "");
-          const marker = `${order}. `;
-          order += 1;
-          return `${indent}${marker}${next}`;
-        });
-      });
+      chain.toggleOrderedList().run();
+      break;
     case "task":
-      return transformSelectedLines(text, start, end, (lines) => {
-        const allTasks = lines.every((line) => !line.trim() || /^\s*[-*+]\s+\[[ xX]\]\s+/.test(line));
-        return lines.map((line) => {
-          if (!line.trim()) {
-            return line;
-          }
-          if (allTasks) {
-            return line.replace(/^\s*[-*+]\s+\[[ xX]\]\s+/, "");
-          }
-          const indent = line.match(/^\s*/)?.[0] || "";
-          const normalized = line.trimStart().replace(/^([-*+]|\d+\.)\s+/, "");
-          return `${indent}- [ ] ${normalized}`;
-        });
-      });
-    case "link": {
-      const selected = text.slice(start, end);
-      if (selected) {
-        const wrapped = `[${selected}](https://example.com)`;
-        const valueWithLink = `${text.slice(0, start)}${wrapped}${text.slice(end)}`;
-        const urlStart = start + wrapped.indexOf("https://");
-        return {
-          value: valueWithLink,
-          selectionStart: urlStart,
-          selectionEnd: urlStart + "https://example.com".length
-        };
-      }
-      const fallback = "[link title](https://example.com)";
-      const valueWithLink = `${text.slice(0, start)}${fallback}${text.slice(end)}`;
-      const titleStart = start + 1;
-      return {
-        value: valueWithLink,
-        selectionStart: titleStart,
-        selectionEnd: titleStart + "link title".length
-      };
-    }
+      chain.toggleTaskList().run();
+      break;
+    case "link":
+      chain.toggleLink({ href: 'https://example.com' }).run();
+      break;
     default:
-      return null;
+      break;
   }
 }
 
@@ -389,213 +190,157 @@ function matchesCommand(command, query) {
 }
 
 export default function MarkdownEditor({ value, onChange, placeholder }) {
-  const textareaRef = useRef(null);
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
   const [slashIndex, setSlashIndex] = useState(0);
+  const slashContextRef = useRef(null);
+  
+  // Track if we are programmatically updating the editor to avoid cyclical updates
+  const isUpdatingValueRef = useRef(false);
+
+  // Parse Initial Content just once safely
+  const initialValueRef = useRef(value);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3, 4],
+        },
+        codeBlock: false, // We can customize this further if needed
+      }),
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
+      Placeholder.configure({
+        placeholder: placeholder || "Write in markdown...",
+        emptyEditorClass: 'is-editor-empty',
+      }),
+      Markdown.configure({
+        html: false, // No HTML output, just pure markdown
+        transformPastedText: true,
+        transformCopiedText: true,
+      }),
+    ],
+    content: initialValueRef.current,
+    editorProps: {
+      attributes: {
+        class: "prose prose-neutral dark:prose-invert max-w-none w-full h-full min-h-[300px] px-1 outline-none prose-p:leading-relaxed prose-pre:bg-neutral-100 dark:prose-pre:bg-neutral-800 prose-pre:border prose-pre:border-black/5 dark:prose-pre:border-white/10 prose-headings:font-semibold prose-a:text-blue-500 hover:prose-a:text-blue-600 tiptap-editor",
+      },
+    },
+    onUpdate: ({ editor }) => {
+      // Avoid firing onChange if we are the ones updating the content via useEffect
+      if (isUpdatingValueRef.current) return;
+      
+      const markdown = editor.storage.markdown.getMarkdown();
+      onChange(markdown);
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const context = getSlashCommandContext(editor);
+      if (!context) {
+        setSlashMenuOpen(false);
+        setSlashQuery("");
+        setSlashIndex(0);
+        slashContextRef.current = null;
+        return;
+      }
+
+      setSlashMenuOpen(true);
+      setSlashQuery(context.query);
+      slashContextRef.current = context;
+    },
+  });
+
+  // Sync external value changes into the editor (e.g. changing notes)
+  useEffect(() => {
+    if (!editor || value === editor.storage.markdown.getMarkdown()) {
+      return;
+    }
+    
+    isUpdatingValueRef.current = true;
+    editor.commands.setContent(value);
+    isUpdatingValueRef.current = false;
+  }, [value, editor]);
 
   const filteredCommands = useMemo(() => {
     return MARKDOWN_COMMANDS.filter((command) => matchesCommand(command, slashQuery));
   }, [slashQuery]);
 
-  const syncSlashMenu = useCallback((nextText, caret, resetIndex = true) => {
-    const context = getSlashCommandContext(nextText, caret);
-    if (!context) {
-      setSlashMenuOpen(false);
-      setSlashQuery("");
-      setSlashIndex(0);
-      return;
-    }
-
-    setSlashMenuOpen(true);
-    setSlashQuery(context.query);
-    if (resetIndex) {
-      setSlashIndex(0);
-    }
-  }, []);
-
-  const applyEditorUpdate = useCallback(
-    (transform) => {
-      const textarea = textareaRef.current;
-      if (!textarea) {
-        return;
-      }
-
-      const result = transform(value, textarea.selectionStart, textarea.selectionEnd);
-      if (!result) {
-        return;
-      }
-
-      onChange(result.value);
-
-      requestAnimationFrame(() => {
-        const editor = textareaRef.current;
-        if (!editor) {
-          return;
-        }
-
-        editor.focus();
-        editor.setSelectionRange(result.selectionStart, result.selectionEnd);
-      });
-    },
-    [onChange, value]
-  );
-
   const runAction = useCallback(
     (action, fromSlash = false) => {
-      applyEditorUpdate((text, start, end) => {
-        let workingText = text;
-        let workingStart = start;
-        let workingEnd = end;
+      if (!editor) return;
 
-        if (fromSlash && start === end) {
-          const context = getSlashCommandContext(text, start);
-          if (context) {
-            workingText = `${text.slice(0, context.start)}${text.slice(context.end)}`;
-            workingStart = context.start;
-            workingEnd = context.start;
-          }
-        }
-
-        return applyMarkdownAction(action, workingText, workingStart, workingEnd);
-      });
+      const contextStart = fromSlash && slashContextRef.current ? slashContextRef.current.start : undefined;
+      const contextEnd = fromSlash && slashContextRef.current ? slashContextRef.current.end : undefined;
+      
+      applyTipTapAction(editor, action, contextStart, contextEnd);
 
       setSlashMenuOpen(false);
       setSlashQuery("");
       setSlashIndex(0);
+      slashContextRef.current = null;
     },
-    [applyEditorUpdate]
+    [editor]
   );
 
-  const onEditorChange = useCallback(
-    (event) => {
-      const next = event.target.value;
-      onChange(next);
-      syncSlashMenu(next, event.target.selectionStart, true);
-    },
-    [onChange, syncSlashMenu]
-  );
-
-  const onCursorUpdate = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      return;
-    }
-
-    syncSlashMenu(textarea.value, textarea.selectionStart, false);
-  }, [syncSlashMenu]);
-
-  const onKeyDown = useCallback(
-    (event) => {
-      if (slashMenuOpen && event.key === "Escape") {
-        event.preventDefault();
-        setSlashMenuOpen(false);
-        return;
-      }
-
-      if (slashMenuOpen && filteredCommands.length > 0) {
-        if (event.key === "ArrowDown") {
+  // Handle Slash Menu Navigation & Global Shortcuts
+  useEffect(() => {
+    const handleGlobalKeyDown = (event) => {
+      if (!editor) return;
+      
+      // If we're focused in the editor and Slash Menu is open, hijack navigation
+      if (slashMenuOpen) {
+        if (event.key === "Escape") {
           event.preventDefault();
-          setSlashIndex((prev) => (prev + 1) % filteredCommands.length);
+          setSlashMenuOpen(false);
           return;
         }
 
-        if (event.key === "ArrowUp") {
-          event.preventDefault();
-          setSlashIndex((prev) => (prev - 1 + filteredCommands.length) % filteredCommands.length);
-          return;
-        }
+        if (filteredCommands.length > 0) {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setSlashIndex((prev) => (prev + 1) % filteredCommands.length);
+            return;
+          }
 
-        if (event.key === "Enter") {
-          event.preventDefault();
-          runAction(filteredCommands[slashIndex]?.id, true);
-          return;
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setSlashIndex((prev) => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+            return;
+          }
+
+          if (event.key === "Enter") {
+            event.preventDefault();
+            runAction(filteredCommands[slashIndex]?.id, true);
+            return;
+          }
         }
       }
 
+      // Handle simple Cmd+B / Cmd+I fallbacks if TipTap doesn't catch them
+      // (TipTap actually handles a lot of this automatically, but keeping for safety/consistency)
       const key = event.key.toLowerCase();
       const usesModifier = event.metaKey || event.ctrlKey;
-
-      if (usesModifier && !event.shiftKey && key === "b") {
-        event.preventDefault();
-        runAction("bold");
-        return;
-      }
-
-      if (usesModifier && !event.shiftKey && key === "i") {
-        event.preventDefault();
-        runAction("italic");
-        return;
-      }
 
       if (usesModifier && !event.shiftKey && key === "k") {
         event.preventDefault();
         runAction("link");
         return;
       }
-
-      if (usesModifier && event.shiftKey && key === "7") {
-        event.preventDefault();
-        runAction("ordered");
-        return;
-      }
-
-      if (usesModifier && event.shiftKey && key === "8") {
-        event.preventDefault();
-        runAction("bullets");
-        return;
-      }
-
-      if (event.key === "Tab") {
-        event.preventDefault();
-        applyEditorUpdate((text, start, end) => indentSelectedLines(text, start, end, event.shiftKey));
-        return;
-      }
-
-      if (event.key === "Enter") {
-        const textarea = textareaRef.current;
-        if (!textarea || textarea.selectionStart !== textarea.selectionEnd) {
-          return;
-        }
-
-        const continuation = continueMarkdownLine(value, textarea.selectionStart);
-        if (!continuation) {
-          return;
-        }
-
-        event.preventDefault();
-        onChange(continuation.value);
-        setSlashMenuOpen(false);
-
-        requestAnimationFrame(() => {
-          const editor = textareaRef.current;
-          if (!editor) {
-            return;
-          }
-          editor.setSelectionRange(continuation.selectionStart, continuation.selectionEnd);
-        });
-      }
-    },
-    [applyEditorUpdate, filteredCommands, onChange, runAction, slashIndex, slashMenuOpen, value]
-  );
+    };
+    
+    // We attach to the window specifically for slash menu hijacking ahead of TipTap
+    window.addEventListener("keydown", handleGlobalKeyDown, true);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown, true);
+  }, [slashMenuOpen, filteredCommands, slashIndex, runAction, editor]);
 
   return (
-    <div className="markdown-editor-shell ">
-      <div className="markdown-editor-body ">
-        <textarea
-          ref={textareaRef}
-          className="editor-textarea  px-1 markdown-input placeholder:text-neutral-500 dark:placeholder:text-neutral-400" 
-          value={value}
-          placeholder={placeholder}
-          onChange={onEditorChange}
-          onKeyDown={onKeyDown}
-          onClick={onCursorUpdate}
-          onKeyUp={onCursorUpdate}
-          onBlur={() => setSlashMenuOpen(false)}
-          spellCheck
-        />
+    <div className="markdown-editor-shell flex flex-col h-full relative">
+      <div className="markdown-editor-body flex-1 min-h-0 relative h-full w-full overflow-y-auto px-4 pb-8 pt-4">
+        <EditorContent editor={editor} className="h-full focus:outline-none" />
 
-        {slashMenuOpen ? (
+        {slashMenuOpen && editor?.isFocused ? (
           <div className="slash-command-menu" role="listbox" aria-label="Markdown commands">
             {filteredCommands.length === 0 ? (
               <p className="slash-command-empty">No markdown commands found</p>
@@ -608,7 +353,7 @@ export default function MarkdownEditor({ value, onChange, placeholder }) {
                     key={command.id}
                     type="button"
                     className={`slash-command-item ${isActive ? "slash-command-item-active" : ""}`}
-                    onMouseDown={(event) => event.preventDefault()}
+                    onMouseDown={(event) => event.preventDefault()} // prevent blur
                     onClick={() => runAction(command.id, true)}
                     role="option"
                     aria-selected={isActive}
