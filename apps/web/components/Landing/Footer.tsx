@@ -34,8 +34,8 @@ function Footer() {
     ]
 
   return (
-    <footer className='border-t mt-20 pb-20 text-black border-neutral-200 p-5   w-full flex justify-center'>
-        <div className='max-w-6xl w-full text-sm flex flex-col md:flex-row md:justify-between'>
+    <footer className='border-t mt-20 pb-20 text-black border-neutral-200 bg-neutral-100 p-5   w-full flex justify-center'>
+        <div className='max-w-5xl w-full text-sm flex flex-col md:flex-row md:justify-between'>
         <div>
             <h1 className='text-2xl font-serif font-bold'>Orca</h1>
         </div>
