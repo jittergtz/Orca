@@ -3,6 +3,8 @@ import TrustedBy from "@/components/Landing/TrustedBy";
 import CarouselSection from "@/components/Landing/CarouselSection";
 import Navbar from "@/components/Landing/Navbar";
 import Blocks from "@/components/Landing/Blocks";
+import OrcaPreview from "@/components/Landing/OrcaPreview";
+import ContainerPreview from "@/components/Landing/ContainerPreview";
 
 export default function Page() {
   return (
@@ -15,6 +17,9 @@ export default function Page() {
  
       <CarouselSection />
      <Blocks />
+
+     < ContainerPreview/>
+     
        <CarouselSection title="Whats Important to you" cards={[
         {
           label: "Sport",
