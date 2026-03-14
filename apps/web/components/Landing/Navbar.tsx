@@ -66,7 +66,7 @@ function Navbar() {
           {/* Desktop Right Actions & Mobile Toggle */}
           <div className='flex items-center gap-4'>
             <div className='hidden md:flex items-center gap-4'>
-              <Link href="/product" className='text-sm text-neutral-600 hover:text-black transition-colors'>
+              <Link href="/mission" className='text-sm text-neutral-600 hover:text-black transition-colors'>
                 Mission
               </Link>
               <Link 

@@ -11,7 +11,7 @@ export default function Page() {
   <div className="flex min-h-screen px-4 flex-col bg-neutral-50  items-center ">
      <Navbar/>
      <div className=" pt-10 md:pt-20">
-      <Hero/>
+      <Hero text="Stay Informed" />
       </div>
       <TrustedBy/>
  
