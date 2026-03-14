@@ -100,7 +100,7 @@ export default function OrcaPreview() {
     <div className="w-full flex items-center justify-center px-4 py-8">
       {/* Mac-style window */}
       <div
-        className="relative w-full max-w-2xl rounded-[28px] overflow-hidden shadow-sm shadow-black/40"
+        className="relative w-full max-w-3xl rounded-[28px] overflow-hidden shadow-sm shadow-black/40"
         style={{
           background:
             "linear-gradient(135deg, #dde3ec 0%, #c8d4e0 30%, #d6cfc8 60%, #e8ddd4 100%)",
@@ -114,12 +114,12 @@ export default function OrcaPreview() {
         </div>
 
         {/* Content area */}
-        <div className="px-6 sm:px-10 pt-3 pb-6">
+        <div className="px-6  sm:px-10 pt-3 pb-6">
           {/* Header row */}
           <div className="flex items-center justify-between mb-1">
             {/* AI badge */}
             <span
-              className="text-xs font-semibold px-3 py-1 rounded-full"
+              className="text-xs font-semibold px-3 py-0.5 rounded-full"
               style={{
                 background: "rgba(210,200,180,0.7)",
                 color: "#5a4e3a",
@@ -134,23 +134,27 @@ export default function OrcaPreview() {
               11.03.2026
             </span>
           </div>
+           
 
+           <div className="flex flex-col items-center">
+            <div className="flex flex-col items-start">
           {/* Title */}
-          <h2 className="font-serif italic text-2xl sm:text-3xl text-neutral-800 leading-snug mb-4">
+          <h2 className="font-serif  italic text-[24px] sm:text-[28px] text-neutral-800 leading-snug mb-4">
             Informed Today about what happen
           </h2>
 
           {/* Scrollable text body */}
-          <div className="space-y-3 max-h-[220px] sm:max-h-[260px] overflow-y-auto pr-1 scrollbar-hide">
+          <div className="space-y-3 max-h-[220px] sm:max-h-[260px]   sm:w-[450px] overflow-y-auto pr-1 scrollbar-hide">
             {paragraphs.map((p) => (
               <p
                 key={p.id}
-                className="text-sm sm:text-[15px] text-neutral-700 leading-relaxed"
+                className="text-sm sm:text-[13px] text-neutral-700 leading-relaxed"
               >
                 {p.text}
               </p>
             ))}
-          </div>
+            </div>
+          </div></div>
         </div>
 
         {/* Playback bar */}
@@ -161,13 +165,13 @@ export default function OrcaPreview() {
               background: "rgba(255,255,255,0.55)",
               backdropFilter: "blur(12px)",
               boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
-              width: "min(300px, 90%)",
+              width: "min(170px, 90%)",
             }}
           >
             {/* Play / Pause button */}
             <button
               onClick={() => setPlaying((p) => !p)}
-              className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-neutral-700 hover:text-black transition-colors"
+              className="w-5 h-4 flex-shrink-0 flex items-center justify-center text-neutral-700 hover:text-black transition-colors"
               aria-label={playing ? "Pause" : "Play"}
             >
               {playing ? (
