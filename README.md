@@ -1,4 +1,4 @@
-# Newsflow Monorepo
+# Orca Monorepo
 
 Welcome to the internal source code repository for Orca. This project is structured as a [Turborepo](https://turbo.build/) monorepo containing multiple applications and shared packages.
 
