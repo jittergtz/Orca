@@ -113,14 +113,14 @@ export default function CarouselSection({
   };
 
   return (
-    <section className="w-full max-w-7xl py-16 px-4 select-none">
+    <section className="w-full max-w-7xl p-10   select-none">
       {/* Heading */}
       <div className="text-center mb-12">
         <h2 className="text-5xl md:text-6xl font-serif italic text-black leading-tight mb-4"
             style={{ fontFamily: "var(--font-instrument-serif), Georgia, serif" }}>
           {title}
         </h2>
-        <p className="text-base md:text-lg text-neutral-500 max-w-xl mx-auto leading-relaxed whitespace-pre-line">
+        <p className="text-base md:text-lg text-neutral-900 max-w-xl mx-auto leading-relaxed whitespace-pre-line">
           {subtitle}
         </p>
       </div>
@@ -128,7 +128,7 @@ export default function CarouselSection({
       {/* Track */}
       <div
         ref={trackRef}
-        className="flex gap-5 overflow-x-auto scroll-smooth pb-4 scrollbar-hide"
+        className="flex   no-shrink gap-5 flex-shrink-0 justify-start  overflow-x-auto scroll-smooth p-5  scrollbar-hide"
         style={{ scrollSnapType: "x mandatory" }}
       >
         {cards.map((card, i) => (
@@ -143,7 +143,7 @@ export default function CarouselSection({
       {/* ── Apple-style nav bar ─────────────────────────── */}
       <div className="flex items-center justify-center gap-2 mt-8">
         {/* Pill backdrop */}
-        <div className="flex items-center gap-[6px] bg-neutral-100 rounded-full px-3 py-2 shadow-inner">
+        <div className="flex items-center  gap-[6px] bg-neutral-100 rounded-full px-5 py-3 shadow-inner">
           {cards.map((_, i) => {
             const isActive = i === active;
             return (
@@ -154,7 +154,7 @@ export default function CarouselSection({
                 className={[
                   "relative overflow-hidden rounded-full transition-all duration-500 ease-in-out",
                   isActive
-                    ? "h-[6px] w-[72px] bg-neutral-300"
+                    ? "h-[7px] w-[72px] bg-neutral-300"
                     : "h-[6px] w-[6px] bg-neutral-300 hover:bg-neutral-400",
                 ].join(" ")}
               >
@@ -203,19 +203,19 @@ function CarouselCardItem({ card, isActive }: { card: CarouselCard; isActive: bo
   return (
     <div
       className={[
-        "relative flex-shrink-0 rounded-3xl overflow-hidden flex flex-col",
+        "relative flex-shrink-0  rounded-3xl overflow-hidden flex flex-col",
         "transition-all duration-500 ease-in-out",
-        isActive ? "ring-2 ring-neutral-400/60 scale-[1.02]" : "scale-100 opacity-80",
+        isActive ? " border-2 border-neutral-300 scale-[1.03]" : "scale-100 ",
       ].join(" ")}
       style={{
         backgroundColor: card.bgColor,
-        width: "clamp(240px, 30vw, 340px)",
+        width: "clamp(300px, 30vw, 340px)",
         minHeight: "420px",
-        scrollSnapAlign: "start",
+        scrollSnapAlign: "center",
       }}
     >
       {/* Top row */}
-      <div className="flex items-start justify-between p-5 gap-2">
+      <div className="flex items-start  justify-between p-5 gap-2">
         <span
           className={`text-3xl md:text-4xl leading-tight font-serif italic ${textColor}`}
           style={{ fontFamily: "var(--font-instrument-serif), Georgia, serif" }}
