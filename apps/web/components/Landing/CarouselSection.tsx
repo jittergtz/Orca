@@ -113,7 +113,7 @@ export default function CarouselSection({
   };
 
   return (
-    <section className="w-full max-w-7xl p-10   select-none">
+    <section className="w-full max-w-7xl p-   select-none">
       {/* Heading */}
       <div className="text-center mb-12">
         <h2 className="text-5xl md:text-6xl font-serif italic text-black leading-tight mb-4"
