@@ -33,13 +33,13 @@ function PlanCard({
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* Card with gradient background and placeholder image */}
-      <div className="relative rounded-2xl overflow-hidden h-44 bg-gradient-to-br from-stone-200 via-stone-100 to-stone-300 shadow-inner">
+      <div className="relative rounded-2xl   overflow-hidden h-44 bg-gradient-to-br from-stone-200 via-stone-100 to-stone-300 shadow-inner">
         {/* Placeholder image — replace src with your real asset */}
         <Image
           src={img}
           alt={`${name} plan background`}
           fill
-          className="object-cover opacity-80 "
+          className="object-cover transition-all duration-500 hover:scale-110"
         />
         {/* Plan name */}
         <span className="absolute top-4 left-5 font-sans text-lg font-medium text-stone-50">
