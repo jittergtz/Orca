@@ -84,7 +84,7 @@ function Navbar() {
               aria-label="Toggle menu"
             >
               <motion.div initial={false} animate={{ rotate: isOpen ? 90 : 0 }} transition={{ duration: 0.2 }}>
-                {isOpen ? <X size={24} /> : <Menu size={24} />}
+                {isOpen ? <X size={20} /> : <Menu size={20} />}
               </motion.div>
             </button>
           </div>
