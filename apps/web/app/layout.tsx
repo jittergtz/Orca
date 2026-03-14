@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Instrument_Serif } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Landing/Navbar';
+import Footer from '@/components/Landing/Footer';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const instrumentSerif = Instrument_Serif({ 
@@ -22,7 +23,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} ${instrumentSerif.variable} font-sans`}>
         <Navbar/>
         {children}
-        </body>l
+        <Footer/>
+        </body>
     </html>
   );
 }
