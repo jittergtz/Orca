@@ -5,11 +5,11 @@ import React from "react";
 const companies = [
   { name: "Reuters" },
   { name: "Bloomberg" },
-  { name: "The New York Times" },
-  { name: "The Washington Post" },
+  { name: "Revolut" },
+  { name: "Google" },
   { name: "Financial Times" },
   { name: "The Economist" },
-  { name: "Associated Press" },
+  { name: "Pinterest" },
   { name: "Politico" },
   { name: "Axios" },
   { name: "The Atlantic" },
@@ -38,7 +38,7 @@ export default function TrustedBy() {
           {allCompanies.map((company, i) => (
             <span
               key={i}
-              className="font-serif text-xl  text-neutral-500 whitespace-nowrap select-none"
+              className="font-serif text-2xl  text-neutral-500 whitespace-nowrap select-none"
               aria-label={company.name}
             >
               {company.name}

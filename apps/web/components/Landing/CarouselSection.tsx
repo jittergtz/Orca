@@ -36,6 +36,20 @@ const defaultCards: CarouselCard[] = [
   { label: "Culture",    bgColor: "#d4b8a0", darkText: true },
 ];
 
+const SecondaryCards: CarouselCard[] = [
+  {
+    label: "Sport",
+    bgColor: "#5C2D30",
+    badge: "2026 Start",
+    imageSrc: "/mock-singapore.png",
+    imageAlt: "Indoor garden waterfall",
+  },
+  { label: "Finance",    bgColor: "#9b93b3" },
+  { label: "Politics",   bgColor: "#d6d6d6", darkText: true },
+  { label: "Technology", bgColor: "#b3c4d8", darkText: true },
+  { label: "Culture",    bgColor: "#d4b8a0", darkText: true },
+];
+
 /* ─── Main component ──────────────────────────────────────── */
 export default function CarouselSection({
   title = "Meet Orca",

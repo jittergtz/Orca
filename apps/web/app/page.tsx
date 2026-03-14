@@ -1,12 +1,28 @@
 import Hero from "@/components/Landing/Hero";
 import TrustedBy from "@/components/Landing/TrustedBy";
 import CarouselSection from "@/components/Landing/CarouselSection";
+import Navbar from "@/components/Landing/Navbar";
 
 export default function Page() {
   return (
-  <div className="flex min-h-screen p-4 flex-col mt-20 items-center ">
+  <div className="flex min-h-screen px-4  flex-col  items-center ">
+     <Navbar/>
       <Hero/>
       <TrustedBy/>
       <CarouselSection />
+
+       <CarouselSection title="Whats Important to you" cards={[
+        {
+          label: "Sport",
+          bgColor: "#5C2D30",
+          badge: "2026 Start",
+          imageSrc: "/mock-singapore.png",
+          imageAlt: "Indoor garden waterfall",
+        },
+        { label: "Podcasts",    bgColor: "#452D5C" },
+        { label: "Politics",   bgColor: "#2D505C", darkText: false },
+        { label: "Technology", bgColor: "#b3c4d8", darkText: true },
+  
+        ]} />
   </div>
   )}
