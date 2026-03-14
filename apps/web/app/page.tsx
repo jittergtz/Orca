@@ -11,8 +11,10 @@ export default function Page() {
   <div className="flex min-h-screen px-4 flex-col bg-neutral-50  items-center ">
      <Navbar/>
      <div className=" pt-10 md:pt-20">
-      <Hero text="Stay Informed" />
-      </div>
+
+<Hero text="Stay Informed" ImgClassName=" hue-rotate-10 contrast-200 opacity-90 " />
+</div>
+
       <TrustedBy/>
  
       <CarouselSection />

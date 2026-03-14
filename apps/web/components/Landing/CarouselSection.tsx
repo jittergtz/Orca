@@ -217,7 +217,7 @@ function CarouselCardItem({ card, isActive }: { card: CarouselCard; isActive: bo
   return (
     <div
       className={[
-        "relative flex-shrink-0  rounded-3xl overflow-hidden flex flex-col",
+        "relative flex-shrink-0  rounded-[30px] overflow-hidden flex flex-col",
         "transition-all duration-500 ease-in-out",
         isActive ? " border-2 border-neutral-300 scale-[1.03]" : "scale-100 ",
       ].join(" ")}

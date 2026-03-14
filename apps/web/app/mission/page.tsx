@@ -1,5 +1,5 @@
 import CarouselSection from '@/components/Landing/CarouselSection'
-import Hero from '@/components/Landing/Hero'
+import Hero, { MissionHero } from '@/components/Landing/Hero'
 import Navbar from '@/components/Landing/Navbar'
 import React from 'react'
 
@@ -8,7 +8,7 @@ function page() {
      <div className="flex min-h-screen px-4 flex-col bg-neutral-50  items-center ">
      <Navbar/>
      <div className=" pt-10 md:pt-20">
-      <Hero text='What Matters to us ' ImgClassName="sepia contrast-200 opacity-90"/>
+      <MissionHero text='What Matters to us ' ImgClassName="mix-blend-luminosity "/>
       </div>
       
 
