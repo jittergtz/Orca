@@ -3,7 +3,7 @@ import React from 'react'
 
 function Hero() {
   return (
-    <main className='w-full select-none relative shadow-md shadow-black/20  overflow-hidden rounded-[60px] max-w-6xl h-full max-h-[550px] bg-neutral-900'>
+    <main className='w-full  select-none  relative shadow-md shadow-black/20  overflow-hidden rounded-[60px] max-w-6xl h-full max-h-[550px] bg-neutral-900'>
        <Image
        src={"/high.webp"}
        width={3024}

@@ -5,9 +5,11 @@ import Navbar from "@/components/Landing/Navbar";
 
 export default function Page() {
   return (
-  <div className="flex min-h-screen px-4  flex-col  items-center ">
+  <div className="flex min-h-screen px-4 flex-col  items-center ">
      <Navbar/>
+     <div className=" pt-10 md:pt-20">
       <Hero/>
+      </div>
       <TrustedBy/>
       <CarouselSection />
 
