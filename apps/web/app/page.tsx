@@ -2,17 +2,19 @@ import Hero from "@/components/Landing/Hero";
 import TrustedBy from "@/components/Landing/TrustedBy";
 import CarouselSection from "@/components/Landing/CarouselSection";
 import Navbar from "@/components/Landing/Navbar";
+import Blocks from "@/components/Landing/Blocks";
 
 export default function Page() {
   return (
-  <div className="flex min-h-screen px-4 flex-col  items-center ">
+  <div className="flex min-h-screen px-4 flex-col bg-neutral-50  items-center ">
      <Navbar/>
      <div className=" pt-10 md:pt-20">
       <Hero/>
       </div>
       <TrustedBy/>
+ 
       <CarouselSection />
-
+     <Blocks />
        <CarouselSection title="Whats Important to you" cards={[
         {
           label: "Sport",

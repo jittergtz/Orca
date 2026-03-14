@@ -41,7 +41,7 @@ function Navbar() {
     <>
       <nav 
         className={` sticky top-1  z-50 flex w-full justify-center transition-all duration-300 ${
-          scrolled ? 'bg-white/80 backdrop-blur-md w-[350px] sm:w-full shadow-sm shadow-black/40 sm:shadow-black/20 rounded-full' : '  bg-transparent'
+          scrolled ? 'bg-white/80 backdrop-blur-md w-[350px] sm:w-full sm:max-w-7xl shadow-sm shadow-black/40 sm:shadow-black/20 rounded-full' : '  bg-transparent'
         }`}
       >
         <div className='h-[50px]  flex items-center justify-between w-full  max-w-7xl px-5 lg:px-4'>

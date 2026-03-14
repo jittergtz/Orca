@@ -44,13 +44,13 @@ function Footer() {
             <div className='flex flex-col'>
                 <h1 className='text-sm font-semibold unde'>Orca</h1>
                    {Orca.map((data, i) => (
-              <Link className='text-neutral-600 mt-2' id='i' href={data.link}>{data.name}</Link>
+              <Link className='text-neutral-600 mt-2' key={i} href={data.link}>{data.name}</Link>
             ))}
             </div>
              <div className='flex flex-col'>
                 <h1 className='text-sm font-semibold'>Company</h1>
                 {Company.map((data, i) => (
-              <Link  className='text-neutral-600 mt-2' id='i' href={data.link}>{data.name}</Link>
+              <Link key={i} className='text-neutral-600 mt-2'  href={data.link}>{data.name}</Link>
             ))}
               
             </div>

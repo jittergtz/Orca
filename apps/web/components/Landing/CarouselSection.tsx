@@ -53,7 +53,7 @@ const SecondaryCards: CarouselCard[] = [
 /* ─── Main component ──────────────────────────────────────── */
 export default function CarouselSection({
   title = "Meet Orca",
-  subtitle = "Orca brings the best of an LMS, LXP, authoring tool, and\nvirtual classroom into one AI-native learning platform.",
+  subtitle = "Orca brings the best of an LMS, LXP, authoring tool, AI-native learning platform.",
   cards = defaultCards,
   slideDuration = 5000,
 }: CarouselSectionProps) {
@@ -127,7 +127,7 @@ export default function CarouselSection({
   };
 
   return (
-    <section className="w-full max-w-7xl py-16   select-none">
+    <section className="w-full max-w-7xl  py-10  select-none">
       {/* Heading */}
       <div className="text-center mb-12">
         <h2 className="text-5xl md:text-6xl font-serif font-bold italic text-black leading-tight mb-4"
