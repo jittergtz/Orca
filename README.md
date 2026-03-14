@@ -1,4 +1,4 @@
-# Newsflow Monorepo
+# Orca Monorepo
 
 Welcome to the internal source code repository for Orca. This project is structured as a [Turborepo](https://turbo.build/) monorepo containing multiple applications and shared packages.
 
@@ -6,7 +6,7 @@ Welcome to the internal source code repository for Orca. This project is structu
 
 ### Apps
 - `apps/desktop`: The core, private local desktop application built with Electron, React, and Vite  Orca.
-- `apps/web`: The Next.js 14 App Router landing page with Stripe and Supabase integration.
+- `apps/web`: The Next.js 16 App Router landing page with Stripe and Supabase integration.
 - `apps/worker`: A Node.js background service that pulls news via Perplexity, summarizes it with GPT-4o-mini, and orchestrates jobs with BullMQ and node-cron.
 
 ### Packages
