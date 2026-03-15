@@ -12,7 +12,7 @@ export default function Page() {
      <Navbar/>
      <div className=" pt-10 md:pt-20">
 
-<Hero text="Stay Informed" ImgClassName=" hue-rotate-10 contrast-200 opacity-90 " />
+<Hero text="Stay Informed in a busy World" ImgClassName=" hue-rotate-10 contrast-200 opacity-90 " />
 </div>
 
       <TrustedBy/>

@@ -1,6 +1,7 @@
 import CarouselSection from '@/components/Landing/CarouselSection'
 import Hero, { MissionHero } from '@/components/Landing/Hero'
 import Navbar from '@/components/Landing/Navbar'
+import OrangeSection from '@/components/Mission/OrangeSection'
 import React from 'react'
 
 function page() {
@@ -11,7 +12,7 @@ function page() {
       <MissionHero text='What Matters to us ' ImgClassName="mix-blend-luminosity "/>
       </div>
       
-
+  
      
        <CarouselSection title="Whats Important to you" cards={[
         {
@@ -26,6 +27,8 @@ function page() {
         { label: "Technology", bgColor: "#b3c4d8", darkText: true },
   
         ]} />
+
+              <OrangeSection/>
   </div>
   )
 }

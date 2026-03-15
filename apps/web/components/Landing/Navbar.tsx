@@ -41,7 +41,7 @@ function Navbar() {
     <>
       <nav 
         className={` sticky top-1  z-50 flex w-full justify-center transition-all duration-300 ${
-          scrolled ? 'bg-white/80 backdrop-blur-md w-[350px] sm:w-full sm:max-w-7xl shadow-sm shadow-black/40 sm:shadow-black/20 rounded-full' : '  bg-transparent'
+          scrolled ? 'bg-white/80 backdrop-blur-md w-[349px] sm:w-full sm:max-w-7xl shadow-sm shadow-black/40 sm:shadow-black/20 rounded-full' : '  bg-transparent'
         }`}
       >
         <div className='h-[50px]  flex items-center justify-between w-full  max-w-7xl px-5 lg:px-4'>
@@ -99,7 +99,7 @@ function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: '0' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className='fixed inset w-full mt-20 z-40 bg-white/30 border border-black/30 rounded-[40px] backdrop-blur-xl md:hidden overflow-y-auto flex flex-col justify-center'
+            className='fixed inset w-full mt-20 z-40 bg-white/50 border border-black/30 rounded-[40px] backdrop-blur-xl md:hidden overflow-y-auto flex flex-col justify-center'
           >
             <div className='flex flex-col items-center mt-10  justify-start min-h-screen p-5'>
               <div className='flex flex-col items-center gap-8 w-full  max-w-sm'>
