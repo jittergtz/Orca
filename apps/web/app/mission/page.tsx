@@ -1,6 +1,7 @@
 import CarouselSection from '@/components/Landing/CarouselSection'
 import Hero, { MissionHero } from '@/components/Landing/Hero'
 import Navbar from '@/components/Landing/Navbar'
+import Contact from '@/components/Mission/Contact'
 import OrangeSection from '@/components/Mission/OrangeSection'
 import React from 'react'
 
@@ -29,6 +30,8 @@ function page() {
         ]} />
 
               <OrangeSection/>
+
+              <Contact/>
   </div>
   )
 }

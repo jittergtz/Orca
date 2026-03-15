@@ -127,14 +127,14 @@ export default function CarouselSection({
   };
 
   return (
-    <section className="w-full max-w-7xl  py-10  select-none">
+    <section className="w-full max-w-7xl  py-20  select-none">
       {/* Heading */}
       <div className="text-center mb-12">
-        <h2 className="text-5xl md:text-6xl font-serif font-bold italic text-black leading-tight mb-4"
+        <h2 className="text-4xl md:text-5xl font-serif font-bold italic text-black leading-tight mb-4"
             style={{ fontFamily: "var(--font-instrument-serif), Georgia, serif" }}>
           {title}
         </h2>
-        <p className="text-base md:text-lg text-neutral-900 max-w-xl mx-auto leading-relaxed whitespace-pre-line">
+        <p className="text-base md:text-lg text-neutral-900 max-w-xl mx-auto  whitespace-pre-line">
           {subtitle}
         </p>
       </div>

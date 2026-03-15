@@ -4,7 +4,7 @@ import OrcaPreview from './OrcaPreview'
 
 function Hero({ImgClassName, text}: {ImgClassName?: string, text: string}) {
   return (
-    <main className='w-full    relative shadow-md shadow-black/20  overflow-hidden rounded-[50px] max-w-6xl h-full max-h-[550px] bg-[#222222]'>
+    <main className='w-full    relative shadow-md shadow-black/20  overflow-hidden rounded-[50px] max-w-6xl h-full max-h-[650px] bg-[#222222]'>
 
 
        <Image
@@ -18,11 +18,11 @@ function Hero({ImgClassName, text}: {ImgClassName?: string, text: string}) {
 
 
 
-       <h1 className='absolute top-5 left-1/2 -translate-x-1/2 text-[48px] md:text-[72px] md:mt-10 text-center w-full font-serif italic'>
+       <h1 className='absolute top-5 left-1/2 -translate-x-1/2 text-[48px] md:text-[72px] md:mt-20 text-center w-full font-serif italic'>
       {text}
      </h1>
 
-       <div className='absolute hidden sm:flex w-full sm:-bottom-40 -bottom-[350px]   left-1/2 -translate-x-1/2 '>
+       <div className='absolute hidden sm:flex w-full sm:-bottom-32 -bottom-[350px]   left-1/2 -translate-x-1/2 '>
        <OrcaPreview/>
        </div>
 
