@@ -2,6 +2,7 @@ import CarouselSection from '@/components/Landing/CarouselSection'
 import Hero, { MissionHero } from '@/components/Landing/Hero'
 import Navbar from '@/components/Landing/Navbar'
 import Contact from '@/components/Mission/Contact'
+import Learn, { Table } from '@/components/Mission/Learn'
 import OrangeSection from '@/components/Mission/OrangeSection'
 import React from 'react'
 
@@ -29,7 +30,11 @@ function page() {
   
         ]} />
 
+        <Learn/>
+
               <OrangeSection/>
+              
+              <Table/>
 
               <Contact/>
   </div>
