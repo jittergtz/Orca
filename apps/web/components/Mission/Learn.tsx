@@ -16,7 +16,7 @@ export default Learn
 
 export function Table() {
   return (
-    <div className='my-20 rounded-[40px] flex justify-center p-4 bg-neutral-200 w-full h-[40vh]'>
+    <div className='my-20 rounded-[40px] flex justify-center p-4 bg-neutral-200 w-full min-h-[40vh]'>
         <div className='w-full max-w-5xl justify-center items-center flex-col md:flex-row flex gap-5' >
             
             <div className='border-x flex flex-col items-center justify-center   rounded-[40px] h-full w-64'>
