@@ -5,6 +5,7 @@ import Navbar from "@/components/Landing/Navbar";
 import Blocks from "@/components/Landing/Blocks";
 import OrcaPreview from "@/components/Landing/OrcaPreview";
 import ContainerPreview from "@/components/Landing/ContainerPreview";
+import Search from "@/components/Landing/Search";
 
 export default function Page() {
   return (
@@ -18,9 +19,14 @@ export default function Page() {
       <TrustedBy/>
  
       <CarouselSection />
+
+  
+  
      <Blocks />
 
-     < ContainerPreview/>
+         <Search/>
+
+     <ContainerPreview/>
      
        <CarouselSection title="Whats Important to you" cards={[
         {
