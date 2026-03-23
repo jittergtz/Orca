@@ -18,11 +18,11 @@ function Hero({ImgClassName, text}: {ImgClassName?: string, text: string}) {
 
 
 
-       <h1 className='absolute hidden lg:block top-5 left-1/2 -translate-x-1/2 text-[48px] md:text-[72px] md:mt-20 text-center w-full font-serif italic'>
+       <h1 className='absolute text-white hidden lg:block top-5 left-1/2 -translate-x-1/2 text-[48px] md:text-[72px] md:mt-20 text-center w-full font-serif italic'>
       {text}
      </h1>
 
-       <h1 className='absolute  lg:hidden top-10 left-1/2 -translate-x-1/2 text-[48px] md:text-[72px] md:mt-20 text-center w-full font-serif italic'>
+       <h1 className='absolute text-white  lg:hidden top-10 left-1/2 -translate-x-1/2 text-[48px] md:text-[72px] md:mt-20 text-center w-full font-serif italic'>
      Stay Informed
      </h1>
 
@@ -66,11 +66,11 @@ export function MissionHero({ImgClassName, text}: {ImgClassName?: string, text: 
 
 
 
-       <h1 className='absolute left-5 top-3 md:top-20 md:left-20 text-[43px] md:text-[80px] md:mt-10 w-full font-serif italic'>
+       <h1 className='absolute text-white left-5 top-3 md:top-20 md:left-20 text-[43px] md:text-[80px] md:mt-10 w-full font-serif italic'>
       {text}
      </h1>
 
-        <h1 className='absolute right-5 bottom-3 md:bottom-20 md:right-20 text-[43px] md:text-[80px] md:mt-10  font-serif italic'>
+        <h1 className='absolute text-white right-5 bottom-3 md:bottom-20 md:right-20 text-[43px] md:text-[80px] md:mt-10  font-serif italic'>
        Is Quality
      </h1>
 

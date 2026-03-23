@@ -2,16 +2,19 @@
   "name": "@newsflow/desktop",
   "version": "1.0.0",
   "description": "Private local desktop notes app with PIN lock",
-  "main": "src/main.js",
+  "main": "out/main.js",
   "scripts": {
-    "build": "vite build",
-    "start": "npm run build && electron .",
-    "dev": "electron . --dev",
+    "build:main": "bun run tsc -p tsconfig.node.json",
+    "build:renderer": "vite build",
+    "build": "bun run build:main && bun run build:renderer",
+    "start": "bun run build && electron .",
+    "dev:main": "bun run tsc -p tsconfig.node.json -w",
+    "dev": "bun run build:main && electron . --dev",
     "dev:ui": "vite",
-    "package:mac": "npm run build && electron-builder --mac",
-    "package:win": "npm run build && electron-builder --win",
-    "package:linux": "npm run build && electron-builder --linux",
-    "package:all": "npm run build && electron-builder -mwl"
+    "package:mac": "bun run build && electron-builder --mac",
+    "package:win": "bun run build && electron-builder --win",
+    "package:linux": "bun run build && electron-builder --linux",
+    "package:all": "bun run build && electron-builder -mwl"
   },
   "keywords": [
     "electron",
@@ -40,12 +43,17 @@
     "@newsflow/config": "*"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "electron": "^36.0.0",
     "electron-builder": "^26.8.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
     "vite": "^5.4.10"
   },
   "build": {
@@ -56,8 +64,7 @@
     },
     "files": [
       "dist/**/*",
-      "src/main.js",
-      "src/preload.js"
+      "out/**/*"
     ],
     "mac": {
       "icon": "build/icon.png",

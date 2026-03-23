@@ -1,12 +1,22 @@
-import React from "react";
 
-function formatUpdatedAt(timestamp) {
+
+function formatUpdatedAt(timestamp: number) {
   return new Date(timestamp).toLocaleString([], {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit"
   });
+}
+
+interface SidebarProps {
+  notes: Note[];
+  activeId: string | null;
+  draftTitle: string;
+  draftContent: string;
+  setActiveId: (id: string) => void;
+  createNote: () => void;
+  isOpen: boolean;
 }
 
 export default function Sidebar({
@@ -17,12 +27,12 @@ export default function Sidebar({
   setActiveId,
   createNote,
   isOpen
-}) {
+}: SidebarProps) {
   return (
     <aside
-      className={` border-2 ml-1.5 mb-2 dark:border-neutral-800/70 dark:bg-neutral-900/30 bg-neutral-100/40 rounded-xl p-1  transition-all duration-300 ease-in-out flex flex-col pt-4 ${
+      className={` border-2 ml-1.5 mb-2 dark:border-neutral-800/70 dark:bg-neutral-900/50 bg-neutral-50 rounded-[25px] p-1  transition-all duration-300 ease-in-out flex flex-col pt-4 ${
         isOpen
-          ? "w-[220px] opacity-100 translate-x-0"
+          ? "w-[240px] opacity-100 translate-x-0"
           : "w-0 opacity-0 -translate-x-[220px] overflow-hidden border-none p-0 [&>*]:hidden"
       }`}
     >

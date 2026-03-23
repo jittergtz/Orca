@@ -5,11 +5,11 @@ import Sidebar from "./components/Sidebar";
 
 const EMPTY_UNLOCK_DIGITS = ["", "", "", ""];
 
-function isValidPin(value) {
+function isValidPin(value: string) {
   return /^\d{4}$/.test(value);
 }
 
-function sortNotes(notes) {
+function sortNotes(notes: Note[]) {
   return [...notes].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
@@ -17,8 +17,8 @@ export default function App() {
   const [view, setView] = useState("loading");
   const [theme, setTheme] = useState("system");
   const [systemTheme, setSystemTheme] = useState("light");
-  const [notes, setNotes] = useState([]);
-  const [activeId, setActiveId] = useState(null);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftContent, setDraftContent] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -39,18 +39,18 @@ export default function App() {
   const [pinEnabled, setPinEnabled] = useState(true);
   const [pinChangeStep, setPinChangeStep] = useState(1);
 
-  const unlockInputRefs = useRef([]);
-  const setupPinRef = useRef(null);
-  const saveTimeoutRef = useRef(null);
-  const notesRef = useRef([]);
-  const activeIdRef = useRef(null);
-  const lastLoadedNoteIdRef = useRef(null);
+  const unlockInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const setupPinRef = useRef<HTMLInputElement>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notesRef = useRef<Note[]>([]);
+  const activeIdRef = useRef<string | null>(null);
+  const lastLoadedNoteIdRef = useRef<string | null>(null);
 
   const resolvedTheme = theme === "system" ? systemTheme : theme;
   const activeNote = useMemo(() => notes.find((note) => note.id === activeId) || null, [notes, activeId]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
         e.preventDefault();
         setSidebarOpen((prev) => !prev);
@@ -84,7 +84,7 @@ export default function App() {
     setUnlockDigits(EMPTY_UNLOCK_DIGITS);
   }, []);
 
-  const focusUnlockIndex = useCallback((index) => {
+  const focusUnlockIndex = useCallback((index: number) => {
     const el = unlockInputRefs.current[index];
     if (el) {
       el.focus();
@@ -92,7 +92,7 @@ export default function App() {
     }
   }, []);
 
-  const refreshNotes = useCallback(async (selectId = null) => {
+  const refreshNotes = useCallback(async (selectId: string | null = null) => {
     let nextNotes = await window.orca.notes.list();
     if (nextNotes.length === 0) {
       const created = await window.orca.notes.create();
@@ -109,7 +109,7 @@ export default function App() {
   }, []);
 
   const enterApp = useCallback(
-    async (selectId = null) => {
+    async (selectId: string | null = null) => {
       await refreshNotes(selectId);
       setAuthError("");
       setView("app");
@@ -118,7 +118,7 @@ export default function App() {
   );
 
   useEffect(() => {
-    let unsubscribe = null;
+    let unsubscribe: (() => void) | null = null;
 
     const init = async () => {
       try {
@@ -214,7 +214,7 @@ export default function App() {
     };
   }, [view, activeNote, draftTitle, draftContent]);
 
-  const submitSetupPin = async (event) => {
+  const submitSetupPin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAuthError("");
 
@@ -239,7 +239,7 @@ export default function App() {
   };
 
   const submitUnlockPin = useCallback(
-    async (pinValue) => {
+    async (pinValue: string) => {
       if (unlockSubmitting) {
         return;
       }
@@ -280,7 +280,7 @@ export default function App() {
     }
   }, [unlockDigits, view, submitUnlockPin]);
 
-  const handleUnlockDigitChange = (index, rawValue) => {
+  const handleUnlockDigitChange = (index: number, rawValue: string) => {
     const digit = rawValue.replace(/\D/g, "").slice(-1);
     setUnlockDigits((prev) => {
       const next = [...prev];
@@ -293,7 +293,7 @@ export default function App() {
     }
   };
 
-  const handleUnlockDigitKeyDown = (index, event) => {
+  const handleUnlockDigitKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Backspace" && !unlockDigits[index] && index > 0) {
       setUnlockDigits((prev) => {
         const next = [...prev];
@@ -322,7 +322,7 @@ export default function App() {
     }
   };
 
-  const handleUnlockPaste = (event) => {
+  const handleUnlockPaste = (event: React.ClipboardEvent<HTMLFormElement>) => {
     const pasted = (event.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 4);
     if (!pasted) {
       return;
@@ -361,7 +361,7 @@ export default function App() {
     setView("unlock");
   };
 
-  const submitPinChange = async (event) => {
+  const submitPinChange = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPinChangeError("");
 
@@ -385,7 +385,7 @@ export default function App() {
     }
   };
 
-  const changeTheme = async (value) => {
+  const changeTheme = async (value: string) => {
     setTheme(value);
     await window.orca.settings.setTheme(value);
   };
@@ -400,7 +400,7 @@ export default function App() {
     }
   };
 
-  const verifyCurrentPin = async (event) => {
+  const verifyCurrentPin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPinChangeError("");
     if (!isValidPin(currentPin)) {
