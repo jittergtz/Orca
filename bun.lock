@@ -12,6 +12,7 @@
       "name": "@newsflow/desktop",
       "version": "1.0.0",
       "dependencies": {
+        "@fontsource/instrument-serif": "^5.2.8",
         "@newsflow/ai": "*",
         "@newsflow/config": "*",
         "@newsflow/db": "*",
@@ -211,6 +212,8 @@
     "@floating-ui/dom": ["@floating-ui/dom@1.7.6", "", { "dependencies": { "@floating-ui/core": "^1.7.5", "@floating-ui/utils": "^0.2.11" } }, ""],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, ""],
+
+    "@fontsource/instrument-serif": ["@fontsource/instrument-serif@5.2.8", "", {}, "sha512-s+bkz+syj2rO00Rmq9g0P+PwuLig33DR1xDR8pTWmovH1pUjwnncrFk++q9mmOex8fUQ7oW80gPpPDaw7V1MMw=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 

@@ -445,7 +445,7 @@ export default function App() {
 
           <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
             <div className="flex flex-col items-center w-full max-w-2xl px-6 -mt-32">
-              <h1 className="font-serif italic text-[3.5rem] leading-[70px]  text-neutral-800 dark:text-white ">
+              <h1 className="font-instrument-serif italic text-[3.5rem] leading-[70px]  text-neutral-800 dark:text-white ">
                 Orca
               </h1>
               <p className="text-lg text-neutral-600 dark:text-neutral-400 font-medium tracking-tight mb-10">Research for the future.</p>
