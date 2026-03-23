@@ -30,7 +30,7 @@ export default function Sidebar({
 }: SidebarProps) {
   return (
     <aside
-      className={`absolute z-10 top-1 bottom-1 bg-white/70 dark:bg-neutral-800/70 backdrop-blur-lg left-1 border-2 border-white dark:border-white/10  rounded-[20px] py-2 px-1 transition-all duration-300 ease-in-out flex flex-col pt-3 ${
+      className={`absolute z-10 top-1 bottom-1 bg-white/70 dark:bg-neutral-900/90  left-1 border border-white dark:border-white/10  rounded-[20px] py-2 px-1 transition-all duration-300 ease-in-out flex flex-col pt-3 ${
         isOpen
           ? "w-[240px] opacity-100 translate-x-0"
           : "w-0 opacity-0 -translate-x-full overflow-hidden border-none p-0 [&>*]:hidden"

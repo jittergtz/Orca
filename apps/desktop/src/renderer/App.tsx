@@ -446,16 +446,7 @@ export default function App() {
               </button>
             </div>
             <div className="flex items-center pt-2 gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
-              {activeNote && (
-                <button
-                style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.4)" }} 
-                  className="p-2 border border-white/10 rounded-full    text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
-                  onClick={() => void deleteActiveNote()}
-                  title="Delete Note"
-                >
-                  <Trash size={15} strokeWidth={2} />
-                </button>
-              )}
+            
               <button 
               style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.4)" }}
                 className="p-2  border border-white/10 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
@@ -489,8 +480,8 @@ export default function App() {
           {isTestUI ? (
              <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
               <div className="flex flex-col items-center w-full max-w-2xl px-6 -mt-32">
-              <h1 className="font-instrument-serif italic text-[3.5rem] text-transparent bg-clip-text bg-gradient-to-tl from-black to-[#727272] dark:from-white dark:to-[#c7c7c7]  leading-[70px]    ">
-                Orca Pro
+              <h1 className="font-instrument-serif italic text-[3.5rem] text-transparent bg-clip-text bg-gradient-to-tl from-black to-[#727272] dark:from-white dark:to-[#8f8e8e]  leading-[70px]    ">
+                Orca Finance
               </h1>
               <p className="text-lg text-neutral-600 dark:text-white/60 font-medium tracking-tight mb-10">Research for the future.</p>
               
