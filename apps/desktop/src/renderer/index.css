@@ -23,11 +23,21 @@
   }
 
   .dark body {
-    background: 
+   
+     background:
+      radial-gradient(circle at 20% 10%, rgba(46, 64, 82, 0.5), transparent 32%),
+      radial-gradient(circle at 86% 85%, rgba(84, 63, 49, 0.42), transparent 35%),
+      linear-gradient(135deg, #29292b 0%, #000000 100%);
     
-  #101010 
+  /* #101010  */
   }
 }
+
+
+/* background:
+      radial-gradient(circle at 20% 10%, rgba(133, 194, 255, 0.5), transparent 32%),
+      radial-gradient(circle at 86% 85%, rgba(253, 197, 158, 0.42), transparent 35%),
+      linear-gradient(135deg, #e4e7ec 0%, #000000 100%); */
 
 @layer components {
   .glass-shell {
@@ -146,7 +156,7 @@
   }
 
   .modal-overlay {
-    @apply fixed inset-0 grid place-items-center bg-black/25 p-5 backdrop-blur-sm;
+    @apply fixed inset-0 grid place-items-center bg-black/20 p-5 ;
   }
 }
 

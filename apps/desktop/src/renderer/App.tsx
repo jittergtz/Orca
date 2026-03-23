@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Settings, Lock, Trash, ArrowUp, Cpu, PanelLeft } from "lucide-react";
 import Sidebar from "./components/Sidebar";
+import SearchResultContainer from "./components/SearchResultContainer";
 
 const EMPTY_UNLOCK_DIGITS = ["", "", "", ""];
 
@@ -44,6 +45,10 @@ export default function App() {
   const notesRef = useRef<Note[]>([]);
   const activeIdRef = useRef<string | null>(null);
   const lastLoadedNoteIdRef = useRef<string | null>(null);
+
+
+// Testting UI 
+  const [isTestUI, setIsTestUI] = useState(true)
 
   const resolvedTheme = theme === "system" ? systemTheme : theme;
   const activeNote = useMemo(() => notes.find((note) => note.id === activeId) || null, [notes, activeId]);
@@ -433,7 +438,7 @@ export default function App() {
           >
             <div className="flex items-center " style={{ WebkitAppRegion: 'no-drag' }}>
               <button 
-                className="p-1 z-50 rounded-full  dark:text-neutral-400 text-neutral-700 hover:text-black dark:hover:text-white/90 transition-colors flex items-center justify-center auto-cols-auto"
+                className="p-1 z-50 rounded-full  dark:text-neutral-400 text-neutral-700 hover:text-black dark:hover:text-white/90 transition-colors flex items-center justify-center auto-cols-auto" 
                 onClick={() => setSidebarOpen(prev => !prev)}
                 title="Toggle Sidebar (Cmd+B)"
               >
@@ -442,8 +447,9 @@ export default function App() {
             </div>
             <div className="flex items-center pt-2 gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
               {activeNote && (
-                <button 
-                  className="p-2 border border-white/30 rounded-full    text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+                <button
+                style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.4)" }} 
+                  className="p-2 border border-white/10 rounded-full    text-red-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
                   onClick={() => void deleteActiveNote()}
                   title="Delete Note"
                 >
@@ -451,14 +457,16 @@ export default function App() {
                 </button>
               )}
               <button 
-                className="p-2  border border-white/30 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+                className="p-2  border border-white/10 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
                 onClick={() => setSettingsOpen(true)}
                 title="Settings"
               >
                 <Settings size={15} strokeWidth={2} />
               </button>
               <button 
-                className="p-2  border border-white/30 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
+              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.4)" }}
+                className="p-2  border border-white/10 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
                 onClick={() => void lockApp()}
                 title="Lock"
               >
@@ -478,22 +486,23 @@ export default function App() {
 
           <div className="flex flex-1  w-full relative">
           
-            <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
+          {isTestUI ? (
+             <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
               <div className="flex flex-col items-center w-full max-w-2xl px-6 -mt-32">
-              <h1 className="font-instrument-serif italic text-[3.5rem] leading-[70px]  text-neutral-800 dark:text-neutral-100 ">
-                Orca
+              <h1 className="font-instrument-serif italic text-[3.5rem] text-transparent bg-clip-text bg-gradient-to-tl from-black to-[#727272] dark:from-white dark:to-[#c7c7c7]  leading-[70px]    ">
+                Orca Pro
               </h1>
               <p className="text-lg text-neutral-600 dark:text-white/60 font-medium tracking-tight mb-10">Research for the future.</p>
               
-              <div className="w-full relative shadow-md shadow-black rounded-full bg-white/60 dark:bg-black/10  border border-white/60 dark:border-white/10 flex  items-center p-2 pl-6 pr-2  group hover:shadow-md transition-shadow" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.4)" }}>
+              <div className="w-full relative  rounded-full bg-white/60 dark:bg-neutral-900/50   border-white/60 dark:border-black/20 flex  items-center p-2 pl-6 pr-2  group hover:shadow-md transition-shadow" style={{ boxShadow: "0 3px 4px rgba(10, 10,10, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
                 <input 
                   type="text" 
                   placeholder="What do you want to be informed of?" 
                   className="flex-1 bg-transparent border-none outline-none s text-neutral-900 dark:text-white placeholder:text-neutral-400/80 font-medium text-[14px]"
                 />
-                <button className="flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-800 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors">
+                <button className="flex items-center gap-1.5 font-light text-xs text-neutral-200 hover:text-neutral-800 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors">
                   Auto
-                  <Cpu size={16} />
+                  <Cpu size={15} strokeWidth={1.8} className="text-neutral-500" />
                 </button>
                 <button className="ml-1.5 w-9 h-9 flex-shrink-0 rounded-full bg-neutral-800 dark:bg-neutral-200 text-white dark:text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm">
                   <ArrowUp size={18} strokeWidth={2.5} />
@@ -501,13 +510,17 @@ export default function App() {
               </div>
             </div>
           </main>
+          ):(
+            <SearchResultContainer/>
+          )}
+           
           </div>
         </div>
       ) : (
         <div className="auth-layer">
           {view === "loading" ? (
             <div className="glass-card backdrop-blur-md max-w-sm">
-              <h1 className="text-2xl font-semibold">Orca Notes</h1>
+              <h1 className="text-2xl font-semibold">Orca</h1>
               <p className="mt-2 text-sm opacity-80">Loading...</p>
             </div>
           ) : null}
@@ -580,7 +593,7 @@ export default function App() {
 
       {settingsOpen ? (
         <div className="modal-overlay flex items-center justify-center p-4">
-          <div className="glass-card w-full max-w-3xl flex overflow-hidden p-0 h-[500px]">
+          <div className="glass-card backdrop-blur-md w-full max-w-3xl flex overflow-hidden p-0 h-[500px]">
             {/* Sidebar */}
             <div className="w-48 border-r border-neutral-200 dark:border-white/10 p-4 flex flex-col gap-2">
               <h2 className="text-sm font-semibold mb-2 px-2 text-neutral-500 dark:text-white/50 uppercase tracking-wider">Settings</h2>
