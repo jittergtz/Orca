@@ -12,14 +12,14 @@ import {
   Strikethrough
 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState, useEffect } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { Markdown } from "tiptap-markdown";
 
-function getSlashCommandContext(editor) {
+function getSlashCommandContext(editor: Editor) {
   const { state } = editor;
   const { selection } = state;
   const { $from } = selection;
@@ -44,7 +44,15 @@ function getSlashCommandContext(editor) {
   };
 }
 
-const MARKDOWN_COMMANDS = [
+interface CommandItem {
+  id: string;
+  label: string;
+  hint: string;
+  keywords: string[];
+  icon: React.ElementType;
+}
+
+const MARKDOWN_COMMANDS: CommandItem[] = [
   {
     id: "heading-1",
     label: "Heading 1",
@@ -124,7 +132,7 @@ const MARKDOWN_COMMANDS = [
   }
 ];
 
-function applyTipTapAction(editor, action, contextStart, contextEnd) {
+function applyTipTapAction(editor: Editor, action: string, contextStart?: number, contextEnd?: number) {
   const chain = editor.chain().focus();
   
   // If triggered from slash menu, delete the /command text first
@@ -176,7 +184,7 @@ function applyTipTapAction(editor, action, contextStart, contextEnd) {
   }
 }
 
-function matchesCommand(command, query) {
+function matchesCommand(command: CommandItem, query: string) {
   if (!query) {
     return true;
   }
@@ -189,11 +197,17 @@ function matchesCommand(command, query) {
   return command.keywords.some((keyword) => keyword.includes(normalized));
 }
 
-export default function MarkdownEditor({ value, onChange, placeholder }) {
+interface MarkdownEditorProps {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+}
+
+export default function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorProps) {
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState("");
   const [slashIndex, setSlashIndex] = useState(0);
-  const slashContextRef = useRef(null);
+  const slashContextRef = useRef<{ start: number; end: number; query: string } | null>(null);
   
   // Track if we are programmatically updating the editor to avoid cyclical updates
   const isUpdatingValueRef = useRef(false);
@@ -233,7 +247,7 @@ export default function MarkdownEditor({ value, onChange, placeholder }) {
       // Avoid firing onChange if we are the ones updating the content via useEffect
       if (isUpdatingValueRef.current) return;
       
-      const markdown = editor.storage.markdown.getMarkdown();
+      const markdown = (editor.storage as any).markdown.getMarkdown();
       onChange(markdown);
     },
     onSelectionUpdate: ({ editor }) => {
@@ -254,7 +268,7 @@ export default function MarkdownEditor({ value, onChange, placeholder }) {
 
   // Sync external value changes into the editor (e.g. changing notes)
   useEffect(() => {
-    if (!editor || value === editor.storage.markdown.getMarkdown()) {
+    if (!editor || value === (editor.storage as any).markdown.getMarkdown()) {
       return;
     }
     
@@ -268,7 +282,7 @@ export default function MarkdownEditor({ value, onChange, placeholder }) {
   }, [slashQuery]);
 
   const runAction = useCallback(
-    (action, fromSlash = false) => {
+    (action: string, fromSlash = false) => {
       if (!editor) return;
 
       const contextStart = fromSlash && slashContextRef.current ? slashContextRef.current.start : undefined;
@@ -286,7 +300,7 @@ export default function MarkdownEditor({ value, onChange, placeholder }) {
 
   // Handle Slash Menu Navigation & Global Shortcuts
   useEffect(() => {
-    const handleGlobalKeyDown = (event) => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
       if (!editor) return;
       
       // If we're focused in the editor and Slash Menu is open, hijack navigation

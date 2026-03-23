@@ -4,17 +4,17 @@ import React from 'react'
 
 function Search() {
   return (
-    <div className='md:py-40 py-20 w-full flex flex-col items-center  '>
+    <div className='md:py-40 text-white py-20 w-full flex flex-col items-center  '>
         <h1 className='md:text-4xl text-3xl font-medium tracking-tight   mb-4  md:mb-8 pl-5  max-w-6xl w-full text-black'>Qualtiy tailored to you</h1>
-```tsx
+
         <div className='h-72 overflow-hidden relative rounded-[50px] w-full max-w-6xl bg-neutral-900'>
           <Image
             src="/blume.webp"
             fill
             alt="cover background"
-            className="object-cover md:-mt-16"
+            className="object-cover "
           />
-```
+
 
            <h3 className='absolute top-28 md:top-1/2 -translate-y-1/2 right-4 md:right-10 font-medium tracking-tighter text-[25px] lg:text-[38px]'>
            Informed on whats important

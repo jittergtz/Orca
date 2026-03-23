@@ -1,9 +1,29 @@
-const crypto = require("crypto");
-const fs = require("fs");
-const path = require("path");
-const { app, BrowserWindow, ipcMain, nativeTheme, Menu } = require("electron");
+import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
+import { app, BrowserWindow, ipcMain, nativeTheme, Menu, IpcMainInvokeEvent } from "electron";
 
-let mainWindow = null;
+interface Note {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface AppState {
+  security: {
+    pinHash: string;
+    salt: string;
+    pinEnabled: boolean;
+  };
+  preferences: {
+    theme: string;
+  };
+  notes: Note[];
+}
+
+let mainWindow: BrowserWindow | null = null;
 let sessionUnlocked = false;
 
 const THEME_MODES = new Set(["system", "light", "dark"]);
@@ -23,12 +43,12 @@ function dataFilePath() {
   return path.join(app.getPath("userData"), "orca-data.json");
 }
 
-function defaultState() {
+function defaultState(): AppState {
   return {
     security: {
       pinHash: "",
       salt: "",
-      pinEnabled: true
+      pinEnabled: false
     },
     preferences: {
       theme: "system"
@@ -37,7 +57,7 @@ function defaultState() {
   };
 }
 
-function readState() {
+function readState(): AppState {
   const file = dataFilePath();
   if (!fs.existsSync(file)) {
     return defaultState();
@@ -57,16 +77,16 @@ function readState() {
   }
 }
 
-function writeState(state) {
+function writeState(state: AppState) {
   fs.mkdirSync(path.dirname(dataFilePath()), { recursive: true });
   fs.writeFileSync(dataFilePath(), JSON.stringify(state, null, 2), "utf8");
 }
 
-function hashPin(pin, salt) {
+function hashPin(pin: string, salt: string) {
   return crypto.createHash("sha256").update(`${salt}:${pin}`).digest("hex");
 }
 
-function validatePin(pin) {
+function validatePin(pin: any): boolean {
   return typeof pin === "string" && /^\d{4}$/.test(pin);
 }
 
@@ -104,13 +124,13 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), "dist", "index.html"));
   }
-  mainWindow.once("ready-to-show", () => mainWindow.show());
+  mainWindow.once("ready-to-show", () => mainWindow?.show());
 }
 
 function registerIpc() {
   ipcMain.handle("auth:get-status", () => {
     const state = readState();
-    const pinEnabled = state.security.pinEnabled !== false;
+    const pinEnabled = state.security.pinEnabled === true;
 
     if (!pinEnabled && state.security.pinHash) {
       sessionUnlocked = true;
@@ -123,7 +143,7 @@ function registerIpc() {
     };
   });
 
-  ipcMain.handle("auth:setup-pin", (_event, pin) => {
+  ipcMain.handle("auth:setup-pin", (_event: IpcMainInvokeEvent, pin: string) => {
     if (!validatePin(pin)) {
       throw new Error("PIN_INVALID");
     }
@@ -135,6 +155,7 @@ function registerIpc() {
 
     const salt = crypto.randomBytes(16).toString("hex");
     state.security = {
+      ...state.security,
       salt,
       pinHash: hashPin(pin, salt)
     };
@@ -143,7 +164,7 @@ function registerIpc() {
     return { ok: true };
   });
 
-  ipcMain.handle("auth:unlock", (_event, pin) => {
+  ipcMain.handle("auth:unlock", (_event: IpcMainInvokeEvent, pin: string) => {
     if (!validatePin(pin)) {
       return { ok: false, error: "PIN_INVALID" };
     }
@@ -171,7 +192,7 @@ function registerIpc() {
     return state.preferences.theme;
   });
 
-  ipcMain.handle("settings:set-theme", (_event, mode) => {
+  ipcMain.handle("settings:set-theme", (_event: IpcMainInvokeEvent, mode: string) => {
     if (!THEME_MODES.has(mode)) {
       throw new Error("THEME_INVALID");
     }
@@ -192,7 +213,7 @@ function registerIpc() {
     }
   });
 
-  ipcMain.handle("settings:set-pin-enabled", (_event, enabled) => {
+  ipcMain.handle("settings:set-pin-enabled", (_event: IpcMainInvokeEvent, enabled: boolean) => {
     requireUnlocked();
     const state = readState();
     if (!state.security.pinHash) {
@@ -203,7 +224,7 @@ function registerIpc() {
     return { ok: true };
   });
 
-  ipcMain.handle("settings:verify-pin", (_event, pin) => {
+  ipcMain.handle("settings:verify-pin", (_event: IpcMainInvokeEvent, pin: string) => {
     if (!validatePin(pin)) {
       return { ok: false, error: "PIN_INVALID" };
     }
@@ -217,7 +238,7 @@ function registerIpc() {
     return { ok: true };
   });
 
-  ipcMain.handle("settings:change-pin", (_event, currentPin, nextPin) => {
+  ipcMain.handle("settings:change-pin", (_event: IpcMainInvokeEvent, currentPin: string, nextPin: string) => {
     requireUnlocked();
     if (!validatePin(currentPin) || !validatePin(nextPin)) {
       throw new Error("PIN_INVALID");
@@ -235,6 +256,7 @@ function registerIpc() {
 
     const salt = crypto.randomBytes(16).toString("hex");
     state.security = {
+      ...state.security,
       salt,
       pinHash: hashPin(nextPin, salt)
     };
@@ -252,7 +274,7 @@ function registerIpc() {
     requireUnlocked();
     const state = readState();
     const now = Date.now();
-    const note = {
+    const note: Note = {
       id: crypto.randomUUID(),
       title: "Untitled",
       content: "",
@@ -264,7 +286,7 @@ function registerIpc() {
     return note;
   });
 
-  ipcMain.handle("notes:update", (_event, payload) => {
+  ipcMain.handle("notes:update", (_event: IpcMainInvokeEvent, payload: any) => {
     requireUnlocked();
 
     if (!payload || typeof payload.id !== "string") {
@@ -272,7 +294,7 @@ function registerIpc() {
     }
 
     const state = readState();
-    const idx = state.notes.findIndex((note) => note.id === payload.id);
+    const idx = state.notes.findIndex((note: Note) => note.id === payload.id);
     if (idx === -1) {
       throw new Error("NOTE_NOT_FOUND");
     }
@@ -289,19 +311,19 @@ function registerIpc() {
     };
 
     state.notes[idx] = updated;
-    state.notes.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    state.notes.sort((a: Note, b: Note) => (b.updatedAt || 0) - (a.updatedAt || 0));
     writeState(state);
     return updated;
   });
 
-  ipcMain.handle("notes:delete", (_event, id) => {
+  ipcMain.handle("notes:delete", (_event: IpcMainInvokeEvent, id: string) => {
     requireUnlocked();
     if (typeof id !== "string") {
       throw new Error("NOTE_INVALID");
     }
 
     const state = readState();
-    state.notes = state.notes.filter((note) => note.id !== id);
+    state.notes = state.notes.filter((note: Note) => note.id !== id);
     writeState(state);
     return { ok: true };
   });
