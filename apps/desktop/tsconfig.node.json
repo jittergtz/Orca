@@ -17,5 +17,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/main.ts", "src/preload.ts"]
+  "include": ["src/main.ts", "src/preload.ts", "src/state.ts", "src/session.ts", "src/window.ts", "src/handlers/**/*.ts"]
 }

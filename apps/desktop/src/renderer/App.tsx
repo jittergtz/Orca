@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, Lock, PanelLeft, Trash } from "lucide-react";
-import MarkdownEditor from "./components/MarkdownEditor";
-import Sidebar from "./components/Sidebar";
+import { Settings, Lock, Trash, ArrowUp, Cpu } from "lucide-react";
+// Removed Sidebar and MarkdownEditor for now
 
 const EMPTY_UNLOCK_DIGITS = ["", "", "", ""];
 
@@ -21,7 +20,6 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftContent, setDraftContent] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const [setupPin, setSetupPin] = useState("");
   const [setupPinConfirm, setSetupPinConfirm] = useState("");
@@ -49,16 +47,7 @@ export default function App() {
   const resolvedTheme = theme === "system" ? systemTheme : theme;
   const activeNote = useMemo(() => notes.find((note) => note.id === activeId) || null, [notes, activeId]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
-        e.preventDefault();
-        setSidebarOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+
 
   useEffect(() => {
     notesRef.current = notes;
@@ -337,10 +326,6 @@ export default function App() {
     }
   };
 
-  const createNote = async () => {
-    const created = await window.orca.notes.create();
-    await refreshNotes(created.id);
-  };
 
   const deleteActiveNote = async () => {
     if (!activeNote) {
@@ -430,13 +415,6 @@ export default function App() {
             style={{ WebkitAppRegion: 'drag' }}
           >
             <div className="flex items-center " style={{ WebkitAppRegion: 'no-drag' }}>
-              <button 
-                className="p-1  rounded-full  dark:text-neutral-400 text-neutral-700 hover:text-black dark:hover:text-white/90 transition-colors flex items-center justify-center auto-cols-auto"
-                onClick={() => setSidebarOpen(prev => !prev)}
-                title="Toggle Sidebar (Cmd+B)"
-              >
-                <PanelLeft size={15} strokeWidth={2.5} />
-              </button>
             </div>
             <div className="flex items-center pt-2 gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
               {activeNote && (
@@ -465,43 +443,28 @@ export default function App() {
             </div>
           </header>
 
-          <main className="flex flex-1 min-h-0 w-full">
-            <Sidebar 
-              notes={notes}
-              activeId={activeId}
-              draftTitle={draftTitle}
-              draftContent={draftContent}
-              setActiveId={setActiveId}
-              createNote={createNote}
-              isOpen={sidebarOpen}
-            />
-
-            <section className="editor flex justify-center w-full">
-              <div className=" max-w-xl w-full  ">
-              <div className="editor-header ">
-                <textarea
-                  className="note-title-input text-black dark:text-white bg-transparent outline-none dark:placeholder:text-white/50 placeholder:text-black/80 w-full text-[28px] px-1 resize-none overflow-hidden block min-h-[44px]"
-                  value={draftTitle}
-                  maxLength={120}
-                  rows={1}
-                  placeholder="Untitled"
-                  onChange={(event) => {
-                    setDraftTitle(event.target.value.replace(/\n/g, " "));
-                    event.target.style.height = "auto";
-                    event.target.style.height = `${event.target.scrollHeight}px`;
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                    }
-                  }}
+          <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
+            <div className="flex flex-col items-center w-full max-w-2xl px-6 -mt-32">
+              <h1 className="font-serif italic text-[3.5rem] leading-[70px]  text-neutral-800 dark:text-white ">
+                Orca
+              </h1>
+              <p className="text-lg text-neutral-600 dark:text-neutral-400 font-medium tracking-tight mb-10">Research for the future.</p>
+              
+              <div className="w-full relative shadow-md shadow-black rounded-full bg-white/60 dark:bg-black/40  border border-white/60 dark:border-white/10 flex  items-center p-2 pl-6 pr-2  group hover:shadow-md transition-shadow" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.04), inset 0 2px 0 rgba(255,255,255,0.4)" }}>
+                <input 
+                  type="text" 
+                  placeholder="What do you want to be informed of?" 
+                  className="flex-1 bg-transparent border-none outline-none s text-neutral-900 dark:text-white placeholder:text-neutral-400/80 font-medium text-[14px]"
                 />
+                <button className="flex items-center gap-1.5 text-xs font-semibold text-neutral-500 hover:text-neutral-800 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors">
+                  Auto
+                  <Cpu size={16} />
+                </button>
+                <button className="ml-1.5 w-9 h-9 flex-shrink-0 rounded-full bg-neutral-800 dark:bg-neutral-200 text-white dark:text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm">
+                  <ArrowUp size={18} strokeWidth={2.5} />
+                </button>
               </div>
-              <div className="min-h-0  h-full">
-                <MarkdownEditor value={draftContent} placeholder="Write in markdown..." onChange={setDraftContent} />
-              </div>
-              </div>
-            </section>
+            </div>
           </main>
         </div>
       ) : (
