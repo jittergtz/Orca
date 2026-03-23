@@ -445,12 +445,12 @@ export default function App() {
 
           <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
             <div className="flex flex-col items-center w-full max-w-2xl px-6 -mt-32">
-              <h1 className="font-instrument-serif italic text-[3.5rem] leading-[70px]  text-neutral-800 dark:text-white ">
+              <h1 className="font-instrument-serif italic text-[3.5rem] leading-[70px]  text-neutral-800 dark:text-neutral-100 ">
                 Orca
               </h1>
-              <p className="text-lg text-neutral-600 dark:text-neutral-400 font-medium tracking-tight mb-10">Research for the future.</p>
+              <p className="text-lg text-neutral-600 dark:text-white/60 font-medium tracking-tight mb-10">Research for the future.</p>
               
-              <div className="w-full relative shadow-md shadow-black rounded-full bg-white/60 dark:bg-black/40  border border-white/60 dark:border-white/10 flex  items-center p-2 pl-6 pr-2  group hover:shadow-md transition-shadow" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.04), inset 0 2px 0 rgba(255,255,255,0.4)" }}>
+              <div className="w-full relative shadow-md shadow-black rounded-full bg-white/60 dark:bg-black/10  border border-white/60 dark:border-white/10 flex  items-center p-2 pl-6 pr-2  group hover:shadow-md transition-shadow" style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.4)" }}>
                 <input 
                   type="text" 
                   placeholder="What do you want to be informed of?" 
