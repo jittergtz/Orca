@@ -30,24 +30,24 @@ export default function Sidebar({
 }: SidebarProps) {
   return (
     <aside
-      className={` border-2 ml-1.5 mb-2 dark:border-neutral-800/70 dark:bg-neutral-900/50 bg-neutral-50 rounded-[25px] p-1  transition-all duration-300 ease-in-out flex flex-col pt-4 ${
+      className={`absolute z-10 top-1 bottom-1 bg-white/70 dark:bg-neutral-800/70 backdrop-blur-sm left-1 border-2 border-white dark:border-white/10  rounded-[20px] py-2 px-1 transition-all duration-300 ease-in-out flex flex-col pt-3 ${
         isOpen
           ? "w-[240px] opacity-100 translate-x-0"
-          : "w-0 opacity-0 -translate-x-[220px] overflow-hidden border-none p-0 [&>*]:hidden"
+          : "w-0 opacity-0 -translate-x-full overflow-hidden border-none p-0 [&>*]:hidden"
       }`}
     >
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold"></h2>
         <button
           type="button"
-          className="primary-button text-sm"
+          className="primary-button rounded-full px-4 text-sm"
           onClick={() => void createNote()}
         >
           New
         </button>
       </div>
 
-      <ul className="scroll-list min-h-0 flex-1 flex flex-col mt-3">
+      {/* <ul className="scroll-list min-h-0 flex-1 flex flex-col mt-3">
         {notes.map((note) => {
           const isActive = note.id === activeId;
           const visibleTitle = isActive ? draftTitle : note.title;
@@ -72,7 +72,7 @@ export default function Sidebar({
             </li>
           );
         })}
-      </ul>
+      </ul> */}
     </aside>
   );
 }

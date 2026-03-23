@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, Lock, Trash, ArrowUp, Cpu } from "lucide-react";
-// Removed Sidebar and MarkdownEditor for now
+import { Settings, Lock, Trash, ArrowUp, Cpu, PanelLeft } from "lucide-react";
+import Sidebar from "./components/Sidebar";
 
 const EMPTY_UNLOCK_DIGITS = ["", "", "", ""];
 
@@ -20,6 +20,7 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftContent, setDraftContent] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [setupPin, setSetupPin] = useState("");
   const [setupPinConfirm, setSetupPinConfirm] = useState("");
@@ -48,6 +49,17 @@ export default function App() {
   const activeNote = useMemo(() => notes.find((note) => note.id === activeId) || null, [notes, activeId]);
 
 
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setSidebarOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     notesRef.current = notes;
@@ -327,6 +339,11 @@ export default function App() {
   };
 
 
+  const createNote = async () => {
+    const created = await window.orca.notes.create();
+    await refreshNotes(created.id);
+  };
+
   const deleteActiveNote = async () => {
     if (!activeNote) {
       return;
@@ -415,6 +432,13 @@ export default function App() {
             style={{ WebkitAppRegion: 'drag' }}
           >
             <div className="flex items-center " style={{ WebkitAppRegion: 'no-drag' }}>
+              <button 
+                className="p-1 z-50 rounded-full  dark:text-neutral-400 text-neutral-700 hover:text-black dark:hover:text-white/90 transition-colors flex items-center justify-center auto-cols-auto"
+                onClick={() => setSidebarOpen(prev => !prev)}
+                title="Toggle Sidebar (Cmd+B)"
+              >
+                <PanelLeft size={15} strokeWidth={2.5} />
+              </button>
             </div>
             <div className="flex items-center pt-2 gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
               {activeNote && (
@@ -442,9 +466,20 @@ export default function App() {
               </button>
             </div>
           </header>
+            <Sidebar 
+              notes={notes}
+              activeId={activeId}
+              draftTitle={draftTitle}
+              draftContent={draftContent}
+              setActiveId={setActiveId}
+              createNote={createNote}
+              isOpen={sidebarOpen}
+            />
 
-          <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
-            <div className="flex flex-col items-center w-full max-w-2xl px-6 -mt-32">
+          <div className="flex flex-1  w-full relative">
+          
+            <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
+              <div className="flex flex-col items-center w-full max-w-2xl px-6 -mt-32">
               <h1 className="font-instrument-serif italic text-[3.5rem] leading-[70px]  text-neutral-800 dark:text-neutral-100 ">
                 Orca
               </h1>
@@ -466,18 +501,19 @@ export default function App() {
               </div>
             </div>
           </main>
+          </div>
         </div>
       ) : (
         <div className="auth-layer">
           {view === "loading" ? (
-            <div className="glass-card max-w-sm">
+            <div className="glass-card backdrop-blur-md max-w-sm">
               <h1 className="text-2xl font-semibold">Orca Notes</h1>
               <p className="mt-2 text-sm opacity-80">Loading...</p>
             </div>
           ) : null}
 
           {view === "setup" ? (
-            <div className="glass-card max-w-md">
+            <div className="glass-card  max-w-md">
               <h1 className="text-2xl font-semibold">Create App PIN</h1>
               <p className="mt-2 text-sm opacity-80">Set a 4-digit PIN to open your notes every time the app starts.</p>
               <form className="mt-5 grid gap-3" onSubmit={submitSetupPin}>
