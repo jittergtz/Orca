@@ -36,7 +36,7 @@ export default function App() {
   const [pinChangeError, setPinChangeError] = useState("");
 
   const [settingsCategory, setSettingsCategory] = useState("profile");
-  const [pinEnabled, setPinEnabled] = useState(true);
+  const [pinEnabled, setPinEnabled] = useState(false);
   const [pinChangeStep, setPinChangeStep] = useState(1);
 
   const unlockInputRefs = useRef<(HTMLInputElement | null)[]>([]);

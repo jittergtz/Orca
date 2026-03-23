@@ -48,7 +48,7 @@ function defaultState(): AppState {
     security: {
       pinHash: "",
       salt: "",
-      pinEnabled: true
+      pinEnabled: false
     },
     preferences: {
       theme: "system"
@@ -130,7 +130,7 @@ function createWindow() {
 function registerIpc() {
   ipcMain.handle("auth:get-status", () => {
     const state = readState();
-    const pinEnabled = state.security.pinEnabled !== false;
+    const pinEnabled = state.security.pinEnabled === true;
 
     if (!pinEnabled && state.security.pinHash) {
       sessionUnlocked = true;
