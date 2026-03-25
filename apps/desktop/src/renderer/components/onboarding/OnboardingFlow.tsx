@@ -91,12 +91,12 @@ export default function OnboardingFlow({ onComplete, onCancel }: OnboardingFlowP
                     }}
                     className={`flex flex-col items-center justify-center p-6 rounded-xl border transition-all duration-200 ${
                       isSelected 
-                        ? \`\${cat.bg} \${cat.border} ring-2 ring-\${cat.color.replace('text-', '')}\`
+                        ? `${cat.bg} ${cat.border} ring-2 ring-${cat.color.replace('text-', '')}`
                         : "bg-white dark:bg-[#13151f] border-neutral-200 dark:border-white/5 hover:border-neutral-300 dark:hover:border-white/20"
                     } hover:shadow-md`}
                   >
-                    <Icon size={28} className={\`mb-3 \${isSelected ? cat.color : "text-neutral-400"}\`} strokeWidth={1.5} />
-                    <span className={\`font-medium \${isSelected ? "text-neutral-900 dark:text-white" : "text-neutral-600 dark:text-neutral-400"}\`}>
+                    <Icon size={28} className={`mb-3 ${isSelected ? cat.color : "text-neutral-400"}`} strokeWidth={1.5} />
+                    <span className={`font-medium ${isSelected ? "text-neutral-900 dark:text-white" : "text-neutral-600 dark:text-neutral-400"}`}>
                       {cat.label}
                     </span>
                   </button>
@@ -177,19 +177,19 @@ export default function OnboardingFlow({ onComplete, onCancel }: OnboardingFlowP
                     }`}
                   >
                     <div className={`mt-0.5 p-2 rounded-lg 
-                      \${isSelected ? 'bg-neutral-100 dark:bg-white/5' : 'bg-neutral-50 dark:bg-[#13151f]'}
+                      ${isSelected ? 'bg-neutral-100 dark:bg-white/5' : 'bg-neutral-50 dark:bg-[#13151f]'}
                     `}>
                       <Icon size={20} className={isSelected ? freq.color : "text-neutral-400"} />
                     </div>
                     <div className="flex-1">
-                      <div className={`font-semibold text-lg mb-1 \${isSelected ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'}`}>
+                      <div className={`font-semibold text-lg mb-1 ${isSelected ? 'text-neutral-900 dark:text-white' : 'text-neutral-700 dark:text-neutral-300'}`}>
                         {freq.title}
                       </div>
                       <div className="text-sm text-neutral-500 dark:text-neutral-400 leading-snug">
                         {freq.desc}
                       </div>
                     </div>
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors \${isSelected ? 'border-[#79e8b0] bg-[#79e8b0]' : 'border-neutral-300 dark:border-neutral-700'}`}>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-[#79e8b0] bg-[#79e8b0]' : 'border-neutral-300 dark:border-neutral-700'}`}>
                       {isSelected && <Check size={14} className="text-[#08090f] stroke-[3]" />}
                     </div>
                   </button>
@@ -270,7 +270,7 @@ export default function OnboardingFlow({ onComplete, onCancel }: OnboardingFlowP
 }
 
 // Sub-component for Step 3 to isolate its state and effect
-function Step3Dialogue({ data, updateData, onNext }: { data: OnboardingData, updateData: (d: Partial<OnboardingData>) => void, onNext: () => void }) {
+function Step3Dialogue({ updateData, onNext }: { data: OnboardingData, updateData: (d: Partial<OnboardingData>) => void, onNext: () => void }) {
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<{role: 'agent'|'user', text: string, isTyping?: boolean}[]>([
     { role: "agent", text: "Got it — a few quick questions to sharpen your feed:\n① Track earnings calls & quarterly financial results?\n② Include deal announcements (fab expansions, partnerships)?\n③ Stock price movements & analyst ratings?" }
@@ -303,8 +303,8 @@ function Step3Dialogue({ data, updateData, onNext }: { data: OnboardingData, upd
       
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`flex \${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-2xl px-5 py-3 \${
+          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] rounded-2xl px-5 py-3 ${
               msg.role === 'user' 
                 ? 'bg-neutral-900 dark:bg-white text-white dark:text-black rounded-tr-sm' 
                 : 'bg-neutral-100 dark:bg-[#1a1c25] text-neutral-800 dark:text-neutral-200 rounded-tl-sm border border-neutral-200 dark:border-white/5'

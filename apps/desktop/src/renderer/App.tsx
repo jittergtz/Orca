@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Settings, ArrowUp, Cpu, PanelLeft } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import SearchResultContainer from "./components/SearchResultContainer";
+import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 
 export interface Note {
   id: string;
@@ -27,6 +28,7 @@ export default function App() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsCategory, setSettingsCategory] = useState("profile");
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notesRef = useRef<Note[]>([]);
@@ -216,6 +218,17 @@ export default function App() {
             />
 
           <div className="flex flex-1  w-full relative">
+          {onboardingOpen && (
+            <div className="absolute inset-0 z-50 bg-white dark:bg-[#08090f] overflow-y-auto w-full h-full flex pt-10">
+               <OnboardingFlow 
+                 onComplete={(data) => {
+                   console.log("Onboarding complete", data);
+                   setOnboardingOpen(false);
+                 }}
+                 onCancel={() => setOnboardingOpen(false)}
+               />
+            </div>
+          )}
           
           {isTestUI ? (
              <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
@@ -231,11 +244,17 @@ export default function App() {
                   placeholder="What do you want to be informed of?" 
                   className="flex-1 bg-transparent border-none outline-none s text-neutral-900 dark:text-white placeholder:text-neutral-400/80 font-medium text-[14px]"
                 />
-                <button className="flex items-center gap-1.5 font-light text-xs text-neutral-200 hover:text-neutral-800 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors">
+                <button 
+                  onClick={() => setOnboardingOpen(true)}
+                  className="flex items-center gap-1.5 font-light text-xs text-neutral-200 hover:text-neutral-800 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors"
+                >
                   Auto
                   <Cpu size={15} strokeWidth={1.8} className="text-neutral-500" />
                 </button>
-                <button className="ml-1.5 w-9 h-9 flex-shrink-0 rounded-full bg-neutral-800 dark:bg-neutral-200 text-white dark:text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm">
+                <button 
+                  onClick={() => setOnboardingOpen(true)}
+                  className="ml-1.5 w-9 h-9 flex-shrink-0 rounded-full bg-neutral-800 dark:bg-neutral-200 text-white dark:text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm"
+                >
                   <ArrowUp size={18} strokeWidth={2.5} />
                 </button>
               </div>
