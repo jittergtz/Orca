@@ -1,30 +1,8 @@
-
-
-function formatUpdatedAt(timestamp: number) {
-  return new Date(timestamp).toLocaleString([], {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
-
 interface SidebarProps {
-  notes: Note[];
-  activeId: string | null;
-  draftTitle: string;
-  draftContent: string;
-  setActiveId: (id: string) => void;
   createNote: () => void;
   isOpen: boolean;
 }
-
 export default function Sidebar({
-  notes,
-  activeId,
-  draftTitle,
-  draftContent,
-  setActiveId,
   createNote,
   isOpen
 }: SidebarProps) {

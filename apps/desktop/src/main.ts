@@ -3,7 +3,6 @@ import { registerAuthHandlers } from "./handlers/auth";
 import { registerSettingsHandlers } from "./handlers/settings";
 import { registerNotesHandlers } from "./handlers/notes";
 import { createWindow } from "./window";
-import { setSessionUnlocked } from "./session";
 
 function registerIpc() {
   registerAuthHandlers();
@@ -23,7 +22,6 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
-  setSessionUnlocked(false);
   if (process.platform !== "darwin") {
     app.quit();
   }

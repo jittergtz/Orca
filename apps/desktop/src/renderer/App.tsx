@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, Lock, Trash, ArrowUp, Cpu, PanelLeft } from "lucide-react";
+import { Settings, ArrowUp, Cpu, PanelLeft } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import SearchResultContainer from "./components/SearchResultContainer";
 
-const EMPTY_UNLOCK_DIGITS = ["", "", "", ""];
-
-function isValidPin(value: string) {
-  return /^\d{4}$/.test(value);
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 function sortNotes(notes: Note[]) {
@@ -23,37 +25,18 @@ export default function App() {
   const [draftContent, setDraftContent] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [setupPin, setSetupPin] = useState("");
-  const [setupPinConfirm, setSetupPinConfirm] = useState("");
-  const [unlockDigits, setUnlockDigits] = useState(EMPTY_UNLOCK_DIGITS);
-  const [authError, setAuthError] = useState("");
-  const [unlockSubmitting, setUnlockSubmitting] = useState(false);
-
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [currentPin, setCurrentPin] = useState("");
-  const [nextPin, setNextPin] = useState("");
-  const [nextPinConfirm, setNextPinConfirm] = useState("");
-  const [pinChangeError, setPinChangeError] = useState("");
-
   const [settingsCategory, setSettingsCategory] = useState("profile");
-  const [pinEnabled, setPinEnabled] = useState(false);
-  const [pinChangeStep, setPinChangeStep] = useState(1);
 
-  const unlockInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const setupPinRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notesRef = useRef<Note[]>([]);
   const activeIdRef = useRef<string | null>(null);
   const lastLoadedNoteIdRef = useRef<string | null>(null);
 
-
-// Testting UI 
-  const [isTestUI, setIsTestUI] = useState(true)
+  const [isTestUI] = useState(true);
 
   const resolvedTheme = theme === "system" ? systemTheme : theme;
   const activeNote = useMemo(() => notes.find((note) => note.id === activeId) || null, [notes, activeId]);
-
-
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -86,18 +69,6 @@ export default function App() {
     }
   }, [activeNote]);
 
-  const clearUnlockDigits = useCallback(() => {
-    setUnlockDigits(EMPTY_UNLOCK_DIGITS);
-  }, []);
-
-  const focusUnlockIndex = useCallback((index: number) => {
-    const el = unlockInputRefs.current[index];
-    if (el) {
-      el.focus();
-      el.select();
-    }
-  }, []);
-
   const refreshNotes = useCallback(async (selectId: string | null = null) => {
     let nextNotes = await window.orca.notes.list();
     if (nextNotes.length === 0) {
@@ -117,7 +88,6 @@ export default function App() {
   const enterApp = useCallback(
     async (selectId: string | null = null) => {
       await refreshNotes(selectId);
-      setAuthError("");
       setView("app");
     },
     [refreshNotes]
@@ -128,10 +98,9 @@ export default function App() {
 
     const init = async () => {
       try {
-        const [savedTheme, effectiveTheme, authStatus] = await Promise.all([
+        const [savedTheme, effectiveTheme] = await Promise.all([
           window.orca.settings.getTheme(),
-          window.orca.settings.getEffectiveTheme(),
-          window.orca.auth.getStatus()
+          window.orca.settings.getEffectiveTheme()
         ]);
         setTheme(savedTheme);
         setSystemTheme(effectiveTheme);
@@ -140,23 +109,10 @@ export default function App() {
           setSystemTheme(mode);
         });
 
-        if (!authStatus.hasPin) {
-          setView("setup");
-          return;
-        }
-
-        setPinEnabled(authStatus.pinEnabled);
-
-        if (authStatus.unlocked || !authStatus.pinEnabled) {
-          await enterApp();
-          return;
-        }
-
-        setView("unlock");
-      } catch (error) {
+        await enterApp();
+      } catch (error: any) {
         console.error("Initialization failed", error);
-        setAuthError("Could not initialize app state.");
-        setView("unlock");
+        setView(`error: ${error.message || String(error)}`);
       }
     };
 
@@ -168,15 +124,6 @@ export default function App() {
       }
     };
   }, [enterApp]);
-
-  useEffect(() => {
-    if (view === "setup") {
-      setupPinRef.current?.focus();
-    }
-    if (view === "unlock") {
-      focusUnlockIndex(0);
-    }
-  }, [view, focusUnlockIndex]);
 
   useEffect(() => {
     if (view !== "app" || !activeNote) {
@@ -220,210 +167,16 @@ export default function App() {
     };
   }, [view, activeNote, draftTitle, draftContent]);
 
-  const submitSetupPin = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setAuthError("");
-
-    if (!isValidPin(setupPin) || !isValidPin(setupPinConfirm)) {
-      setAuthError("PIN must be exactly 4 digits.");
-      return;
-    }
-
-    if (setupPin !== setupPinConfirm) {
-      setAuthError("PIN confirmation does not match.");
-      return;
-    }
-
-    try {
-      await window.orca.auth.setupPin(setupPin);
-      setSetupPin("");
-      setSetupPinConfirm("");
-      await enterApp();
-    } catch {
-      setAuthError("Could not set PIN. Please try again.");
-    }
-  };
-
-  const submitUnlockPin = useCallback(
-    async (pinValue: string) => {
-      if (unlockSubmitting) {
-        return;
-      }
-      if (!isValidPin(pinValue)) {
-        setAuthError("PIN must be exactly 4 digits.");
-        clearUnlockDigits();
-        focusUnlockIndex(0);
-        return;
-      }
-
-      setUnlockSubmitting(true);
-      setAuthError("");
-      try {
-        const result = await window.orca.auth.unlock(pinValue);
-        if (!result.ok) {
-          setAuthError("Incorrect PIN.");
-          clearUnlockDigits();
-          focusUnlockIndex(0);
-          return;
-        }
-
-        clearUnlockDigits();
-        await enterApp();
-      } finally {
-        setUnlockSubmitting(false);
-      }
-    },
-    [unlockSubmitting, clearUnlockDigits, focusUnlockIndex, enterApp]
-  );
-
-  useEffect(() => {
-    if (view !== "unlock") {
-      return;
-    }
-    const pinValue = unlockDigits.join("");
-    if (pinValue.length === 4) {
-      void submitUnlockPin(pinValue);
-    }
-  }, [unlockDigits, view, submitUnlockPin]);
-
-  const handleUnlockDigitChange = (index: number, rawValue: string) => {
-    const digit = rawValue.replace(/\D/g, "").slice(-1);
-    setUnlockDigits((prev) => {
-      const next = [...prev];
-      next[index] = digit;
-      return next;
-    });
-
-    if (digit && index < unlockInputRefs.current.length - 1) {
-      focusUnlockIndex(index + 1);
-    }
-  };
-
-  const handleUnlockDigitKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Backspace" && !unlockDigits[index] && index > 0) {
-      setUnlockDigits((prev) => {
-        const next = [...prev];
-        next[index - 1] = "";
-        return next;
-      });
-      focusUnlockIndex(index - 1);
-      event.preventDefault();
-      return;
-    }
-
-    if (event.key === "ArrowLeft" && index > 0) {
-      focusUnlockIndex(index - 1);
-      event.preventDefault();
-      return;
-    }
-
-    if (event.key === "ArrowRight" && index < unlockInputRefs.current.length - 1) {
-      focusUnlockIndex(index + 1);
-      event.preventDefault();
-      return;
-    }
-
-    if (event.key.length === 1 && /\D/.test(event.key)) {
-      event.preventDefault();
-    }
-  };
-
-  const handleUnlockPaste = (event: React.ClipboardEvent<HTMLFormElement>) => {
-    const pasted = (event.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 4);
-    if (!pasted) {
-      return;
-    }
-
-    event.preventDefault();
-    const next = EMPTY_UNLOCK_DIGITS.map((_, idx) => pasted[idx] || "");
-    setUnlockDigits(next);
-
-    if (pasted.length < 4) {
-      focusUnlockIndex(pasted.length);
-    }
-  };
-
-
   const createNote = async () => {
     const created = await window.orca.notes.create();
     await refreshNotes(created.id);
   };
 
-  const deleteActiveNote = async () => {
-    if (!activeNote) {
-      return;
-    }
-    await window.orca.notes.remove(activeNote.id);
-    await refreshNotes();
-  };
 
-  const lockApp = async () => {
-    await window.orca.auth.lock();
-    setSettingsOpen(false);
-    setNotes([]);
-    setActiveId(null);
-    setDraftTitle("");
-    setDraftContent("");
-    clearUnlockDigits();
-    setView("unlock");
-  };
-
-  const submitPinChange = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setPinChangeError("");
-
-    if (!isValidPin(currentPin) || !isValidPin(nextPin) || !isValidPin(nextPinConfirm)) {
-      setPinChangeError("Each PIN must be exactly 4 digits.");
-      return;
-    }
-    if (nextPin !== nextPinConfirm) {
-      setPinChangeError("New PIN confirmation does not match.");
-      return;
-    }
-
-    try {
-      await window.orca.settings.changePin(currentPin, nextPin);
-      setCurrentPin("");
-      setNextPin("");
-      setNextPinConfirm("");
-      setSettingsOpen(false);
-    } catch {
-      setPinChangeError("Could not change PIN. Check current PIN and try again.");
-    }
-  };
 
   const changeTheme = async (value: string) => {
     setTheme(value);
     await window.orca.settings.setTheme(value);
-  };
-
-  const togglePinEnabled = async () => {
-    const nextState = !pinEnabled;
-    try {
-      await window.orca.settings.setPinEnabled(nextState);
-      setPinEnabled(nextState);
-    } catch {
-      setPinChangeError("Could not update PIN settings.");
-    }
-  };
-
-  const verifyCurrentPin = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setPinChangeError("");
-    if (!isValidPin(currentPin)) {
-      setPinChangeError("PIN must be exactly 4 digits.");
-      return;
-    }
-    try {
-      const result = await window.orca.settings.verifyPin(currentPin);
-      if (!result.ok) {
-        setPinChangeError("Incorrect current PIN.");
-        return;
-      }
-      setPinChangeStep(2);
-    } catch {
-      setPinChangeError("Error verifying PIN.");
-    }
   };
 
   const appReady = view === "app";
@@ -455,22 +208,9 @@ export default function App() {
               >
                 <Settings size={15} strokeWidth={2} />
               </button>
-              <button 
-              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.4)" }}
-                className="p-2  border border-white/10 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
-                onClick={() => void lockApp()}
-                title="Lock"
-              >
-                <Lock size={15} strokeWidth={2} />
-              </button>
             </div>
           </header>
             <Sidebar 
-              notes={notes}
-              activeId={activeId}
-              draftTitle={draftTitle}
-              draftContent={draftContent}
-              setActiveId={setActiveId}
               createNote={createNote}
               isOpen={sidebarOpen}
             />
@@ -514,69 +254,10 @@ export default function App() {
               <h1 className="text-2xl font-semibold">Orca</h1>
               <p className="mt-2 text-sm opacity-80">Loading...</p>
             </div>
-          ) : null}
-
-          {view === "setup" ? (
-            <div className="glass-card  max-w-md">
-              <h1 className="text-2xl font-semibold">Create App PIN</h1>
-              <p className="mt-2 text-sm opacity-80">Set a 4-digit PIN to open your notes every time the app starts.</p>
-              <form className="mt-5 grid gap-3" onSubmit={submitSetupPin}>
-                <label className="grid gap-1 text-sm">
-                  New PIN
-                  <input
-                    ref={setupPinRef}
-                    className="glass-input h-11 rounded-xl px-3"
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={4}
-                    value={setupPin}
-                    onChange={(event) => setSetupPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                  />
-                </label>
-                <label className="grid gap-1 text-sm">
-                  Confirm PIN
-                  <input
-                    className="glass-input h-11 rounded-xl px-3"
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={4}
-                    value={setupPinConfirm}
-                    onChange={(event) => setSetupPinConfirm(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                  />
-                </label>
-                <button className="primary-button mt-1 h-11" type="submit">
-                  Create PIN
-                </button>
-                <p className="min-h-5 text-sm text-red-500 dark:text-red-400">{authError}</p>
-              </form>
-            </div>
-          ) : null}
-
-          {view === "unlock" ? (
-            <div className=" max-w-md">
-
-              <form className="mt-5 grid gap-3" onPaste={handleUnlockPaste} onSubmit={(event) => event.preventDefault()}>
-                <label className="text-sm">PIN</label>
-                <div className="grid  grid-cols-4 gap-1">
-                  {unlockDigits.map((digit, index) => (
-                    <input
-                      key={index}
-                      ref={(el) => {
-                        unlockInputRefs.current[index] = el;
-                      }}
-                      className="otp-input "
-                      type="password"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(event) => handleUnlockDigitChange(index, event.target.value)}
-                      onKeyDown={(event) => handleUnlockDigitKeyDown(index, event)}
-                    />
-                  ))}
-                </div>
-                <p className="min-h-5 text-sm text-red-500 dark:text-red-400">{authError}</p>
-              </form>
+          ) : view.startsWith("error:") ? (
+            <div className="glass-card backdrop-blur-md max-w-sm border border-red-500/50">
+              <h1 className="text-2xl font-semibold text-red-500">Error Hook</h1>
+              <p className="mt-2 text-sm opacity-80 font-mono text-red-400">{view.replace("error: ", "")}</p>
             </div>
           ) : null}
         </div>
@@ -585,19 +266,13 @@ export default function App() {
       {settingsOpen ? (
         <div className="modal-overlay flex items-center justify-center p-4">
           <div className="glass-card backdrop-blur-md w-full max-w-3xl flex overflow-hidden p-0 h-[500px]">
-            {/* Sidebar */}
             <div className="w-48 border-r border-neutral-200 dark:border-white/10 p-4 flex flex-col gap-2">
               <h2 className="text-sm font-semibold mb-2 px-2 text-neutral-500 dark:text-white/50 uppercase tracking-wider">Settings</h2>
-              {["profile", "pin", "themes", "api-key"].map((cat) => (
+              {["profile", "themes", "api-key"].map((cat) => (
                 <button
                   key={cat}
                   onClick={() => {
                     setSettingsCategory(cat);
-                    setPinChangeError("");
-                    setPinChangeStep(1);
-                    setCurrentPin("");
-                    setNextPin("");
-                    setNextPinConfirm("");
                   }}
                   className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     settingsCategory === cat
@@ -610,7 +285,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Content Area */}
             <div className="flex-1 p-6 flex flex-col relative overflow-y-auto">
               <button 
                 className="absolute top-4 right-4 text-neutral-400 dark:text-white/40 hover:text-neutral-900 dark:hover:text-white transition-colors"
@@ -650,79 +324,6 @@ export default function App() {
                 <div>
                   <h2 className="text-xl font-semibold">API Keys</h2>
                   <p className="mt-2 text-sm opacity-80">API configuration coming soon.</p>
-                </div>
-              )}
-
-              {settingsCategory === "pin" && (
-                <div>
-                  <h2 className="text-xl font-semibold">Security Settings</h2>
-                  <p className="mt-2 text-sm opacity-80 mb-6">Manage your application lock and PIN.</p>
-                  
-                  <div className="flex items-center justify-between p-4 rounded-xl bg-neutral-100 dark:bg-white/5 mb-8">
-                    <div>
-                      <h3 className="font-medium">Require PIN on Startup</h3>
-                      <p className="text-xs text-neutral-500 dark:text-white/60 mt-1">If enabled, you must enter your PIN to open your notes.</p>
-                    </div>
-                    <button 
-                      onClick={() => void togglePinEnabled()}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${pinEnabled ? 'bg-blue-500' : 'bg-neutral-300 dark:bg-white/20'}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${pinEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
-
-                  <div className="pt-2 border-t border-neutral-200 dark:border-white/10 pl-1 pr-1">
-                    <h3 className="font-medium mb-4">Change PIN</h3>
-                    
-                    {pinChangeStep === 1 ? (
-                      <form className="max-w-xs grid gap-3" onSubmit={verifyCurrentPin}>
-                        <label className="grid gap-1 text-sm">
-                          Current PIN
-                          <input
-                            className="glass-input h-11 rounded-xl px-3"
-                            type="password"
-                            inputMode="numeric"
-                            maxLength={4}
-                            value={currentPin}
-                            onChange={(event) => setCurrentPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                          />
-                        </label>
-                        <button className="primary-button h-11 mt-2" type="submit">
-                          Continue
-                        </button>
-                        <p className="min-h-5 text-sm text-red-500 dark:text-red-400 mt-1">{pinChangeError}</p>
-                      </form>
-                    ) : (
-                      <form className="max-w-xs grid gap-3" onSubmit={submitPinChange}>
-                        <label className="grid gap-1 text-sm">
-                          New PIN
-                          <input
-                            className="glass-input h-11 rounded-xl px-3"
-                            type="password"
-                            inputMode="numeric"
-                            maxLength={4}
-                            value={nextPin}
-                            onChange={(event) => setNextPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                          />
-                        </label>
-                        <label className="grid gap-1 text-sm">
-                          Confirm New PIN
-                          <input
-                            className="glass-input h-11 rounded-xl px-3"
-                            type="password"
-                            inputMode="numeric"
-                            maxLength={4}
-                            value={nextPinConfirm}
-                            onChange={(event) => setNextPinConfirm(event.target.value.replace(/\D/g, "").slice(0, 4))}
-                          />
-                        </label>
-                        <button className="primary-button h-11 mt-2" type="submit">
-                          Update PIN
-                        </button>
-                        <p className="min-h-5 text-sm text-red-500 dark:text-red-400 mt-1">{pinChangeError}</p>
-                      </form>
-                    )}
-                  </div>
                 </div>
               )}
             </div>

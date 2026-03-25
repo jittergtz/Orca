@@ -1,4 +1,4 @@
-import React from 'react'
+
 import { LineChartDemo } from './charts/LineChartDemo'
 import { RadialChartDemo } from './charts/RadialChartDemo'
 import { BarChartDemo } from './charts/BarChartDemo'

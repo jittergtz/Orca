@@ -10,15 +10,17 @@ export interface Note {
   updatedAt: number;
 }
 
+export interface SecurityState {
+  pinHash: string | null;
+  salt: string | null;
+  pinEnabled: boolean;
+}
+
 export interface AppState {
-  security: {
-    pinHash: string;
-    salt: string;
-    pinEnabled: boolean;
-  };
   preferences: {
     theme: string;
   };
+  security: SecurityState;
   notes: Note[];
 }
 
@@ -28,13 +30,13 @@ export function dataFilePath() {
 
 export function defaultState(): AppState {
   return {
-    security: {
-      pinHash: "",
-      salt: "",
-      pinEnabled: false
-    },
     preferences: {
       theme: "system"
+    },
+    security: {
+      pinHash: null,
+      salt: null,
+      pinEnabled: true
     },
     notes: []
   };
@@ -51,8 +53,8 @@ export function readState(): AppState {
     return {
       ...defaultState(),
       ...parsed,
-      security: { ...defaultState().security, ...(parsed.security || {}) },
       preferences: { ...defaultState().preferences, ...(parsed.preferences || {}) },
+      security: { ...defaultState().security, ...(parsed.security || {}) },
       notes: Array.isArray(parsed.notes) ? parsed.notes : []
     };
   } catch {

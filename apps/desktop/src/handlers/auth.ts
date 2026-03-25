@@ -7,7 +7,7 @@ export function hashPin(pin: string, salt: string) {
   return crypto.createHash("sha256").update(`${salt}:${pin}`).digest("hex");
 }
 
-export function validatePin(pin: any): boolean {
+export function validatePin(pin: unknown): pin is string {
   return typeof pin === "string" && /^\d{4}$/.test(pin);
 }
 
@@ -43,6 +43,7 @@ export function registerAuthHandlers() {
       salt,
       pinHash: hashPin(pin, salt)
     };
+
     writeState(state);
     setSessionUnlocked(true);
     return { ok: true };
