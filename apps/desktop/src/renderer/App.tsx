@@ -31,6 +31,7 @@ export default function App() {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [searchMode, setSearchMode] = useState("Auto");
   const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
+  const modeDropdownRef = useRef<HTMLDivElement>(null);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notesRef = useRef<Note[]>([]);
@@ -171,6 +172,17 @@ export default function App() {
     };
   }, [view, activeNote, draftTitle, draftContent]);
 
+  useEffect(() => {
+    if (!modeDropdownOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node)) {
+        setModeDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [modeDropdownOpen]);
+
   const createNote = async () => {
     const created = await window.orca.notes.create();
     await refreshNotes(created.id);
@@ -246,7 +258,7 @@ export default function App() {
                   placeholder="What do you want to be informed of?" 
                   className="flex-1 placeholder:font-light bg-transparent border-none outline-none s text-neutral-900 dark:text-white placeholder:text-neutral-400/80 font-medium text-[14px]"
                 />
-                <div className="relative">
+                <div className="relative" ref={modeDropdownRef}>
                   <button 
                     onClick={() => setModeDropdownOpen(!modeDropdownOpen)}
                     className="flex items-center gap-1.5 font-light text-xs text-neutral-800 dark:text-neutral-200 hover:text-neutral-800 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors"
