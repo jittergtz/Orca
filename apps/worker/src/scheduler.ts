@@ -4,17 +4,20 @@ import {
   createServiceRoleClient,
   listDueTopics,
 } from "@newsflow/db";
+import { resolveWorkerRuntimeEnv } from "./lib/env";
 import { logger } from "./lib/logger";
 import { enqueueFetchNews } from "./queue";
 
 export function startScheduler(source?: EnvSource) {
-  const task = cron.schedule("*/15 * * * *", async () => {
+  const { workerPollCron } = resolveWorkerRuntimeEnv(source);
+  const task = cron.schedule(workerPollCron, async () => {
     try {
       const supabase = createServiceRoleClient(source);
       const topics = await listDueTopics(supabase);
 
       logger.info("Scheduler discovered due topics", {
         count: topics.length,
+        workerPollCron,
       });
 
       await Promise.all(

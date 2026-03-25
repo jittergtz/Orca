@@ -1,6 +1,17 @@
 export type SubscriptionStatus = "active" | "trialing" | "past_due" | "canceled";
 export type TopicFrequency = "daily" | "weekly" | "realtime";
 export type ArticleSentiment = "positive" | "negative" | "neutral";
+export type BillingProvider = "stripe";
+export type BillingPlanCode = "go" | "pro";
+export type BillingSubscriptionStatus =
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "unpaid"
+  | "incomplete"
+  | "incomplete_expired";
+export type CheckoutSessionStatus = "open" | "complete" | "expired";
 
 export interface TopicConfig {
   signals: string[];
@@ -50,6 +61,45 @@ export interface ArticleRead {
   article_id: string;
   read_at: string;
   listened_at: string | null;
+}
+
+export interface BillingSubscription {
+  id: string;
+  user_id: string;
+  provider: BillingProvider;
+  stripe_customer_id: string;
+  stripe_subscription_id: string;
+  stripe_price_id: string;
+  plan_code: BillingPlanCode;
+  status: BillingSubscriptionStatus;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  canceled_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CheckoutSession {
+  id: string;
+  user_id: string;
+  stripe_checkout_session_id: string;
+  plan_code: BillingPlanCode;
+  stripe_price_id: string;
+  status: CheckoutSessionStatus;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface BillingEvent {
+  id: number;
+  event_id: string;
+  provider: BillingProvider;
+  event_type: string;
+  livemode: boolean;
+  payload: Record<string, unknown>;
+  processed_at: string | null;
+  created_at: string;
 }
 
 export interface TopicRefinementResult extends TopicConfig {
@@ -112,6 +162,24 @@ export interface NewsflowDatabase {
         Row: ArticleRead;
         Insert: ArticleRead;
         Update: Partial<ArticleRead>;
+        Relationships: [];
+      };
+      billing_subscriptions: {
+        Row: BillingSubscription;
+        Insert: BillingSubscription;
+        Update: Partial<BillingSubscription>;
+        Relationships: [];
+      };
+      checkout_sessions: {
+        Row: CheckoutSession;
+        Insert: CheckoutSession;
+        Update: Partial<CheckoutSession>;
+        Relationships: [];
+      };
+      billing_events: {
+        Row: BillingEvent;
+        Insert: BillingEvent;
+        Update: Partial<BillingEvent>;
         Relationships: [];
       };
     };

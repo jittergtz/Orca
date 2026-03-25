@@ -1,12 +1,18 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import type { EnvSource } from '@newsflow/config'
+import { createBrowserClient, type NewsflowSupabaseClient } from '@newsflow/db'
 
-let client: SupabaseClient | null = null
+let client: NewsflowSupabaseClient | null = null
+
+function readWebEnv(): EnvSource {
+  return {
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+  }
+}
 
 export function getSupabase() {
   if (client) return client
   if (typeof window === 'undefined') return null
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY as string
-  client = createClient(url, key)
+  client = createBrowserClient(readWebEnv())
   return client
 }

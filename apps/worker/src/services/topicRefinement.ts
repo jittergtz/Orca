@@ -4,9 +4,9 @@ import {
   MAX_ARTICLES_PER_FETCH,
 } from "@newsflow/config";
 import {
-  runTopicDialogue,
+  runWorkerTopicDialogue,
   type TopicDialogueInput,
-} from "@newsflow/ai";
+} from "../ai/topicAgent";
 
 export interface TopicRefinementPreview {
   normalizedName: string;
@@ -24,7 +24,7 @@ export interface TopicRefinementPreview {
 }
 
 export async function previewTopicRefinement(input: TopicDialogueInput, source?: EnvSource): Promise<TopicRefinementPreview> {
-  const topic = await runTopicDialogue(input, source);
+  const topic = await runWorkerTopicDialogue(input, source);
   const normalizedName = topic.topic.trim();
   const broadCategoryKnown = BROAD_CATEGORIES.includes(topic.category as (typeof BROAD_CATEGORIES)[number]);
 

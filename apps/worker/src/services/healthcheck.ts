@@ -1,4 +1,5 @@
 import type { EnvSource } from "@newsflow/config";
+import { Redis } from "@upstash/redis";
 import {
   resolveOpenAIEnv,
   resolvePerplexityEnv,
@@ -6,6 +7,7 @@ import {
   resolveRedisEnv,
   resolveServiceRoleSupabaseEnv,
 } from "@newsflow/config";
+import { resolveWorkerRuntimeEnv } from "../lib/env";
 import { createRedisConnection } from "../queue";
 
 export async function runHealthcheck(source?: EnvSource) {
@@ -14,11 +16,20 @@ export async function runHealthcheck(source?: EnvSource) {
   const openai = resolveOpenAIEnv(source);
   const perplexity = resolvePerplexityEnv(source);
   const redis = resolveRedisEnv(source);
+  const runtime = resolveWorkerRuntimeEnv(source);
 
   const connection = createRedisConnection(source);
+  const upstashRest =
+    runtime.upstashRestUrl && runtime.upstashRestToken
+      ? new Redis({
+          url: runtime.upstashRestUrl,
+          token: runtime.upstashRestToken,
+        })
+      : null;
 
   try {
     const redisPing = await connection.ping();
+    const upstashRestPing = upstashRest ? await upstashRest.ping() : null;
 
     return {
       ok: redisPing === "PONG",
@@ -28,8 +39,15 @@ export async function runHealthcheck(source?: EnvSource) {
         openaiConfigured: Boolean(openai.openaiApiKey),
         perplexityConfigured: Boolean(perplexity.perplexityApiKey),
         redisUrl: redis.redisUrl,
+        upstashRestConfigured: Boolean(upstashRest),
+        workerPollCron: runtime.workerPollCron,
+        topicDialogueModel: runtime.topicDialogueModel,
+        newsSearchModel: runtime.newsSearchModel,
+        articleSummaryModel: runtime.articleSummaryModel,
+        railwayEnvironment: runtime.railwayEnvironment ?? null,
       },
       redisPing,
+      upstashRestPing,
     };
   } finally {
     await connection.quit();

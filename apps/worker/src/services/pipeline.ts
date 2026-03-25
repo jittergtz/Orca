@@ -1,12 +1,12 @@
 import { createHash } from "crypto";
 import type { EnvSource } from "@newsflow/config";
-import { searchNews, summarizeArticle } from "@newsflow/ai";
 import {
   createServiceRoleClient,
   getTopicById,
   updateTopicFetchTimestamp,
   upsertArticle,
 } from "@newsflow/db";
+import { runWorkerArticleSummary, runWorkerNewsSearch } from "../ai";
 import { logger } from "../lib/logger";
 import {
   enqueueSummarizeArticle,
@@ -43,7 +43,7 @@ export async function executeFetchPipeline(
   }
 
   const articles = dedupeBySourceUrl(
-    await searchNews(
+    await runWorkerNewsSearch(
       {
         topicName: topic.name,
         topicConfig: topic.config,
@@ -96,7 +96,7 @@ export async function executeFetchPipeline(
 
 export async function executeSummarizePipeline(data: SummarizeArticleJobData, source?: EnvSource) {
   const supabase = createServiceRoleClient(source);
-  const summary = await summarizeArticle(data.rawText, source);
+  const summary = await runWorkerArticleSummary(data.rawText, source);
 
   const article = await upsertArticle(supabase, {
     topic_id: data.topicId,

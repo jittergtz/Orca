@@ -29,6 +29,8 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsCategory, setSettingsCategory] = useState("profile");
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [searchMode, setSearchMode] = useState("Auto");
+  const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notesRef = useRef<Note[]>([]);
@@ -238,19 +240,40 @@ export default function App() {
               </h1>
               <p className="text-lg text-neutral-600 dark:text-white/80 font-light tracking-tight mb-10">Seeing the big picture, Research off the future.</p>
               
-              <div className="w-full relative  rounded-full bg-white/60 dark:bg-neutral-900/50   border-white/60 dark:border-black/20 flex  items-center p-2 pl-6 pr-2  group hover:shadow-md transition-shadow" style={{ boxShadow: "0 3px 4px rgba(10, 10,10, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
+              <div className="w-full relative  rounded-full bg-white/60 dark:bg-neutral-900/50   border-white/60 dark:border-black/20 flex  items-center p-2 pl-6 pr-2  group hover:shadow-md transition-shadow" style={{ boxShadow: "0 3px 4px rgba(10, 10,10, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
                 <input 
                   type="text" 
                   placeholder="What do you want to be informed of?" 
-                  className="flex-1 bg-transparent border-none outline-none s text-neutral-900 dark:text-white placeholder:text-neutral-400/80 font-medium text-[14px]"
+                  className="flex-1 placeholder:font-light bg-transparent border-none outline-none s text-neutral-900 dark:text-white placeholder:text-neutral-400/80 font-medium text-[14px]"
                 />
-                <button 
-                  onClick={() => setOnboardingOpen(true)}
-                  className="flex items-center gap-1.5 font-light text-xs text-neutral-200 hover:text-neutral-800 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors"
-                >
-                  Auto
-                  <Cpu size={15} strokeWidth={1.8} className="text-neutral-500" />
-                </button>
+                <div className="relative">
+                  <button 
+                    onClick={() => setModeDropdownOpen(!modeDropdownOpen)}
+                    className="flex items-center gap-1.5 font-light text-xs text-neutral-800 dark:text-neutral-200 hover:text-neutral-800 dark:hover:text-white px-3 py-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors"
+                  >
+                    {searchMode}
+                    <Cpu size={15} strokeWidth={1.8} className="text-neutral-600 dark:text-neutral-500" />
+                  </button>
+                  
+                  <div 
+                    className={`absolute right-0 top-full mt-2 w-40 bg-white/95 dark:bg-[#1a1b23]/95 backdrop-blur-md rounded-xl shadow-lg border border-black/10 dark:border-white/10 overflow-hidden z-50 py-1 flex flex-col transition-all duration-[100ms] ease-out origin-top-right ${
+                      modeDropdownOpen ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 -translate-y-2 scale-95 pointer-events-none'
+                    }`}
+                  >
+                    {["Auto", "Full Report", "Fast response", "Realtime"].map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => {
+                          setSearchMode(mode);
+                          setModeDropdownOpen(false);
+                        }}
+                        className={`text-left px-4 py-2 text-sm hover:bg-black/5 dark:hover:bg-white/10 transition-colors ${searchMode === mode ? 'font-medium text-black dark:text-white' : 'text-neutral-600 dark:text-neutral-400'}`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <button 
                   onClick={() => setOnboardingOpen(true)}
                   className="ml-1.5 w-9 h-9 flex-shrink-0 rounded-full bg-neutral-800 dark:bg-neutral-200 text-white dark:text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm"

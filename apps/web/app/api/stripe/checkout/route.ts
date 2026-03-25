@@ -5,7 +5,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion:
 
 function getPriceId(plan: string) {
   if (plan === 'go') return process.env.STRIPE_PRICE_GO as string
-  if (plan === 'pro') return process.env.STRIPE_PRICE_PRO as string
+  if (plan === 'pro') return ((process.env.STRIPE_PRICE_PRO ?? process.env.STRIPE_PRICE_Pro) as string)
   return ''
 }
 

@@ -44,8 +44,15 @@ export function resolvePublicSupabaseEnv(source: EnvSource = defaultEnvSource())
       source
     ),
     supabaseAnonKey: requireEnvValue(
-      "Supabase anon key",
-      ["VITE_SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY"],
+      "Supabase publishable key",
+      [
+        "VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
+        "SUPABASE_PUBLISHABLE_DEFAULT_KEY",
+        "VITE_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "SUPABASE_ANON_KEY"
+      ],
       source
     )
   };

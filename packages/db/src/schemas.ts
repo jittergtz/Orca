@@ -16,6 +16,19 @@ export const UserSchema = z.object({
   created_at: z.string(),
 });
 
+export const BillingPlanCodeSchema = z.enum(["go", "pro"]);
+export const BillingProviderSchema = z.literal("stripe");
+export const BillingSubscriptionStatusSchema = z.enum([
+  "trialing",
+  "active",
+  "past_due",
+  "canceled",
+  "unpaid",
+  "incomplete",
+  "incomplete_expired",
+]);
+export const CheckoutSessionStatusSchema = z.enum(["open", "complete", "expired"]);
+
 export const TopicSchema = z.object({
   id: z.string(),
   user_id: z.string(),
@@ -76,4 +89,43 @@ export const ArticleReadSchema = z.object({
   article_id: z.string(),
   read_at: z.string(),
   listened_at: z.string().nullable(),
+});
+
+export const BillingSubscriptionSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  provider: BillingProviderSchema,
+  stripe_customer_id: z.string(),
+  stripe_subscription_id: z.string(),
+  stripe_price_id: z.string(),
+  plan_code: BillingPlanCodeSchema,
+  status: BillingSubscriptionStatusSchema,
+  current_period_start: z.string().nullable(),
+  current_period_end: z.string().nullable(),
+  cancel_at_period_end: z.boolean(),
+  canceled_at: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const CheckoutSessionSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  stripe_checkout_session_id: z.string(),
+  plan_code: BillingPlanCodeSchema,
+  stripe_price_id: z.string(),
+  status: CheckoutSessionStatusSchema,
+  created_at: z.string(),
+  completed_at: z.string().nullable(),
+});
+
+export const BillingEventSchema = z.object({
+  id: z.number(),
+  event_id: z.string(),
+  provider: BillingProviderSchema,
+  event_type: z.string(),
+  livemode: z.boolean(),
+  payload: z.record(z.unknown()),
+  processed_at: z.string().nullable(),
+  created_at: z.string(),
 });
