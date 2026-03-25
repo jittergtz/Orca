@@ -48,7 +48,7 @@ function Navbar() {
           <div className='flex gap-10 items-center'>
           {/* Logo */}
           <Link href="/" className='flex items-center z-50'>
-            <h1 className='text-black text-2xl font-serif font-semibold tracking-tight'>Orca</h1>
+            <h1 className='text-black text-2xl font-serif font-medium italic'>Orca</h1>
           </Link>
 
           {/* Desktop Navigation */}

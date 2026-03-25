@@ -480,10 +480,10 @@ export default function App() {
           {isTestUI ? (
              <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
               <div className="flex flex-col items-center w-full max-w-2xl px-6 -mt-32">
-              <h1 className="font-instrument-serif italic text-[3.5rem] text-transparent bg-clip-text bg-gradient-to-tl from-black to-[#727272] dark:from-white dark:to-[#8f8e8e]  leading-[70px]    ">
+              <h1 className="font-instrument-serif italic text-[3.5rem] text-transparent bg-clip-text bg-gradient-to-tl from-black to-[#727272] dark:from-white dark:to-[#bcbcbc]  leading-[70px]    ">
                 Orca Finance
               </h1>
-              <p className="text-lg text-neutral-600 dark:text-white/60 font-medium tracking-tight mb-10">Research for the future.</p>
+              <p className="text-lg text-neutral-600 dark:text-white/80 font-light tracking-tight mb-10">Seeing the big picture, Research off the future.</p>
               
               <div className="w-full relative  rounded-full bg-white/60 dark:bg-neutral-900/50   border-white/60 dark:border-black/20 flex  items-center p-2 pl-6 pr-2  group hover:shadow-md transition-shadow" style={{ boxShadow: "0 3px 4px rgba(10, 10,10, 0.4), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
                 <input 
