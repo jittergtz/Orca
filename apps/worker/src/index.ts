@@ -1,4 +1,5 @@
 import { closeWorkerRuntime, createWorkers } from "./queue";
+import { logger } from "./lib/logger";
 import { startScheduler } from "./scheduler";
 
 async function bootstrap() {
@@ -19,7 +20,7 @@ async function bootstrap() {
     void shutdown();
   });
 
-  console.log("NewsFlow worker started");
+  logger.info("NewsFlow worker started");
 }
 
 void bootstrap();
