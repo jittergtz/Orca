@@ -4,10 +4,12 @@ import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
+import { getSupabase } from '@/lib/supabaseClient';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [session, setSession] = useState(false);
 
   // Handle scroll effect
   useEffect(() => {
@@ -16,6 +18,15 @@ function Navbar() {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Check auth session
+  useEffect(() => {
+    const s = getSupabase();
+    if (!s) return;
+    s.auth.getSession().then(({ data }) => {
+      setSession(!!data.session);
+    });
   }, []);
 
   // Prevent scrolling when mobile menu is open
@@ -70,10 +81,10 @@ function Navbar() {
                 Mission
               </Link>
               <Link 
-                href="/product" 
+                href={session ? "/dashboard" : "/product"} 
                 className='text-sm bg-black text-white px-4 py-2 rounded-full hover:bg-neutral-800 transition-all hover:scale-105 active:scale-95'
               >
-                Get Started
+                {session ? "Dashboard" : "Get Started"}
               </Link>
             </div>
             
@@ -141,11 +152,11 @@ function Navbar() {
                   className='w-full pt-8   flex flex-col items-center'
                 >
                   <Link 
-                    href="/product" 
+                    href={session ? "/dashboard" : "/product"} 
                     className='w-full text-center bg-black text-white px-6 py-4 rounded-full text-lg  hover:bg-neutral-800 transition-all active:scale-95'
                     onClick={() => setIsOpen(false)}
                   >
-                    Get Started
+                    {session ? "Dashboard" : "Get Started"}
                   </Link>
                 </motion.div>
               </div>

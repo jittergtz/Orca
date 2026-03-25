@@ -22,6 +22,7 @@ export async function POST(req: Request) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/subscribe?status=success`,
       cancel_url: `${origin}/pricing`,
+      allow_promotion_codes: true,
     })
 
     return NextResponse.json({ url: session.url })
