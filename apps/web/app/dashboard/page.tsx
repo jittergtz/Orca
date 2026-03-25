@@ -8,9 +8,13 @@ import { LogOut, CreditCard, Zap } from 'lucide-react'
 export default function DashboardPage() {
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [portalLoading, setPortalLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [plan, setPlan] = useState<string>('Go')
+  const [status, setStatus] = useState<string>('Inactive')
+  const [nextPayment, setNextPayment] = useState<string>('N/A')
 
   useEffect(() => {
     const s = getSupabase()
@@ -20,7 +24,36 @@ export default function DashboardPage() {
         router.push('/')
       } else {
         setEmail(data.session.user.email ?? null)
-        setLoading(false)
+        setUserId(data.session.user.id ?? null)
+        
+        // @ts-ignore - Types for billing_subscriptions may not be generated yet
+        const query = s.from('billing_subscriptions')
+          .select('plan_code, status, current_period_end')
+          .eq('user_id', data.session.user.id)
+          .maybeSingle() as Promise<any>;
+
+        query.then((res: any) => {
+            const { data: sub, error } = res;
+            if (error) {
+              console.error("Supabase Error fetching plan:", error);
+            }
+            if (!error && sub) {
+              const pc = sub.plan_code ? String(sub.plan_code).trim().toLowerCase() : 'go';
+              setPlan(pc === 'pro' ? 'Pro' : 'Go')
+              if (sub.status) setStatus(String(sub.status).charAt(0).toUpperCase() + String(sub.status).slice(1))
+              if (sub.current_period_end) {
+                setNextPayment(new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
+              }
+            } else {
+              setPlan('Go')
+              setStatus('Inactive')
+            }
+            setLoading(false)
+          })
+          .catch((err: any) => {
+            console.error("Network Error fetching plan:", err);
+            setLoading(false)
+          })
       }
     })
   }, [router])
@@ -56,13 +89,13 @@ export default function DashboardPage() {
   }
 
   const handleUpgradeToPro = async () => {
-    if (!email) return
+    if (!email || !userId) return
     setCheckoutLoading(true)
     try {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: 'pro', email }),
+        body: JSON.stringify({ plan: 'pro', email, userId }),
       })
       const data = await res.json()
       if (data.url) {
@@ -125,14 +158,16 @@ export default function DashboardPage() {
             </div>
 
             <div className="bg-stone-50 rounded-xl p-4 border border-stone-100 flex items-center justify-between">
-              <span className="font-sans text-sm text-stone-600">Current Plan: <strong>Go</strong></span>
-              <button 
-                onClick={handleUpgradeToPro}
-                disabled={checkoutLoading}
-                className="bg-stone-900 text-white font-sans text-sm px-4 py-2 rounded-full font-medium hover:bg-stone-800 transition-colors disabled:opacity-50"
-              >
-                {checkoutLoading ? 'Loading...' : 'Upgrade to Pro'}
-              </button>
+              <span className="font-sans text-sm text-stone-600">Current Plan: <strong>{plan}</strong></span>
+              {plan !== 'Pro' && (
+                <button 
+                  onClick={handleUpgradeToPro}
+                  disabled={checkoutLoading}
+                  className="bg-stone-900 text-white font-sans text-sm px-4 py-2 rounded-full font-medium hover:bg-stone-800 transition-colors disabled:opacity-50"
+                >
+                  {checkoutLoading ? 'Loading...' : 'Upgrade to Pro'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -150,12 +185,12 @@ export default function DashboardPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-stone-100 pb-3">
                 <span className="font-sans text-sm text-stone-500">Next Payment</span>
-                <span className="font-sans text-sm font-medium text-stone-900">Apr 21, 2026</span>
+                <span className="font-sans text-sm font-medium text-stone-900">{nextPayment}</span>
               </div>
               <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-6">
                 <span className="font-sans text-sm text-stone-500">Status</span>
-                <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                  Active
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${status.toLowerCase() === 'active' ? 'bg-green-50 text-green-700 ring-green-600/20' : 'bg-stone-50 text-stone-700 ring-stone-600/20'}`}>
+                  {status}
                 </span>
               </div>
 

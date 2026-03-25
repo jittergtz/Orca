@@ -12,13 +12,18 @@ function getPriceId(plan: string) {
 export async function POST(req: Request) {
   try {
     const origin = new URL(req.url).origin
-    const { plan, email } = await req.json()
+    const { plan, email, userId } = await req.json()
     const priceId = getPriceId(plan)
-    if (!priceId || !email) return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
+    if (!priceId || !email || !userId) return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer_email: email,
+      client_reference_id: userId,
+      subscription_data: {
+        metadata: { supabase_user_id: userId }
+      },
+      metadata: { supabase_user_id: userId },
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/subscribe?status=success`,
       cancel_url: `${origin}/pricing`,

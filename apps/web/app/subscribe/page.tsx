@@ -9,11 +9,11 @@ function SubscribeInner() {
   const plan = useMemo(() => (params.get('plan') === 'pro' ? 'pro' : 'go'), [params])
   const status = params.get('status')
 
-  const checkout = async (email: string) => {
+  const checkout = async (email: string, userId: string) => {
     const res = await fetch('/api/stripe/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan, email }),
+      body: JSON.stringify({ plan, email, userId }),
     })
     const data = await res.json()
     if (data?.url) window.location.href = data.url as string

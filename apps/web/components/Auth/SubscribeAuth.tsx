@@ -9,19 +9,21 @@ export default function SubscribeAuth({
   onCheckout,
 }: {
   plan: Plan
-  onCheckout: (email: string) => Promise<void> | void
+  onCheckout: (email: string, userId: string) => Promise<void> | void
 }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
+  const [sessionUserId, setSessionUserId] = useState<string | null>(null)
 
   useEffect(() => {
     const s = getSupabase()
     if (!s) return
     s.auth.getSession().then(({ data }) => {
       setSessionEmail(data.session?.user.email ?? null)
+      setSessionUserId(data.session?.user.id ?? null)
     })
   }, [])
 
@@ -34,6 +36,7 @@ export default function SubscribeAuth({
     if (error) setError(error.message)
     const { data } = await s.auth.getSession()
     setSessionEmail(data.session?.user.email ?? null)
+    setSessionUserId(data.session?.user.id ?? null)
     setLoading(false)
   }
 
@@ -46,6 +49,7 @@ export default function SubscribeAuth({
     if (error) setError(error.message)
     const { data } = await s.auth.getSession()
     setSessionEmail(data.session?.user.email ?? null)
+    setSessionUserId(data.session?.user.id ?? null)
     setLoading(false)
   }
 
@@ -66,11 +70,11 @@ export default function SubscribeAuth({
   }
 
   const continueToCheckout = async () => {
-    if (!sessionEmail) return
+    if (!sessionEmail || !sessionUserId) return
     setLoading(true)
     setError(null)
     try {
-      await onCheckout(sessionEmail)
+      await onCheckout(sessionEmail, sessionUserId)
     } catch (e) {
       setError('Unable to start checkout')
       setLoading(false)
