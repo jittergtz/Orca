@@ -161,17 +161,17 @@ export default function DashboardPage() {
 
               <div className="space-y-2 mb-8">
                 <div className="flex justify-between font-sans text-sm text-stone-600">
-                  <span>Fast Requests</span>
-                  <span className="font-medium text-stone-900">235 / 500</span>
+                  <span>Requests</span>
+                  <span className="font-medium text-stone-900">47% used</span>
                 </div>
                 {/* Usage Bar */}
-                <div className="w-full h-2 bg-stone-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-stone-900 rounded-full" style={{ width: '47%' }} />
+                <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-lime-400 rounded-full" style={{ width: '47%' }} />
                 </div>
               </div>
             </div>
 
-            <div className="bg-stone-50 rounded-xl p-4 border border-stone-100 flex items-center justify-between">
+            <div className="bg-gradient-to-tl from-stone-200 border border-black/10 rounded-xl p-4   flex items-center justify-between">
               <span className="font-sans text-sm text-stone-600">Current Plan: <strong>{plan}</strong></span>
               {plan !== 'Pro' && (
                 <button 
@@ -217,7 +217,7 @@ export default function DashboardPage() {
                 disabled={portalLoading}
                 className="w-full bg-white text-stone-900 border border-stone-200 font-sans text-sm px-4 py-3 rounded-full font-medium hover:bg-stone-50 hover:border-stone-300 transition-all disabled:opacity-50 shadow-sm"
               >
-                {portalLoading ? 'Redirecting...' : 'Manage Payment / Cancel'}
+                {portalLoading ? 'loading...' : 'Mange subscription'}
               </button>
             </div>
           </div>
