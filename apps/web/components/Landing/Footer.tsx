@@ -37,7 +37,7 @@ function Footer() {
     <footer className='border-t pt-20 pb-20 text-black border-neutral-200 bg-neutral-100 p-5   w-full flex justify-center'>
         <div className='max-w-5xl w-full text-sm flex flex-col md:flex-row md:justify-between'>
         <div>
-            <h1 className='text-3xl font-serif font-bold'>Orca</h1>
+            <h1 className='text-3xl font-serif italic'>Orca</h1>
             <p className='text-xs'>2026</p>
         </div>
 

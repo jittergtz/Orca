@@ -90,7 +90,7 @@ export default function ProfileInfoCard({ email, createdAt }: ProfileInfoCardPro
         {Array.from({ length: membershipMonths }, (_, i) => i + 1).map((month) => (
           <span
             key={`batch-month-${month}`}
-            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium text-stone-800 border border-black/5 bg-gradient-to-br ${BADGE_GRADIENTS[(month - 1) % BADGE_GRADIENTS.length]}`}
+            className={`inline-flex items-center rounded-full px-5 py-2 text-xs font-medium text-stone-800 border border-black/5 bg-gradient-to-br ${BADGE_GRADIENTS[(month - 1) % BADGE_GRADIENTS.length]}`}
           >
             Batch Month: {month}
           </span>

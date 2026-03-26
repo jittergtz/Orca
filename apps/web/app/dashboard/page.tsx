@@ -182,11 +182,12 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-
+          {plan !== 'Pro' ? (
             <div className="bg-gradient-to-tl from-stone-200 border border-black/10 rounded-xl p-4   flex flex-col items-center justify-between">
+             
             <div className='flex w-full items-center justify-between'>
               <span className="font-sans text-sm text-stone-600">Current Plan: <strong>{plan}</strong></span>
-              {plan !== 'Pro' && (
+            
                 <div className='flex flex-col gap-1'>
                 <button 
                   onClick={handleUpgradeToPro}
@@ -195,15 +196,29 @@ export default function DashboardPage() {
                 >
                   {checkoutLoading ? 'Loading...' : 'Upgrade to Pro'}
                 </button>
-                  
+              
                 </div>
-                
-              )}
+                  
             </div>
-               <p className='text-black mt-3 text-xs w-full text-start font-'>
+              <p className='text-black mt-3 text-xs w-full text-start font-'>
                 Pro will give you 15 active subscriped topics and up to 4x higher limits.
                </p>
                 </div>  
+                      ):(
+            <div className="bg-gradient-to-tl from-stone-500 border border-black/10 rounded-xl p-4   flex flex-col items-center justify-between">
+             
+            <div className='flex w-full items-center justify-between'>
+              <span className="font-sans text-sm text-stone-600">Current Plan: <strong>{plan}</strong></span>
+            
+                <div className='flex flex-col gap-1'>             
+                </div>      
+        
+            </div>
+              <p className='text-black mt-3 text-xs w-full text-start font-'>
+             Thanks for subscribing to Orca Pro.
+               </p>
+                </div>  
+                      )}
           </div>
 
           {/* Subscription Box */}
