@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabase } from '@/lib/supabaseClient'
-import Navbar from '@/components/Landing/Navbar'
+import Navbar, { NavbarDashboard } from '@/components/Landing/Navbar'
 import { LogOut, CreditCard, Zap } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -132,18 +132,27 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen px-4 flex-col bg-neutral-50 items-center">
-      <Navbar />
+      <NavbarDashboard />
 
       <main className="w-full max-w-4xl pt-24 pb-12 flex flex-col gap-8">
         {/* Header */}
         <div className="flex items-end justify-between border-b border-stone-200 pb-6">
           <div>
+            <div className='w-full flex  justify-between'>
             <h1 className="font-serif italic text-4xl text-stone-900 mb-2">Dashboard</h1>
+            <button 
+            onClick={handleSignOut}
+            className="flex sm:hidden items-center gap-2 text-sm font-sans font-medium text-stone-500 hover:text-stone-900 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
+          </div>
             <p className="font-sans text-stone-500">Welcome back, {email}</p>
           </div>
           <button 
             onClick={handleSignOut}
-            className="flex items-center gap-2 text-sm font-sans font-medium text-stone-500 hover:text-stone-900 transition-colors"
+            className="sm:flex hidden items-center gap-2 text-sm font-sans font-medium text-stone-500 hover:text-stone-900 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Sign Out
