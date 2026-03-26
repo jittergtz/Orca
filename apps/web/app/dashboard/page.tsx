@@ -2,13 +2,15 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabase } from '@/lib/supabaseClient'
-import Navbar, { NavbarDashboard } from '@/components/Landing/Navbar'
+import { NavbarDashboard } from '@/components/Landing/Navbar'
+import ProfileInfoCard from '@/components/Dashboard/ProfileInfoCard'
 import { LogOut, CreditCard, Zap } from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [createdAt, setCreatedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [portalLoading, setPortalLoading] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
@@ -26,6 +28,7 @@ export default function DashboardPage() {
       } else {
         setEmail(data.session.user.email ?? null)
         setUserId(data.session.user.id ?? null)
+        setCreatedAt(data.session.user.created_at ?? null)
         
         // @ts-ignore - Types for billing_subscriptions may not be generated yet
         const query = s.from('billing_subscriptions')
@@ -175,14 +178,16 @@ export default function DashboardPage() {
                 </div>
                 {/* Usage Bar */}
                 <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
-                  <div className="h-full bg-lime-400 rounded-full" style={{ width: '47%' }} />
+                  <div className="h-full bg-gradient-to-r from-orange-600 to-orange-200 rounded-full" style={{ width: '47%' }} />
                 </div>
               </div>
             </div>
 
-            <div className="bg-gradient-to-tl from-stone-200 border border-black/10 rounded-xl p-4   flex items-center justify-between">
+            <div className="bg-gradient-to-tl from-stone-200 border border-black/10 rounded-xl p-4   flex flex-col items-center justify-between">
+            <div className='flex w-full items-center justify-between'>
               <span className="font-sans text-sm text-stone-600">Current Plan: <strong>{plan}</strong></span>
               {plan !== 'Pro' && (
+                <div className='flex flex-col gap-1'>
                 <button 
                   onClick={handleUpgradeToPro}
                   disabled={checkoutLoading}
@@ -190,8 +195,15 @@ export default function DashboardPage() {
                 >
                   {checkoutLoading ? 'Loading...' : 'Upgrade to Pro'}
                 </button>
+                  
+                </div>
+                
               )}
             </div>
+               <p className='text-black mt-3 text-xs w-full text-start font-'>
+                Pro will give you 15 active subscriped topics and up to 4x higher limits.
+               </p>
+                </div>  
           </div>
 
           {/* Subscription Box */}
@@ -230,6 +242,8 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
+
+          <ProfileInfoCard email={email} createdAt={createdAt} />
         </div>
       </main>
     </div>
