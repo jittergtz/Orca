@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import { appendFileSync } from 'fs'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' })
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string
@@ -10,28 +11,37 @@ export async function POST(req: Request) {
   const sig = req.headers.get('stripe-signature') as string
 
   let event: Stripe.Event
+  const log = (msg: string) => {
+    const timestamp = new Date().toISOString()
+    appendFileSync('/tmp/webhook_logs.txt', `[${timestamp}] ${msg}\n`)
+  }
+
+  const toISO = (ts: any) => {
+    if (!ts || isNaN(Number(ts))) return null
+    return new Date(Number(ts) * 1000).toISOString()
+  }
 
   try {
     event = stripe.webhooks.constructEvent(body, sig, endpointSecret)
   } catch (err: any) {
-    console.error(`Webhook Error: ${err.message}`)
+    log(`Webhook Error: ${err.message}`)
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
   }
 
-  // Initialize service client for DB bypassing RLS
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL as string,
     process.env.SUPABASE_SERVICE_ROLE_KEY as string
   )
 
   try {
+    log(`Received Event: ${event.type}`)
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.metadata?.supabase_user_id || session.client_reference_id
         
         if (!userId) {
-          console.error('No userId attached to session metadata!')
+          log(`No userId attached to session metadata!`)
           break
         }
 
@@ -39,7 +49,8 @@ export async function POST(req: Request) {
         const priceId = subscription.items.data[0].price.id
         const planCode = priceId === process.env.STRIPE_PRICE_GO ? 'go' : 'pro'
 
-        await supabase.from('billing_subscriptions').upsert({
+        log(`Inserting sub ${subscription.id} for user ${userId}. End Date: ${toISO(subscription.current_period_end)}`)
+        const { error: insertError } = await supabase.from('billing_subscriptions').upsert({
           user_id: userId,
           provider: 'stripe',
           stripe_customer_id: session.customer as string,
@@ -47,35 +58,50 @@ export async function POST(req: Request) {
           stripe_price_id: priceId,
           plan_code: planCode,
           status: subscription.status,
-          current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          current_period_start: toISO(subscription.current_period_start),
+          current_period_end: toISO(subscription.current_period_end),
           cancel_at_period_end: subscription.cancel_at_period_end,
           updated_at: new Date().toISOString()
         }, { onConflict: 'user_id' })
-
+        
+        if (insertError) log(`Insert Error: ${JSON.stringify(insertError)}`)
+        else log(`Insert Success!`)
         break
       }
 
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription
+        const eventSubscription = event.data.object as Stripe.Subscription
         
-        await supabase.from('billing_subscriptions')
+        // IMPORTANT: Always retrieve full object from Stripe to ensure all fields like current_period_end are present and correctly formatted
+        const subscription = await stripe.subscriptions.retrieve(eventSubscription.id)
+        
+        const start = toISO(subscription.current_period_start)
+        const end = toISO(subscription.current_period_end)
+        log(`Updating sub ${subscription.id} (status: ${subscription.status}, canceling: ${subscription.cancel_at_period_end}, end: ${end})`)
+        
+        const { data: updatedData, error: updateError } = await supabase.from('billing_subscriptions')
           .update({
             status: subscription.status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_start: start,
+            current_period_end: end,
             cancel_at_period_end: subscription.cancel_at_period_end,
-            canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
+            canceled_at: toISO(subscription.canceled_at),
             updated_at: new Date().toISOString()
           })
           .eq('stripe_subscription_id', subscription.id)
+          .select()
 
+        if (updateError) {
+          log(`Update DB error: ${JSON.stringify(updateError)}`)
+        } else {
+          log(`Update Success! New Data Rows: ${updatedData?.length || 0}`)
+        }
         break
       }
     }
   } catch (err: any) {
-    console.error('Database write failed:', err)
+    log(`Critical Fail: ${err.message}`)
   }
 
   return NextResponse.json({ ok: true })

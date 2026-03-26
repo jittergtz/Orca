@@ -15,6 +15,7 @@ export default function DashboardPage() {
   const [plan, setPlan] = useState<string>('Go')
   const [status, setStatus] = useState<string>('Inactive')
   const [nextPayment, setNextPayment] = useState<string>('N/A')
+  const [willCancel, setWillCancel] = useState(false)
 
   useEffect(() => {
     const s = getSupabase()
@@ -28,7 +29,7 @@ export default function DashboardPage() {
         
         // @ts-ignore - Types for billing_subscriptions may not be generated yet
         const query = s.from('billing_subscriptions')
-          .select('plan_code, status, current_period_end')
+          .select('plan_code, status, current_period_end, cancel_at_period_end')
           .eq('user_id', data.session.user.id)
           .maybeSingle() as Promise<any>;
 
@@ -39,14 +40,27 @@ export default function DashboardPage() {
             }
             if (!error && sub) {
               const pc = sub.plan_code ? String(sub.plan_code).trim().toLowerCase() : 'go';
-              setPlan(pc === 'pro' ? 'Pro' : 'Go')
-              if (sub.status) setStatus(String(sub.status).charAt(0).toUpperCase() + String(sub.status).slice(1))
+              const currentStatus = String(sub.status).toLowerCase();
+              setPlan(pc === 'pro' && currentStatus !== 'canceled' ? 'Pro' : 'Go')
+              
+              if (currentStatus === 'canceled' || currentStatus === 'past_due') {
+                 setStatus(currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1))
+                 setWillCancel(false)
+              } else if (sub.cancel_at_period_end) {
+                 setStatus('Canceling')
+                 setWillCancel(true)
+              } else {
+                 setStatus('Active')
+                 setWillCancel(false)
+              }
+
               if (sub.current_period_end) {
                 setNextPayment(new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
               }
             } else {
               setPlan('Go')
               setStatus('Inactive')
+              setWillCancel(false)
             }
             setLoading(false)
           })
@@ -184,12 +198,16 @@ export default function DashboardPage() {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                <span className="font-sans text-sm text-stone-500">Next Payment</span>
+                <span className="font-sans text-sm text-stone-500">{willCancel ? 'Access Until' : 'Next Payment'}</span>
                 <span className="font-sans text-sm font-medium text-stone-900">{nextPayment}</span>
               </div>
               <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-6">
                 <span className="font-sans text-sm text-stone-500">Status</span>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${status.toLowerCase() === 'active' ? 'bg-green-50 text-green-700 ring-green-600/20' : 'bg-stone-50 text-stone-700 ring-stone-600/20'}`}>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                  status === 'Active' ? 'bg-green-50 text-green-700 ring-green-600/20' : 
+                  status === 'Canceling' ? 'bg-amber-50 text-amber-700 ring-amber-600/20' : 
+                  'bg-stone-50 text-stone-700 ring-stone-600/20'
+                }`}>
                   {status}
                 </span>
               </div>
