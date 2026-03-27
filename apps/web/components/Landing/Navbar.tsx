@@ -81,7 +81,7 @@ function Navbar() {
                 Mission
               </Link>
               <Link 
-                href={session ? "/dashboard" : "/product"} 
+                href={session ? "/dashboard" : "/pricing"} 
                 className='text-sm bg-black text-white px-4 py-2 rounded-full hover:bg-neutral-800 transition-all hover:scale-105 active:scale-95'
               >
                 {session ? "Dashboard" : "Get Started"}
