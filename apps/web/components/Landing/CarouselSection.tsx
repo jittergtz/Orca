@@ -11,6 +11,13 @@ export interface CarouselCard {
   darkText?: boolean;
   imageSrc?: string;
   imageAlt?: string;
+  
+  GlassChatparagraph?: string;
+  Textparagraph?: string;
+
+
+
+  TextColor?: string;
 }
 
 export interface CarouselSectionProps {
@@ -23,6 +30,14 @@ export interface CarouselSectionProps {
 
 /* ─── Defaults ────────────────────────────────────────────── */
 const defaultCards: CarouselCard[] = [
+
+  //   {
+  //   label: `Topics off  Interest`,
+  //   bgColor: "#000",
+  //   badge: "2026 Start",
+  //   imageSrc: "/carousel/TopicsOffInterest.jpg",
+  //   imageAlt: "Indoor garden waterfall",
+  // },
  
   {
     label: "Sport",
@@ -30,6 +45,8 @@ const defaultCards: CarouselCard[] = [
     badge: "2026 Start",
     imageSrc: "/carousel/sport.jpg",
     imageAlt: "Indoor garden waterfall",
+    
+    GlassChatparagraph: "Orca is a powerful learning platform that helps you create and manage your work.",
   },
 
     {
@@ -38,6 +55,9 @@ const defaultCards: CarouselCard[] = [
     badge: "2026 Start",
     imageSrc: "/carousel/newspaper.jpg",
     imageAlt: "Indoor garden waterfall",
+
+    Textparagraph: "Politics is a powerful learning platform that helps you create and manage your work.",
+    TextColor: "text-transparent bg-clip-text bg-gradient-to-tl from-amber-100 to-white"
   },
      {
     label: "Technology",
@@ -286,7 +306,28 @@ function CarouselCardItem({ card, isActive }: { card: CarouselCard; isActive: bo
 
       <div className="flex-1" />
 
-      {/* Optional image */}
+
+      
+    
+      {/* Paragraph Glass chat */}
+        {card.GlassChatparagraph && (
+          <span className={`absolute top-48 right-4 z-50 w-72 flex-shrink-0 text-white  text-xs font-medium px-3 py-1 rounded-full border border-white/30 ${badgeBg}`}>
+            {card.GlassChatparagraph}
+          </span>
+        )}
+
+        {/* Paragraph Text */}
+        {card.Textparagraph && (
+          <span className={`absolute bottom-16 right-4 z-50    text-2xl font-medium px-4 py-1 ${card.TextColor}`}>
+            {card.Textparagraph}
+          </span>
+            )}
+
+
+
+
+
+      {/* image */}
       {card.imageSrc && (
         <div className="mx-4 mb-4 rounded-2xl overflow-hidden shadow-lg" style={{ height: 200 }}>
           <Image
