@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, ArrowUp, Cpu, PanelLeft } from "lucide-react";
+import { Settings, ArrowUp, Cpu, PanelLeft, LogOut, ExternalLink } from "lucide-react";
 import Sidebar from "./components/Sidebar";
-import SearchResultContainer from "./components/SearchResultContainer";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
+import { getDesktopSupabaseClient } from "./lib/supabase";
 
 export interface Note {
   id: string;
@@ -16,7 +16,23 @@ function sortNotes(notes: Note[]) {
   return [...notes].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
+function hasActivePlan(status: string | null) {
+  return status === "active" || status === "trialing";
+}
+
+function getPricingUrl(baseUrl: string, email: string | null) {
+  const normalizedBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  if (!email) {
+    return `${normalizedBase}/pricing`;
+  }
+  return `${normalizedBase}/pricing?email=${encodeURIComponent(email)}`;
+}
+
 export default function App() {
+  const appBaseUrl = useMemo(
+    () => import.meta.env.VITE_APP_URL || import.meta.env.NEXT_PUBLIC_APP_URL || "https://newsflow.app",
+    []
+  );
   const [view, setView] = useState("loading");
   const [theme, setTheme] = useState("system");
   const [systemTheme, setSystemTheme] = useState("light");
@@ -31,6 +47,16 @@ export default function App() {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [searchMode, setSearchMode] = useState("Auto");
   const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [signOutLoading, setSignOutLoading] = useState(false);
   const modeDropdownRef = useRef<HTMLDivElement>(null);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -38,8 +64,7 @@ export default function App() {
   const activeIdRef = useRef<string | null>(null);
   const lastLoadedNoteIdRef = useRef<string | null>(null);
 
-  const [isTestUI] = useState(true);
-
+  
   const resolvedTheme = theme === "system" ? systemTheme : theme;
   const activeNote = useMemo(() => notes.find((note) => note.id === activeId) || null, [notes, activeId]);
 
@@ -98,8 +123,47 @@ export default function App() {
     [refreshNotes]
   );
 
+  const syncAuthState = useCallback(async () => {
+    const supabase = getDesktopSupabaseClient();
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+    if (sessionError) {
+      throw sessionError;
+    }
+
+    if (!session) {
+      setSessionEmail(null);
+      setSubscriptionStatus(null);
+      setView("auth");
+      return;
+    }
+
+    setSessionEmail(session.user.email ?? null);
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("subscription_status")
+      .eq("id", session.user.id)
+      .single();
+    if (profileError) {
+      throw profileError;
+    }
+    const nextSubscriptionStatus =
+      (profile as { subscription_status?: string } | null)?.subscription_status ?? "canceled";
+    setSubscriptionStatus(nextSubscriptionStatus);
+
+    if (hasActivePlan(nextSubscriptionStatus)) {
+      await enterApp();
+      return;
+    }
+
+    setView("paywall");
+  }, [enterApp]);
+
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
+    let unsubscribeAuth: (() => void) | null = null;
 
     const init = async () => {
       try {
@@ -114,7 +178,16 @@ export default function App() {
           setSystemTheme(mode);
         });
 
-        await enterApp();
+        await syncAuthState();
+        const supabase = getDesktopSupabaseClient();
+        const authSubscription = supabase.auth.onAuthStateChange(() => {
+          void syncAuthState().catch((error: any) => {
+            setView(`error: ${error.message || String(error)}`);
+          });
+        });
+        unsubscribeAuth = () => {
+          authSubscription.data.subscription.unsubscribe();
+        };
       } catch (error: any) {
         console.error("Initialization failed", error);
         setView(`error: ${error.message || String(error)}`);
@@ -127,8 +200,11 @@ export default function App() {
       if (unsubscribe) {
         unsubscribe();
       }
+      if (unsubscribeAuth) {
+        unsubscribeAuth();
+      }
     };
-  }, [enterApp]);
+  }, [syncAuthState]);
 
   useEffect(() => {
     if (view !== "app" || !activeNote) {
@@ -195,6 +271,83 @@ export default function App() {
     await window.orca.settings.setTheme(value);
   };
 
+  const handleAuthSubmit = async () => {
+    if (!authEmail || !authPassword) {
+      setAuthError("Please enter email and password.");
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const supabase = getDesktopSupabaseClient();
+      const result =
+        authMode === "signin"
+          ? await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword })
+          : await supabase.auth.signUp({ email: authEmail, password: authPassword });
+
+      if (result.error) {
+        setAuthError(result.error.message);
+        setAuthLoading(false);
+        return;
+      }
+
+      if (authMode === "signup" && !result.data.session) {
+        setAuthError("Account created. Please verify your email, then sign in.");
+        setAuthLoading(false);
+        return;
+      }
+
+      await syncAuthState();
+    } catch (error: any) {
+      setAuthError(error?.message || "Could not authenticate.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setGoogleLoading(true);
+    setAuthError(null);
+    try {
+      const supabase = getDesktopSupabaseClient();
+      const redirectTo = `${window.location.origin}/`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+      if (error) {
+        setAuthError(error.message);
+        setGoogleLoading(false);
+      }
+    } catch (error: any) {
+      setAuthError(error?.message || "Could not continue with Google.");
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleOpenPricing = async () => {
+    setPricingLoading(true);
+    try {
+      await window.orca.settings.openExternal(getPricingUrl(appBaseUrl, sessionEmail));
+    } finally {
+      setPricingLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setSignOutLoading(true);
+    try {
+      const supabase = getDesktopSupabaseClient();
+      await supabase.auth.signOut();
+      setSessionEmail(null);
+      setSubscriptionStatus(null);
+      setView("auth");
+    } finally {
+      setSignOutLoading(false);
+    }
+  };
+
   const appReady = view === "app";
 
   return (
@@ -215,7 +368,14 @@ export default function App() {
               </button>
             </div>
             <div className="flex items-center pt-2 gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
-            
+              <button
+                onClick={() => void handleSignOut()}
+                disabled={signOutLoading}
+                className="px-3 py-1 rounded-full border border-white/20 text-xs dark:text-neutral-300 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                <LogOut size={12} />
+                {signOutLoading ? "Signing out..." : "Sign Out"}
+              </button>
               <button 
               style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.4)" }}
                 className="p-2  border border-white/10 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
@@ -244,11 +404,11 @@ export default function App() {
             </div>
           )}
           
-          {isTestUI ? (
+        
              <main className="flex flex-1 min-h-0 w-full items-center justify-center relative  ">
               <div className="flex flex-col items-center w-full max-w-2xl px-6 -mt-32">
-              <h1 className="font-instrument-serif italic text-[3.5rem] text-transparent bg-clip-text bg-gradient-to-tl from-black to-[#727272] dark:from-white dark:to-[#bcbcbc]  leading-[70px]    ">
-                Orca Finance
+              <h1 className="font-instrument-serif italic text-[3.7rem] text-transparent bg-clip-text bg-gradient-to-tl from-black to-[#727272] dark:from-white dark:to-[#bcbcbc]  leading-[70px]    ">
+                Orca
               </h1>
               <p className="text-lg text-neutral-600 dark:text-white/80 font-light tracking-tight mb-10">Seeing the big picture, Research off the future.</p>
               
@@ -295,9 +455,7 @@ export default function App() {
               </div>
             </div>
           </main>
-          ):(
-            <SearchResultContainer/>
-          )}
+      
            
           </div>
         </div>
@@ -312,6 +470,110 @@ export default function App() {
             <div className="glass-card backdrop-blur-md max-w-sm border border-red-500/50">
               <h1 className="text-2xl font-semibold text-red-500">Error Hook</h1>
               <p className="mt-2 text-sm opacity-80 font-mono text-red-400">{view.replace("error: ", "")}</p>
+            </div>
+          ) : view === "auth" ? (
+            <div className="glass-card backdrop-blur-md max-w-md border border-white/40 dark:border-white/15 shadow-2xl">
+              <div className="mb-5">
+                <h1 className="font-instrument-serif italic text-5xl leading-[52px] bg-clip-text text-transparent bg-gradient-to-br from-stone-900 to-stone-500 dark:from-white dark:to-stone-300">
+                  Orca
+                </h1>
+                <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-2">
+                  Sign in to continue your research flow.
+                </p>
+              </div>
+
+              <button
+                onClick={() => void handleGoogleAuth()}
+                disabled={authLoading || googleLoading}
+                className="w-full rounded-full border border-stone-300/70 dark:border-white/15 bg-white/85 dark:bg-black/20 px-4 py-2.5 text-sm font-medium text-stone-800 dark:text-stone-100 hover:bg-white dark:hover:bg-white/10 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.653 32.657 29.23 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.846 1.154 7.961 3.039l5.657-5.657C34.053 6.053 29.277 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
+                  <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.846 1.154 7.961 3.039l5.657-5.657C34.053 6.053 29.277 4 24 4c-7.681 0-14.417 4.337-17.694 10.691z" />
+                  <path fill="#4CAF50" d="M24 44c5.176 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.137 35.091 26.715 36 24 36c-5.21 0-9.62-3.318-11.283-7.946l-6.522 5.025C9.436 39.556 16.227 44 24 44z" />
+                  <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.056 12.056 0 0 1-4.084 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
+                </svg>
+                {googleLoading ? "Connecting Google..." : "Continue with Google"}
+              </button>
+
+              <div className="my-4 flex items-center gap-3">
+                <div className="h-px bg-stone-300/80 dark:bg-white/15 flex-1" />
+                <span className="text-[11px] uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">or</span>
+                <div className="h-px bg-stone-300/80 dark:bg-white/15 flex-1" />
+              </div>
+
+              <div className="flex gap-2 mb-4">
+                <button
+                  className={`flex-1 rounded-full px-3 py-2 text-xs transition-colors ${authMode === "signin" ? "bg-stone-900 text-white dark:bg-white dark:text-black" : "bg-stone-200/80 text-stone-700 dark:bg-white/10 dark:text-stone-200"}`}
+                  onClick={() => setAuthMode("signin")}
+                  disabled={authLoading || googleLoading}
+                >
+                  Sign in
+                </button>
+                <button
+                  className={`flex-1 rounded-full px-3 py-2 text-xs transition-colors ${authMode === "signup" ? "bg-stone-900 text-white dark:bg-white dark:text-black" : "bg-stone-200/80 text-stone-700 dark:bg-white/10 dark:text-stone-200"}`}
+                  onClick={() => setAuthMode("signup")}
+                  disabled={authLoading || googleLoading}
+                >
+                  Create account
+                </button>
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="email"
+                  value={authEmail}
+                  onChange={(event) => setAuthEmail(event.target.value)}
+                  placeholder="Email"
+                  className="glass-input w-full rounded-xl px-3 py-2.5 text-sm"
+                  disabled={authLoading || googleLoading}
+                />
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={(event) => setAuthPassword(event.target.value)}
+                  placeholder="Password"
+                  className="glass-input w-full rounded-xl px-3 py-2.5 text-sm"
+                  disabled={authLoading || googleLoading}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      void handleAuthSubmit();
+                    }
+                  }}
+                />
+                {authError ? <p className="text-xs text-red-500">{authError}</p> : null}
+                <button
+                  onClick={() => void handleAuthSubmit()}
+                  disabled={authLoading || googleLoading}
+                  className="w-full rounded-full bg-stone-900 px-3 py-2.5 text-sm text-white dark:bg-white dark:text-black disabled:opacity-50"
+                >
+                  {authLoading ? "Please wait..." : authMode === "signin" ? "Sign in" : "Create account"}
+                </button>
+              </div>
+            </div>
+          ) : view === "paywall" ? (
+            <div className="glass-card backdrop-blur-md max-w-sm">
+              <h1 className="text-2xl font-semibold mb-1">Plan inactive</h1>
+              <p className="text-sm opacity-80 mb-4">
+                Your account is signed in as {sessionEmail ?? "unknown user"}, but your plan is not active.
+              </p>
+              <p className="text-xs opacity-70 mb-5">Status: {subscriptionStatus ?? "unknown"}</p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => void handleOpenPricing()}
+                  disabled={pricingLoading}
+                  className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white dark:bg-white dark:text-black disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
+                >
+                  <ExternalLink size={14} />
+                  {pricingLoading ? "Opening..." : "Open pricing"}
+                </button>
+                <button
+                  onClick={() => void handleSignOut()}
+                  disabled={signOutLoading}
+                  className="w-full rounded-lg border border-white/25 px-3 py-2 text-sm disabled:opacity-50"
+                >
+                  {signOutLoading ? "Signing out..." : "Sign out"}
+                </button>
+              </div>
             </div>
           ) : null}
         </div>

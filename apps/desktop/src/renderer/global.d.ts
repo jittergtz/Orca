@@ -42,6 +42,7 @@ declare global {
       changePin: (currentPin: string, nextPin: string) => Promise<{ ok: boolean }>;
       setPinEnabled: (enabled: boolean) => Promise<{ ok: boolean }>;
       verifyPin: (pin: string) => Promise<{ ok: boolean; error?: string }>;
+      openExternal: (url: string) => Promise<{ ok: boolean }>;
     };
     onSystemThemeChanged: (callback: (theme: string) => void) => () => void;
   }

@@ -1,4 +1,4 @@
-import { ipcMain, nativeTheme, BrowserWindow, IpcMainInvokeEvent } from "electron";
+import { ipcMain, nativeTheme, BrowserWindow, IpcMainInvokeEvent, shell } from "electron";
 import { readState, writeState } from "../state";
 import { hashPin, validatePin } from "./auth";
 
@@ -69,6 +69,26 @@ export function registerSettingsHandlers() {
       return { ok: false, error: "PIN_INCORRECT" };
     }
 
+    return { ok: true };
+  });
+
+  ipcMain.handle("settings:open-external", async (_event: IpcMainInvokeEvent, url: string) => {
+    if (typeof url !== "string") {
+      throw new Error("URL_INVALID");
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new Error("URL_INVALID");
+    }
+
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      throw new Error("URL_PROTOCOL_INVALID");
+    }
+
+    await shell.openExternal(parsed.toString());
     return { ok: true };
   });
 

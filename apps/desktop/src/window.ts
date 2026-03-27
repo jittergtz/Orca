@@ -3,6 +3,7 @@ import { app, BrowserWindow, Menu } from "electron";
 
 let mainWindow: BrowserWindow | null = null;
 const isDev = process.env.NODE_ENV === "development" || process.argv.includes("--dev");
+const shouldOpenDevTools = process.env.ORCA_OPEN_DEVTOOLS === "1";
 
 export function getMainWindow() {
   return mainWindow;
@@ -42,7 +43,9 @@ export function createWindow() {
   const devUrl = rendererUrl();
   if (devUrl) {
     mainWindow.loadURL(devUrl);
-    mainWindow.webContents.openDevTools({ mode: "detach" });
+    if (shouldOpenDevTools) {
+      mainWindow.webContents.openDevTools({ mode: "detach" });
+    }
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), "dist", "index.html"));
   }
