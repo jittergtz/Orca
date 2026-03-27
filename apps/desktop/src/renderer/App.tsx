@@ -472,7 +472,7 @@ export default function App() {
               <p className="mt-2 text-sm opacity-80 font-mono text-red-400">{view.replace("error: ", "")}</p>
             </div>
           ) : view === "auth" ? (
-            <div className="glass-card backdrop-blur-md max-w-md border border-white/40 dark:border-white/15 shadow-2xl">
+            <div className="max-w-md  ">
               <div className="mb-5">
                 <h1 className="font-instrument-serif italic text-5xl leading-[52px] bg-clip-text text-transparent bg-gradient-to-br from-stone-900 to-stone-500 dark:from-white dark:to-stone-300">
                   Orca
@@ -496,7 +496,7 @@ export default function App() {
                 {googleLoading ? "Connecting Google..." : "Continue with Google"}
               </button>
 
-              <div className="my-4 flex items-center gap-3">
+              <div className="my-4 flex items-center gap-3 mb-9">
                 <div className="h-px bg-stone-300/80 dark:bg-white/15 flex-1" />
                 <span className="text-[11px] uppercase tracking-[0.18em] text-stone-500 dark:text-stone-400">or</span>
                 <div className="h-px bg-stone-300/80 dark:bg-white/15 flex-1" />
