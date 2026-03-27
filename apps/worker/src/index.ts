@@ -1,4 +1,26 @@
-// entry point, starts cron scheduler
-export const start = () => {
-  console.log('Worker started');
-};
+import { closeWorkerRuntime, createWorkers } from "./queue";
+import { logger } from "./lib/logger";
+import { startScheduler } from "./scheduler";
+
+async function bootstrap() {
+  const runtime = createWorkers();
+  const scheduler = startScheduler();
+
+  const shutdown = async () => {
+    scheduler.stop();
+    await closeWorkerRuntime(runtime);
+    process.exit(0);
+  };
+
+  process.on("SIGINT", () => {
+    void shutdown();
+  });
+
+  process.on("SIGTERM", () => {
+    void shutdown();
+  });
+
+  logger.info("NewsFlow worker started");
+}
+
+void bootstrap();

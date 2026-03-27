@@ -1,5 +1,7 @@
+'use client'
 import React from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
 const GO_FEATURES = [
   '8 subscribed Topics',
@@ -24,11 +26,13 @@ function PlanCard({
   price,
   cta,
   img,
+  onChoose,
 }: {
   name: string
   price: string
   cta: string
   img: string
+  onChoose: () => void
 }) {
   return (
     <div className="flex flex-col gap-3 w-full">
@@ -53,7 +57,7 @@ function PlanCard({
       </div>
 
       {/* CTA button */}
-      <button className="w-full rounded-full bg-black text-white font-sans text-sm font-medium py-3 hover:bg-stone-800 transition-colors">
+      <button onClick={onChoose} className="w-full rounded-full bg-black text-white font-sans text-sm font-medium py-3 hover:bg-stone-800 transition-colors">
         {cta}
       </button>
     </div>
@@ -76,6 +80,7 @@ function FeatureList({ features }: { features: string[] }) {
 }
 
 function PricingHero() {
+  const router = useRouter()
   return (
     <section className="w-full flex justify-center min-h-screen bg-neutral-50 px-6 py-16 md:px-16 lg:px-24">
         <div className='w-full max-w-6xl flex flex-col'>
@@ -98,13 +103,13 @@ function PricingHero() {
 
         {/* Go plan */}
         <div className="flex flex-col gap-0">
-          <PlanCard img='/gra3.webp' name="Go" price="$9" cta="Choose Go" />
+          <PlanCard img='/gra3.webp' name="Go" price="$9" cta="Choose Go" onChoose={() => router.push('/subscribe?plan=go')} />
           <FeatureList features={GO_FEATURES} />
         </div>
 
         {/* Pro plan */}
         <div className="flex flex-col gap-0">
-          <PlanCard img='/gra2.webp' name="Pro" price="$17" cta="Choose Pro" />
+          <PlanCard img='/gra2.webp' name="Pro" price="$17" cta="Choose Pro" onChoose={() => router.push('/subscribe?plan=pro')} />
           <FeatureList features={PRO_FEATURES} />
         </div>
       </div>

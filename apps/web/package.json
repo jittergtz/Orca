@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@newsflow/ai": "*",
     "@newsflow/config": "*",
     "@newsflow/db": "*",
     "@stripe/stripe-js": "^3.4.0",

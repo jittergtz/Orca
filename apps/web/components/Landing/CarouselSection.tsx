@@ -11,6 +11,13 @@ export interface CarouselCard {
   darkText?: boolean;
   imageSrc?: string;
   imageAlt?: string;
+  
+  GlassChatparagraph?: string;
+  Textparagraph?: string;
+
+
+
+  TextColor?: string;
 }
 
 export interface CarouselSectionProps {
@@ -23,17 +30,65 @@ export interface CarouselSectionProps {
 
 /* ─── Defaults ────────────────────────────────────────────── */
 const defaultCards: CarouselCard[] = [
+
+  //   {
+  //   label: `Topics off  Interest`,
+  //   bgColor: "#000",
+  //   badge: "2026 Start",
+  //   imageSrc: "/carousel/TopicsOffInterest.jpg",
+  //   imageAlt: "Indoor garden waterfall",
+  // },
+ 
+  {
+    label: "Sport",
+    bgColor: "#000",
+    badge: "2026 Start",
+    imageSrc: "/carousel/sport.jpg",
+    imageAlt: "Indoor garden waterfall",
+    
+    GlassChatparagraph: "Orca is a powerful learning platform that helps you create and manage your work.",
+  },
+
+    {
+    label: "Politics",
+    bgColor: "#000",
+    badge: "2026 Start",
+    imageSrc: "/carousel/newspaper.jpg",
+    imageAlt: "Indoor garden waterfall",
+
+    Textparagraph: "Politics is a powerful learning platform that helps you create and manage your work.",
+    TextColor: "text-transparent bg-clip-text bg-gradient-to-tl from-amber-100 to-white"
+  },
+     {
+    label: "Technology",
+    bgColor: "#000",
+    badge: "2026 Start",
+    imageSrc: "/carousel/datacenter.jpg",
+    imageAlt: "Indoor garden waterfall",
+  },
+      {
+    label: "health",
+    bgColor: "#000",
+    badge: "2026 Start",
+    imageSrc: "/carousel/Health.jpg",
+    imageAlt: "Indoor garden waterfall",
+  },
+
+      {
+    label: "Global Communication",
+    bgColor: "#000",
+    badge: "2026 Start",
+    imageSrc: "/carousel/Global.jpg",
+    imageAlt: "Indoor garden waterfall",
+  },
+   
   {
     label: "Singapore",
     bgColor: "#2d5a45",
     badge: "Daily News",
-    imageSrc: "/mock-singapore.png",
+    imageSrc: "/carousel/season.jpg",
     imageAlt: "Indoor garden waterfall",
   },
-  { label: "Finance",    bgColor: "#9b93b3" },
-  { label: "Politics",   bgColor: "#d6d6d6", darkText: true },
-  { label: "Technology", bgColor: "#b3c4d8", darkText: true },
-  { label: "Culture",    bgColor: "#d4b8a0", darkText: true },
 ];
 
 const SecondaryCards: CarouselCard[] = [
@@ -41,10 +96,16 @@ const SecondaryCards: CarouselCard[] = [
     label: "Sport",
     bgColor: "#5C2D30",
     badge: "2026 Start",
-    imageSrc: "/mock-singapore.png",
+    imageSrc: "/carousel/season.jpg",
     imageAlt: "Indoor garden waterfall",
   },
-  { label: "Finance",    bgColor: "#9b93b3" },
+  {
+    label: "Sport",
+    bgColor: "#000",
+    badge: "2026 Start",
+    imageSrc: "/carousel/sport.png",
+    imageAlt: "Indoor garden waterfall",
+  },
   { label: "Politics",   bgColor: "#d6d6d6", darkText: true },
   { label: "Technology", bgColor: "#b3c4d8", darkText: true },
   { label: "Culture",    bgColor: "#d4b8a0", darkText: true },
@@ -130,7 +191,7 @@ export default function CarouselSection({
     <section className="w-full max-w-7xl  py-20  select-none">
       {/* Heading */}
       <div className="text-center mb-12">
-        <h2 className="text-4xl md:text-5xl font-serif font-bold italic text-black leading-tight mb-4"
+        <h2 className="text-4xl  md:text-5xl font-serif font-bold italic text-black leading-tight mb-4"
             style={{ fontFamily: "var(--font-instrument-serif), Georgia, serif" }}>
           {title}
         </h2>
@@ -231,13 +292,13 @@ function CarouselCardItem({ card, isActive }: { card: CarouselCard; isActive: bo
       {/* Top row */}
       <div className="flex items-start  justify-between p-5 gap-2">
         <span
-          className={`text-3xl md:text-4xl leading-tight font-serif italic ${textColor}`}
+          className={`absolute top-5 left-5 z-50 text-4xl md:text-5xl leading-tight font-serif italic ${textColor}`}
           style={{ fontFamily: "var(--font-instrument-serif), Georgia, serif" }}
         >
           {card.label}
         </span>
         {card.badge && (
-          <span className={`mt-1.5 flex-shrink-0 text-xs font-medium px-3 py-1 rounded-full border border-white/30 ${badgeBg}`}>
+          <span className={`absolute top-7 right-5 z-50 mt-1.5 flex-shrink-0 text-xs font-medium px-3 py-1 rounded-full border border-white/30 ${badgeBg}`}>
             {card.badge}
           </span>
         )}
@@ -245,15 +306,35 @@ function CarouselCardItem({ card, isActive }: { card: CarouselCard; isActive: bo
 
       <div className="flex-1" />
 
-      {/* Optional image */}
+
+      
+    
+      {/* Paragraph Glass chat */}
+        {card.GlassChatparagraph && (
+          <span className={`absolute top-48 right-4 z-50 w-72 flex-shrink-0 text-white  text-xs font-medium px-3 py-1 rounded-full border border-white/30 ${badgeBg}`}>
+            {card.GlassChatparagraph}
+          </span>
+        )}
+
+        {/* Paragraph Text */}
+        {card.Textparagraph && (
+          <span className={`absolute bottom-16 right-4 z-50    text-2xl font-medium px-4 py-1 ${card.TextColor}`}>
+            {card.Textparagraph}
+          </span>
+            )}
+
+
+
+
+
+      {/* image */}
       {card.imageSrc && (
         <div className="mx-4 mb-4 rounded-2xl overflow-hidden shadow-lg" style={{ height: 200 }}>
           <Image
             src={card.imageSrc}
             alt={card.imageAlt ?? card.label}
-            width={600}
-            height={400}
-            className="w-full h-full object-cover"
+            fill
+            className="w-full saturate-80 opacity-80   h-full object-cover"
           />
         </div>
       )}

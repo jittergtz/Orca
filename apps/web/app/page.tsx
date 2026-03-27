@@ -6,10 +6,12 @@ import Blocks from "@/components/Landing/Blocks";
 import OrcaPreview from "@/components/Landing/OrcaPreview";
 import ContainerPreview from "@/components/Landing/ContainerPreview";
 import Search from "@/components/Landing/Search";
+import AuthRedirect from "@/components/Auth/AuthRedirect";
 
 export default function Page() {
   return (
   <div className="flex min-h-screen px-4 flex-col bg-neutral-50  items-center ">
+     <AuthRedirect />
      <Navbar/>
      <div className=" pt-10 md:pt-20">
 
