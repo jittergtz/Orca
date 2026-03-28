@@ -22,7 +22,7 @@ function Notify() {
            </h3>
 
              <div className='absolute flex items-center bg-[#35a34254] h-10  border border-white/30 shadow-md shadow-black/40  backdrop-blur-xl  w-72 lg:w-80 rounded-full px-5 bottom-20 md:top-1/2 -translate-y-1/2 left-4 md:left-20 '>
-             <h1 className=' md:text-[19px] text-[16px] text-lime-100'>
+             <h1 className=' md:text-[19px] font-light text-[16px] text-lime-50'>
                Nvidia live press confrence 
             </h1>
             <div className='rounded-full size-2 mt0.5 bg-lime-100 animate-pulse ml-5'></div>
