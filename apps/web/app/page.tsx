@@ -3,13 +3,14 @@ import TrustedBy from "@/components/Landing/TrustedBy";
 import CarouselSection from "@/components/Landing/CarouselSection";
 import Navbar from "@/components/Landing/Navbar";
 import Blocks from "@/components/Landing/Blocks";
-import OrcaPreview from "@/components/Landing/OrcaPreview";
+
 import ContainerPreview from "@/components/Landing/ContainerPreview";
-import Search from "@/components/Landing/Search";
+
 import AuthRedirect from "@/components/Auth/AuthRedirect";
-import Learn from "@/components/Mission/Learn";
+
 import BlankBlock from "@/components/Mission/Learn";
 import SideBySideTabs from "@/components/Landing/Exp";
+import Notify from "@/components/Landing/Notify";
 
 export default function Page() {
   return (
@@ -31,7 +32,7 @@ export default function Page() {
 
      <SideBySideTabs/>
 
-         <Search/>
+         <Notify/>
 
      <ContainerPreview/>
      
