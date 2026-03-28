@@ -3,6 +3,7 @@ import { Suspense, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Navbar from '@/components/Landing/Navbar'
 import SubscribeAuth from '@/components/Auth/SubscribeAuth'
+import Image from 'next/image'
 
 function SubscribeInner() {
   const params = useSearchParams()
@@ -20,13 +21,21 @@ function SubscribeInner() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex-col flex items-center">
+    <div className="min-h-screen bg-white  w-full flex-col flex items-center">
       <Navbar />
-      <div className="w-full max-w-md mt-10 px-6">
+      <div className="w-full max-w-7xl mt-40 px-6">
         {status === 'success' ? (
           <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-green-700">Payment successful</div>
         ) : null}
+        <div className='flex  shadow-md rounded-2xl w-full gap-5 justify-center'>
+          <Image
+          src={"/pricing/4.jpg"}
+          width={960}
+          height={640}
+          alt='Subscribe Image'
+          className='w-full hidden md:flex h-[600px] object-cover rounded-2xl'/>
         <SubscribeAuth plan={plan} onCheckout={checkout} />
+        </div>
       </div>
     </div>
   )
@@ -34,7 +43,7 @@ function SubscribeInner() {
 
 export default function SubscribePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-neutral-50" />}>
+    <Suspense fallback={<div className="min-h-screen w-full bg-neutral-50" />}>
       <SubscribeInner />
     </Suspense>
   )

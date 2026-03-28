@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { getSupabase } from '@/lib/supabaseClient'
+import { main } from 'framer-motion/client'
 
 type Plan = 'go' | 'pro'
 
@@ -82,8 +83,9 @@ export default function SubscribeAuth({
   }
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-      <div className="mb-4 font-serif italic text-2xl text-stone-900">Subscribe</div>
+    <main className='0  flex pt-10 justify-center w-full'>
+    <div className=" max-w-md  w-full p-6 ">
+      <div className="mb-4 font-serif italic text-2xl text-stone-900">Orca Login</div>
       <div className="mb-2 font-sans text-sm text-stone-500">Selected plan: {plan === 'pro' ? 'Pro' : 'Go'}</div>
       {sessionEmail ? (
         <div className="flex flex-col gap-3">
@@ -101,7 +103,7 @@ export default function SubscribeAuth({
           <button
             onClick={signInWithGoogle}
             disabled={loading}
-            className="w-full rounded-full bg-stone-900 text-white font-sans text-sm font-medium py-3 hover:bg-stone-800 transition-colors disabled:opacity-50"
+            className="w-full mb-10 mt-5 rounded-full bg-stone-900 text-white font-sans text-sm font-medium py-3.5 hover:bg-stone-800 transition-colors disabled:opacity-50"
           >
             Continue with Google
           </button>
@@ -109,27 +111,27 @@ export default function SubscribeAuth({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 font-sans text-sm"
+            className="w-full rounded-full border border-stone-200 px-3 py-3 font-sans text-sm"
           />
           <input
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             type="password"
             placeholder="Password"
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 font-sans text-sm"
+            className="w-full rounded-full border border-stone-200 px-3 py-3 font-sans text-sm"
           />
           <div className="flex gap-2">
             <button
               onClick={signIn}
               disabled={loading}
-              className="w-1/2 rounded-full bg-black text-white font-sans text-sm font-medium py-2 hover:bg-stone-800 transition-colors disabled:opacity-50"
+              className="w-1/2 rounded-full bg-black text-white font-sans text-sm font-medium py-3 hover:bg-stone-800 transition-colors disabled:opacity-50"
             >
               Sign In
             </button>
             <button
               onClick={signUp}
               disabled={loading}
-              className="w-1/2 rounded-full bg-stone-200 text-stone-900 font-sans text-sm font-medium py-2 hover:bg-stone-300 transition-colors disabled:opacity-50"
+              className="w-1/2 rounded-full bg-stone-100 text-stone-900 font-sans text-sm font-medium py-3 hover:bg-stone-300 transition-colors disabled:opacity-50"
             >
               Sign Up
             </button>
@@ -138,5 +140,6 @@ export default function SubscribeAuth({
       )}
       {error ? <div className="mt-3 text-sm text-red-600">{error}</div> : null}
     </div>
+    </main>
   )
 }
