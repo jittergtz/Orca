@@ -158,7 +158,7 @@ function TallCard({ card }: { card: Card }) {
   return (
     <motion.div
       variants={cardVariants}
-      className="relative rounded-3xl overflow-hidden min-h-[280px] md:min-h-[340px] lg:row-span-2 group cursor-pointer"
+      className="relative rounded-3xl overflow-hidden min-h-[280px] md:min-h-[340px] lg:row-span-2  group cursor-pointer"
     >
       {card.image && (
         <Image
@@ -190,7 +190,7 @@ function WideCard({ card }: { card: Card }) {
   return (
     <motion.div
       variants={cardVariants}
-      className="relative rounded-3xl overflow-hidden min-h-[220px] group cursor-pointer"
+      className="relative rounded-3xl overflow-hidden min-h-[220px]  group cursor-pointer"
     >
       {card.image && (
         <Image
@@ -268,7 +268,7 @@ export default function Blocks() {
   const cards = cardData[activeTab];
 
   return (
-    <section className="w-full max-w-5xl mx-auto px-4 py-20">
+    <section className="w-full max-w-5xl mx-auto px-4 py-20 md:py-40">
       {/* Heading */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

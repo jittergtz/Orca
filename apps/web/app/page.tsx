@@ -9,6 +9,7 @@ import Search from "@/components/Landing/Search";
 import AuthRedirect from "@/components/Auth/AuthRedirect";
 import Learn from "@/components/Mission/Learn";
 import BlankBlock from "@/components/Mission/Learn";
+import SideBySideTabs from "@/components/Landing/Exp";
 
 export default function Page() {
   return (
@@ -27,6 +28,8 @@ export default function Page() {
 
   
      <Blocks />
+
+     <SideBySideTabs/>
 
          <Search/>
 
