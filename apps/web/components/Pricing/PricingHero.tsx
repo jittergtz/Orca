@@ -103,13 +103,13 @@ function PricingHero() {
 
         {/* Go plan */}
         <div className="flex flex-col gap-0">
-          <PlanCard img='/goplan.png' name="Go" price="$9" cta="Choose Go" onChoose={() => router.push('/subscribe?plan=go')} />
+          <PlanCard img='/pricing/goplan2.png' name="Go" price="$9" cta="Choose Go" onChoose={() => router.push('/subscribe?plan=go')} />
           <FeatureList features={GO_FEATURES} />
         </div>
 
         {/* Pro plan */}
         <div className="flex flex-col gap-0">
-          <PlanCard img='/larca3.png' name="Pro" price="$17" cta="Choose Pro" onChoose={() => router.push('/subscribe?plan=pro')} />
+          <PlanCard img='/pricing/larca3.png' name="Pro" price="$17" cta="Choose Pro" onChoose={() => router.push('/subscribe?plan=pro')} />
           <FeatureList features={PRO_FEATURES} />
         </div>
       </div>
