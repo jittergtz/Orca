@@ -1,3 +1,4 @@
+
 import CarouselSection from '@/components/Landing/CarouselSection'
 import Hero, { MissionHero } from '@/components/Landing/Hero'
 import Navbar from '@/components/Landing/Navbar'
@@ -38,6 +39,8 @@ function page() {
               <OrangeSection/>
               
               <Table/>
+
+         
 
               <Contact/>
   </div>
