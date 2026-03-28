@@ -32,16 +32,50 @@ export default function Page() {
      
        <CarouselSection title="Whats Important to you" cards={[
         {
+          label: "Sources",
+          bgColor: "#5C2D30",
+          badge: "2026 Start",
+          imageSrc: "/carousel/whitedome.jpg",
+          imageAlt: "Indoor garden waterfall",
+        },
+          {
+          label: "Speed",
+          bgColor: "#5C2D30",
+          badge: "2026 Start",
+          imageSrc: "/carousel/track.jpg",
+          imageAlt: "Indoor garden waterfall",
+        
+        },
+
+          {
+          label: "Science",
+          bgColor: "#5C2D30",
+          badge: "2026 Start",
+          imageSrc: "/carousel/Science.jpg",
+          imageAlt: "Indoor garden waterfall",
+        },
+          {
+          label: "Ocosystem",
+          bgColor: "#5C2D30",
+          badge: "2026 Start",
+          imageSrc: "/carousel/nature.jpg",
+          imageAlt: "Indoor garden waterfall",
+        },
+          {
+          label: "Endurance",
+          bgColor: "#5C2D30",
+          badge: "2026 Start",
+          imageSrc: "/carousel/tennis.jpg",
+          imageAlt: "Indoor garden waterfall",
+        },
+          {
           label: "Sport",
           bgColor: "#5C2D30",
           badge: "2026 Start",
-          imageSrc: "/mock-singapore.png",
+          imageSrc: "/carousel/season2.jpg",
           imageAlt: "Indoor garden waterfall",
         },
-        { label: "Podcasts",    bgColor: "#452D5C" },
-        { label: "Politics",   bgColor: "#2D505C", darkText: false },
-        { label: "Technology", bgColor: "#b3c4d8", darkText: true },
-  
+
         ]} />
   </div>
   )}

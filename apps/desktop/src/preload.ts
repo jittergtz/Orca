@@ -26,5 +26,10 @@ contextBridge.exposeInMainWorld("orca", {
     const listener = (_event: IpcRendererEvent, value: string) => callback(value);
     ipcRenderer.on("theme:system-changed", listener);
     return () => ipcRenderer.removeListener("theme:system-changed", listener);
+  },
+  onOAuthCallback: (callback: (url: string) => void) => {
+    const listener = (_event: IpcRendererEvent, value: string) => callback(value);
+    ipcRenderer.on("auth:oauth-callback", listener);
+    return () => ipcRenderer.removeListener("auth:oauth-callback", listener);
   }
 });

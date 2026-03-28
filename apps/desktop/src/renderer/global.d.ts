@@ -45,6 +45,7 @@ declare global {
       openExternal: (url: string) => Promise<{ ok: boolean }>;
     };
     onSystemThemeChanged: (callback: (theme: string) => void) => () => void;
+    onOAuthCallback: (callback: (url: string) => void) => () => void;
   }
 
   interface Window {

@@ -53,6 +53,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [pricingLoading, setPricingLoading] = useState(false);
@@ -164,6 +165,7 @@ export default function App() {
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     let unsubscribeAuth: (() => void) | null = null;
+    let unsubscribeOAuthCallback: (() => void) | null = null;
 
     const init = async () => {
       try {
@@ -188,6 +190,43 @@ export default function App() {
         unsubscribeAuth = () => {
           authSubscription.data.subscription.unsubscribe();
         };
+        unsubscribeOAuthCallback = window.orca.onOAuthCallback((url) => {
+          void (async () => {
+            try {
+              const callbackUrl = new URL(url);
+              const queryCode = callbackUrl.searchParams.get("code");
+              const hashPayload = new URLSearchParams(callbackUrl.hash.replace(/^#/, ""));
+              const hashAccessToken = hashPayload.get("access_token");
+              const hashRefreshToken = hashPayload.get("refresh_token");
+              const supabase = getDesktopSupabaseClient();
+
+              if (queryCode) {
+                const { error } = await supabase.auth.exchangeCodeForSession(queryCode);
+                if (error) {
+                  throw error;
+                }
+              } else if (hashAccessToken && hashRefreshToken) {
+                const { error } = await supabase.auth.setSession({
+                  access_token: hashAccessToken,
+                  refresh_token: hashRefreshToken,
+                });
+                if (error) {
+                  throw error;
+                }
+              } else {
+                throw new Error("Invalid OAuth callback payload.");
+              }
+
+              setAuthNotice("Google sign-in successful.");
+              setAuthError(null);
+              await syncAuthState();
+            } catch (error: any) {
+              setAuthError(error?.message || "Could not complete Google sign-in.");
+            } finally {
+              setGoogleLoading(false);
+            }
+          })();
+        });
       } catch (error: any) {
         console.error("Initialization failed", error);
         setView(`error: ${error.message || String(error)}`);
@@ -202,6 +241,9 @@ export default function App() {
       }
       if (unsubscribeAuth) {
         unsubscribeAuth();
+      }
+      if (unsubscribeOAuthCallback) {
+        unsubscribeOAuthCallback();
       }
     };
   }, [syncAuthState]);
@@ -279,6 +321,7 @@ export default function App() {
 
     setAuthLoading(true);
     setAuthError(null);
+    setAuthNotice(null);
     try {
       const supabase = getDesktopSupabaseClient();
       const result =
@@ -309,17 +352,34 @@ export default function App() {
   const handleGoogleAuth = async () => {
     setGoogleLoading(true);
     setAuthError(null);
+    setAuthNotice(null);
     try {
       const supabase = getDesktopSupabaseClient();
-      const redirectTo = `${window.location.origin}/`;
-      const { error } = await supabase.auth.signInWithOAuth({
+      const redirectTo = `orcadesktop://auth/callback/`;
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo },
+        options: { redirectTo, skipBrowserRedirect: true },
       });
       if (error) {
         setAuthError(error.message);
         setGoogleLoading(false);
+        return;
       }
+      if (!data?.url) {
+        setAuthError("Could not create Google auth link.");
+        setGoogleLoading(false);
+        return;
+      }
+      const oauthUrl = new URL(data.url);
+      const redirectTarget = oauthUrl.searchParams.get("redirect_to");
+      if (!redirectTarget?.startsWith("orcadesktop://")) {
+        setAuthError(`Supabase OAuth redirect mismatch. Expected orcadesktop:// callback, got ${redirectTarget || "none"}. Update Auth URL settings.`);
+        setGoogleLoading(false);
+        return;
+      }
+      await window.orca.settings.openExternal(data.url);
+      setAuthNotice("Browser opened. Complete Google sign-in there, then return to Orca.");
+      setGoogleLoading(false);
     } catch (error: any) {
       setAuthError(error?.message || "Could not continue with Google.");
       setGoogleLoading(false);
@@ -541,6 +601,7 @@ export default function App() {
                   }}
                 />
                 {authError ? <p className="text-xs text-red-500">{authError}</p> : null}
+                {authNotice ? <p className="text-xs text-emerald-600 dark:text-emerald-400">{authNotice}</p> : null}
                 <button
                   onClick={() => void handleAuthSubmit()}
                   disabled={authLoading || googleLoading}

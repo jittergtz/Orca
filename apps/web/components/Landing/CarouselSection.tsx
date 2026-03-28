@@ -65,6 +65,10 @@ const defaultCards: CarouselCard[] = [
     badge: "2026 Start",
     imageSrc: "/carousel/datacenter.jpg",
     imageAlt: "Indoor garden waterfall",
+
+      GlassChatparagraph: "300B Data Center build",
+      Textparagraph: "Ai is in the wolrd the fastedt growing assest in human history learning",
+    TextColor: "text-transparent bg-clip-text bg-gradient-to-tl from-gray-400 to-white"
   },
       {
     label: "health",
@@ -311,7 +315,7 @@ function CarouselCardItem({ card, isActive }: { card: CarouselCard; isActive: bo
     
       {/* Paragraph Glass chat */}
         {card.GlassChatparagraph && (
-          <span className={`absolute top-48 right-4 z-50 w-72 flex-shrink-0 text-white  text-xs font-medium px-3 py-1 rounded-full border border-white/30 ${badgeBg}`}>
+          <span className={`absolute top-48 right-4 z-50 max-w-72 flex-shrink-0 text-white  text-xs font-medium px-3 py-1 rounded-full border border-white/30 ${badgeBg}`}>
             {card.GlassChatparagraph}
           </span>
         )}
