@@ -20,9 +20,9 @@ const allCompanies = [...companies, ...companies];
 
 export default function TrustedBy() {
   return (
-    <section className="w-full max-w-7xl pt-20 pb-12 px-4">
+    <section className="w-full max-w-7xl pt-10 md:pt-20  px-4">
       {/* Header */}
-      <p className="text-center text-xl tracking-tight md:text-2xl font-semibold  text-black mb-10">
+      <p className="text-center text-lg tracking-tighter md:text-2xl font-semibold  text-black mb-10">
         Trusted by Employes at
       </p>
 

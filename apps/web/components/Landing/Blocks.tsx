@@ -56,7 +56,7 @@ const cardData: Record<Tab, Card[]> = {
     {
       id: "h5",
       title: "Inside the newsroom of the future",
-      image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80",
+      image: "/carousel/oldpaper.jpg",
       size: "image",
     },
   ],

@@ -199,7 +199,7 @@ export default function CarouselSection({
             style={{ fontFamily: "var(--font-instrument-serif), Georgia, serif" }}>
           {title}
         </h2>
-        <p className="text-base md:text-lg text-neutral-900 max-w-xl mx-auto  whitespace-pre-line">
+        <p className=" text-sm md:text-lg text-neutral-500 max-w-xl mx-auto ">
           {subtitle}
         </p>
       </div>
@@ -338,7 +338,7 @@ function CarouselCardItem({ card, isActive }: { card: CarouselCard; isActive: bo
             src={card.imageSrc}
             alt={card.imageAlt ?? card.label}
             fill
-            className="w-full saturate-80 opacity-80   h-full object-cover"
+            className="w-full pointer-events-none saturate-80 opacity-80   h-full object-cover"
           />
         </div>
       )}

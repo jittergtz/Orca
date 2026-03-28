@@ -7,6 +7,8 @@ import OrcaPreview from "@/components/Landing/OrcaPreview";
 import ContainerPreview from "@/components/Landing/ContainerPreview";
 import Search from "@/components/Landing/Search";
 import AuthRedirect from "@/components/Auth/AuthRedirect";
+import Learn from "@/components/Mission/Learn";
+import BlankBlock from "@/components/Mission/Learn";
 
 export default function Page() {
   return (
@@ -18,11 +20,11 @@ export default function Page() {
 <Hero text="Stay Informed in a busy World" ImgClassName=" hue-rotate-10 contrast-200 opacity-90 " />
 </div>
 
-      <TrustedBy/>
+  <TrustedBy/>
  
       <CarouselSection />
 
-  
+
   
      <Blocks />
 
@@ -77,5 +79,10 @@ export default function Page() {
         },
 
         ]} />
+
+
+            <BlankBlock 
+            Headline="Orca Desktop"
+            text="You can download Orca here is a feature we implemented internally for staying not only uptodate but quickly get into a new topic with understanding a broad picture od current situations."/>
   </div>
   )}
