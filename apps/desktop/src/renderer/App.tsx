@@ -612,8 +612,8 @@ export default function App() {
               </div>
             </div>
           ) : view === "paywall" ? (
-            <div className="glass-card backdrop-blur-md max-w-sm">
-              <h1 className="text-2xl font-semibold mb-1">Plan inactive</h1>
+            <div className="  max-w-sm">
+              <h1 className="text-2xl font-serif italic mb-1">Plan inactive</h1>
               <p className="text-sm opacity-80 mb-4">
                 Your account is signed in as {sessionEmail ?? "unknown user"}, but your plan is not active.
               </p>
@@ -622,7 +622,7 @@ export default function App() {
                 <button
                   onClick={() => void handleOpenPricing()}
                   disabled={pricingLoading}
-                  className="w-full rounded-lg bg-neutral-900 px-3 py-2 text-sm text-white dark:bg-white dark:text-black disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
+                  className="w-full rounded-full bg-neutral-900 px-3 py-2 text-sm text-white dark:bg-white dark:text-black disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
                 >
                   <ExternalLink size={14} />
                   {pricingLoading ? "Opening..." : "Open pricing"}
