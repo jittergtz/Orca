@@ -1,107 +1,7 @@
 import React from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { blogPosts } from './blogPosts'
-
-function renderInlineMarkdown(text: string) {
-  const nodes: React.ReactNode[] = []
-  const inlineRegex = /(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g
-  let cursor = 0
-
-  let match = inlineRegex.exec(text)
-  while (match) {
-    const index = match.index ?? 0
-    if (index > cursor) {
-      nodes.push(text.slice(cursor, index))
-    }
-
-    const token = match[0]
-    if (token.startsWith('**') && token.endsWith('**')) {
-      nodes.push(
-        <strong key={`${token}-${index}`} className='font-semibold text-neutral-900'>
-          {token.slice(2, -2)}
-        </strong>
-      )
-    } else {
-      const linkMatch = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
-      if (linkMatch) {
-        nodes.push(
-          <a
-            key={`${token}-${index}`}
-            href={linkMatch[2]}
-            className='underline underline-offset-2 text-neutral-900 hover:text-neutral-700'
-          >
-            {linkMatch[1]}
-          </a>
-        )
-      } else {
-        nodes.push(token)
-      }
-    }
-
-    cursor = index + token.length
-    match = inlineRegex.exec(text)
-  }
-
-  if (cursor < text.length) {
-    nodes.push(text.slice(cursor))
-  }
-
-  return nodes
-}
-
-function renderMarkdown(bodyMd: string) {
-  const lines = bodyMd.split('\n')
-  const blocks: React.ReactNode[] = []
-  let bulletBuffer: string[] = []
-  let key = 0
-
-  const flushBullets = () => {
-    if (!bulletBuffer.length) {
-      return
-    }
-
-    blocks.push(
-      <ul key={`ul-${key++}`} className='list-disc list-inside text-sm md:text-base text-neutral-600 space-y-1'>
-        {bulletBuffer.map((bullet, index) => (
-          <li key={`li-${index}`}>{renderInlineMarkdown(bullet)}</li>
-        ))}
-      </ul>
-    )
-    bulletBuffer = []
-  }
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed) {
-      flushBullets()
-      continue
-    }
-
-    if (trimmed.startsWith('- ')) {
-      bulletBuffer.push(trimmed.slice(2))
-      continue
-    }
-
-    flushBullets()
-
-    if (trimmed.startsWith('### ')) {
-      blocks.push(
-        <h4 key={`h4-${key++}`} className='text-base md:text-lg font-semibold text-neutral-900 mt-2'>
-          {renderInlineMarkdown(trimmed.slice(4))}
-        </h4>
-      )
-      continue
-    }
-
-    blocks.push(
-      <p key={`p-${key++}`} className='text-sm md:text-base text-neutral-600 leading-relaxed'>
-        {renderInlineMarkdown(trimmed)}
-      </p>
-    )
-  }
-
-  flushBullets()
-  return blocks
-}
 
 function BlogSection() {
   return (
@@ -114,22 +14,26 @@ function BlogSection() {
         </p>
       </div>
 
-      <div className='grid gap-6 md:gap-8'>
+      <div className='grid gap-6 md:grid-cols-2 md:gap-8'>
         {blogPosts.map((post) => (
-          <article
-            key={post.id}
-            className='rounded-3xl md:rounded-[32px]    p-6 md:p-8 shadow-md shadow-neutral-500/30'
-          >
-            <div className='flex flex-wrap items-center gap-2 text-xs md:text-sm mb-3'>
-              <span className='px-3 py-1 rounded-full bg-black text-neutral-200 '>{post.category}</span>
-              <span className='text-neutral-400'>•</span>
-              <span className='text-neutral-500'>{post.date}</span>
-              <span className='text-neutral-400'>•</span>
-              <span className='text-neutral-500'>{post.readTime}</span>
-            </div>
-            <h3 className='text-xl md:text-3xl text-neutral-900 mb-5 italic font-serif'>{post.title}</h3>
-            <div className='space-y-3'>{renderMarkdown(post.bodyMd)}</div>
-          </article>
+          <Link key={post.id} href={`/blog/${post.slug}`} className='group'>
+            <article className='rounded-3xl md:rounded-[32px] p-4 md:p-5 shadow-md shadow-neutral-500/30 transition-transform duration-300 group-hover:-translate-y-1'>
+              <div className='relative w-full h-48 md:h-56 rounded-2xl overflow-hidden'>
+                <Image src={post.imageSrc} alt={post.imageAlt} fill className='object-cover transition-transform duration-500 group-hover:scale-105' />
+              </div>
+              <div className='pt-5 pb-2'>
+                <div className='flex flex-wrap items-center gap-2 text-xs md:text-sm mb-3'>
+                  <span className='px-3 py-1 rounded-full bg-black text-neutral-200'>{post.category}</span>
+                  <span className='text-neutral-400'>•</span>
+                  <span className='text-neutral-500'>{post.date}</span>
+                  <span className='text-neutral-400'>•</span>
+                  <span className='text-neutral-500'>{post.readTime}</span>
+                </div>
+                <h3 className='text-xl md:text-2xl text-neutral-900 mb-2 italic font-serif'>{post.title}</h3>
+                <p className='text-neutral-600 text-sm md:text-base leading-relaxed'>{post.description}</p>
+              </div>
+            </article>
+          </Link>
         ))}
       </div>
     </section>
