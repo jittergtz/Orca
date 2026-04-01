@@ -138,9 +138,9 @@ export default async function BlogPostPage({
           <span className='text-neutral-400'>•</span>
           <span className='text-neutral-500'>{post.readTime}</span>
         </div>
-        <h1 className='text-4xl md:text-5xl text-neutral-900 italic font-serif'>{post.title}</h1>
+        <h1 className='text-4xl md:text-5xl mt-10 md:mt-20 text-neutral-900 italic font-serif'>{post.title}</h1>
         <p className='text-neutral-600 text-base md:text-lg mt-4 mb-8'>{post.description}</p>
-        <div className='space-y-4'>{renderMarkdown(post.bodyMd)}</div>
+        <div className='space-y-5'>{renderMarkdown(post.bodyMd)}</div>
       </article>
     </main>
   )
