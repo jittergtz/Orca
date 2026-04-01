@@ -105,9 +105,9 @@ function renderMarkdown(bodyMd: string) {
 
 function BlogSection() {
   return (
-    <section className='w-full max-w-6xl py-20 md:py-32'>
+    <section className='w-full max-w-5xl py-20 md:py-32'>
       <div className='mb-10 md:mb-14'>
-        <h2 className='text-3xl md:text-4xl text-neutral-800 font-semibold tracking-tight'>From our blog</h2>
+        <h2 className='text-4xl md:text-5xl text-neutral-800 italic font-serif  '>From our blog</h2>
         <p className='text-neutral-500 mt-3 max-w-2xl'>
           Fresh notes from the team. Edit the <span className='font-medium text-neutral-700'>blogPosts.ts</span> file to
           add a new post.
@@ -118,16 +118,16 @@ function BlogSection() {
         {blogPosts.map((post) => (
           <article
             key={post.id}
-            className='rounded-3xl md:rounded-[32px] bg-white border border-neutral-200 p-6 md:p-8 shadow-sm shadow-neutral-300/30'
+            className='rounded-3xl md:rounded-[32px]    p-6 md:p-8 shadow-md shadow-neutral-500/30'
           >
             <div className='flex flex-wrap items-center gap-2 text-xs md:text-sm mb-3'>
-              <span className='px-3 py-1 rounded-full bg-neutral-100 text-neutral-700 font-medium'>{post.category}</span>
+              <span className='px-3 py-1 rounded-full bg-black text-neutral-200 '>{post.category}</span>
               <span className='text-neutral-400'>•</span>
               <span className='text-neutral-500'>{post.date}</span>
               <span className='text-neutral-400'>•</span>
               <span className='text-neutral-500'>{post.readTime}</span>
             </div>
-            <h3 className='text-xl md:text-2xl tracking-tight text-neutral-900 font-semibold mb-5'>{post.title}</h3>
+            <h3 className='text-xl md:text-3xl text-neutral-900 mb-5 italic font-serif'>{post.title}</h3>
             <div className='space-y-3'>{renderMarkdown(post.bodyMd)}</div>
           </article>
         ))}

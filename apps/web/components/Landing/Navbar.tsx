@@ -44,7 +44,7 @@ function Navbar() {
   const navLinks = [
     { name: 'Product', href: '/product' },
     { name: 'Terms', href: '/terms' },
-    { name: 'Privacy', href: '/privacy' },
+    { name: 'Blog', href: '/blog' },
     { name: 'Pricing', href: '/pricing' },
   ];
 

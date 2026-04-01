@@ -35,7 +35,7 @@ export default function Page() {
 
          <Notify/>
 
-     <BlogSection />
+ 
 
      <ContainerPreview/>
      
