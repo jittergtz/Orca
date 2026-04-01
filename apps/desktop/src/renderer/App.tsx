@@ -142,16 +142,18 @@ export default function App() {
     }
 
     setSessionEmail(session.user.email ?? null);
-    const { data: profile, error: profileError } = await supabase
-      .from("users")
-      .select("subscription_status")
-      .eq("id", session.user.id)
-      .single();
-    if (profileError) {
-      throw profileError;
+    const { data: sub, error: subError } = await supabase
+      .from("billing_subscriptions")
+      .select("status")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+      
+    if (subError) {
+      throw subError;
     }
+    
     const nextSubscriptionStatus =
-      (profile as { subscription_status?: string } | null)?.subscription_status ?? "canceled";
+      (sub as { status?: string } | null)?.status ?? "canceled";
     setSubscriptionStatus(nextSubscriptionStatus);
 
     if (hasActivePlan(nextSubscriptionStatus)) {
@@ -624,7 +626,7 @@ export default function App() {
               </div>
             </div>
           ) : view === "paywall" ? (
-            <div className=" bg-red-500 max-w-sm">
+            <div className="  max-w-sm">
               <h1 className="text-2xl font-serif italic mb-1">Plan inactive</h1>
               <p className="text-sm opacity-80 mb-4">
                 Your account is signed in as {sessionEmail ?? "unknown user"}, but your plan is not active.
