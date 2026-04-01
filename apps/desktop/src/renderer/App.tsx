@@ -469,8 +469,29 @@ export default function App() {
           {onboardingOpen && (
             <div className="absolute inset-0 z-50 bg-white dark:bg-[#08090f] overflow-y-auto w-full h-full flex pt-10">
                <OnboardingFlow 
-                 onComplete={(data) => {
+                 onComplete={async (data) => {
                    console.log("Onboarding complete", data);
+                   try {
+                     const supabase = getDesktopSupabaseClient();
+                     const { data: sessionData } = await supabase.auth.getSession();
+                     const userId = sessionData?.session?.user?.id;
+                     if (userId) {
+                       const { error } = await (supabase as any).from('topics').insert({
+                         user_id: userId,
+                         name: data.prompt || "Custom Topic",
+                         category: data.category || "other",
+                         frequency: data.frequency,
+                         config: data.chatHistory,
+                       });
+                       if (error) {
+                         console.error("Failed to insert topic", error);
+                       } else {
+                         console.log("Topic successfully saved to Supabase!");
+                       }
+                     }
+                   } catch (e) {
+                     console.error("Error saving topic", e);
+                   }
                    setOnboardingOpen(false);
                  }}
                  onCancel={() => setOnboardingOpen(false)}
