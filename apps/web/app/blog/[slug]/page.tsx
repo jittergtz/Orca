@@ -63,7 +63,7 @@ function renderMarkdown(bodyMd: string) {
     }
 
     blocks.push(
-      <ul key={`ul-${key++}`} className='list-disc list-inside text-base md:text-lg text-neutral-700 space-y-1'>
+      <ul key={`ul-${key++}`} className='list-disc list-inside  text-base md:text-lg text-neutral-700 space-y-1'>
         {bulletBuffer.map((bullet, index) => (
           <li key={`li-${index}`}>{renderInlineMarkdown(bullet)}</li>
         ))}
@@ -123,7 +123,7 @@ export default async function BlogPostPage({
   }
 
   return (
-    <main className='min-h-screen bg-neutral-50 px-4 py-10 md:py-16 flex justify-center'>
+    <main className='min-h-screen pb-80 bg-neutral-50 px-4 pt-10 md:pt-16 flex justify-center'>
       <article className='w-full max-w-3xl'>
         <Link href='/' className='text-sm text-neutral-500 hover:text-neutral-800'>
           ← Back to home
