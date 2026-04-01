@@ -190,7 +190,9 @@ export default function App() {
         unsubscribeAuth = () => {
           authSubscription.data.subscription.unsubscribe();
         };
+        console.log("[ORCA-RENDERER] Registering onOAuthCallback listener");
         unsubscribeOAuthCallback = window.orca.onOAuthCallback((url) => {
+          console.log("[ORCA-RENDERER] ★ onOAuthCallback fired! URL:", url);
           void (async () => {
             try {
               const callbackUrl = new URL(url);
@@ -198,29 +200,37 @@ export default function App() {
               const hashPayload = new URLSearchParams(callbackUrl.hash.replace(/^#/, ""));
               const hashAccessToken = hashPayload.get("access_token");
               const hashRefreshToken = hashPayload.get("refresh_token");
+              console.log("[ORCA-RENDERER] Callback parsed → code:", queryCode ? "YES" : "NO", "accessToken:", hashAccessToken ? "YES" : "NO");
               const supabase = getDesktopSupabaseClient();
 
               if (queryCode) {
+                console.log("[ORCA-RENDERER] Calling exchangeCodeForSession...");
                 const { error } = await supabase.auth.exchangeCodeForSession(queryCode);
                 if (error) {
+                  console.error("[ORCA-RENDERER] exchangeCodeForSession error:", error.message);
                   throw error;
                 }
+                console.log("[ORCA-RENDERER] exchangeCodeForSession SUCCESS");
               } else if (hashAccessToken && hashRefreshToken) {
+                console.log("[ORCA-RENDERER] Calling setSession (implicit flow)...");
                 const { error } = await supabase.auth.setSession({
                   access_token: hashAccessToken,
                   refresh_token: hashRefreshToken,
                 });
                 if (error) {
+                  console.error("[ORCA-RENDERER] setSession error:", error.message);
                   throw error;
                 }
+                console.log("[ORCA-RENDERER] setSession SUCCESS");
               } else {
-                throw new Error("Invalid OAuth callback payload.");
+                throw new Error("Invalid OAuth callback payload — no code or tokens found.");
               }
 
               setAuthNotice("Google sign-in successful.");
               setAuthError(null);
               await syncAuthState();
             } catch (error: any) {
+              console.error("[ORCA-RENDERER] OAuth callback handler error:", error);
               setAuthError(error?.message || "Could not complete Google sign-in.");
             } finally {
               setGoogleLoading(false);
@@ -355,11 +365,18 @@ export default function App() {
     setAuthNotice(null);
     try {
       const supabase = getDesktopSupabaseClient();
-      const redirectTo = `orcadesktop://auth/callback/`;
+      // In dev (Vite), redirect to the local HTTP server that forwards the
+      // callback to the renderer via IPC — avoids custom-protocol issues.
+      // In production (packaged), use the deep link (registered in Info.plist).
+      const redirectTo = import.meta.env.DEV
+        ? "http://localhost:54321/auth/callback"
+        : "orcadesktop://auth/callback/";
+      console.log("[ORCA-RENDERER] handleGoogleAuth → redirectTo:", redirectTo);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo, skipBrowserRedirect: true },
       });
+      console.log("[ORCA-RENDERER] signInWithOAuth result → url:", data?.url, "error:", error?.message);
       if (error) {
         setAuthError(error.message);
         setGoogleLoading(false);
@@ -370,17 +387,12 @@ export default function App() {
         setGoogleLoading(false);
         return;
       }
-      const oauthUrl = new URL(data.url);
-      const redirectTarget = oauthUrl.searchParams.get("redirect_to");
-      if (!redirectTarget?.startsWith("orcadesktop://")) {
-        setAuthError(`Supabase OAuth redirect mismatch. Expected orcadesktop:// callback, got ${redirectTarget || "none"}. Update Auth URL settings.`);
-        setGoogleLoading(false);
-        return;
-      }
+      console.log("[ORCA-RENDERER] Opening external browser with OAuth URL");
       await window.orca.settings.openExternal(data.url);
       setAuthNotice("Browser opened. Complete Google sign-in there, then return to Orca.");
       setGoogleLoading(false);
     } catch (error: any) {
+      console.error("[ORCA-RENDERER] handleGoogleAuth error:", error);
       setAuthError(error?.message || "Could not continue with Google.");
       setGoogleLoading(false);
     }
@@ -618,8 +630,7 @@ export default function App() {
                 Your account is signed in as {sessionEmail ?? "unknown user"}, but your plan is not active.
               </p>
               <p className="text-xs opacity-70 mb-5">Status: {subscriptionStatus ?? "unknown"}</p>
-              <div className="flex flex-col gap-2">
-                <button
+              <div className="flex flex-col gap-2"> <button
                   onClick={() => void handleOpenPricing()}
                   disabled={pricingLoading}
                   className="w-full rounded-full bg-neutral-900 px-3 py-2 text-sm text-white dark:bg-white dark:text-black disabled:opacity-50 inline-flex items-center justify-center gap-1.5"

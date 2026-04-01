@@ -73,10 +73,22 @@
     ],
     "mac": {
       "icon": "build/icon.png",
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "protocols": [
+        {
+          "name": "Orca Desktop Auth",
+          "schemes": ["orcadesktop"]
+        }
+      ]
     },
     "win": {
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "protocols": [
+        {
+          "name": "Orca Desktop Auth",
+          "schemes": ["orcadesktop"]
+        }
+      ]
     },
     "linux": {
       "icon": "build/icon.png"

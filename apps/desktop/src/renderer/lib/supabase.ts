@@ -23,7 +23,15 @@ function readRendererEnv() {
 export function getDesktopSupabaseClient() {
   if (!desktopSupabaseClient) {
     const { supabaseUrl, supabaseAnonKey } = readRendererEnv();
-    desktopSupabaseClient = createClient<NewsflowDatabase>(supabaseUrl, supabaseAnonKey);
+    desktopSupabaseClient = createClient<NewsflowDatabase>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        // Electron renderer does not have a real URL bar, so we must use
+        // localStorage explicitly and disable URL-based session detection.
+        storage: window.localStorage,
+        detectSessionInUrl: false,
+        persistSession: true,
+      },
+    });
   }
 
   return desktopSupabaseClient;
