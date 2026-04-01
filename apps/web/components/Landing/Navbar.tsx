@@ -80,6 +80,11 @@ function Navbar() {
               <Link href="/mission" className='text-sm text-neutral-600 hover:text-black transition-colors'>
                 Mission
               </Link>
+              {!session && (
+                <Link href="/subscribe" className='text-sm text-neutral-600 hover:text-black transition-colors'>
+                  Login
+                </Link>
+              )}
               <Link 
                 href={session ? "/dashboard" : "/pricing"} 
                 className='text-sm bg-black text-white px-4 py-2 rounded-full hover:bg-neutral-800 transition-all hover:scale-105 active:scale-95'
@@ -144,11 +149,27 @@ function Navbar() {
                     Mission
                   </Link>
                 </motion.div>
+
+                {!session && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + (navLinks.length + 1) * 0.05 }}
+                  >
+                    <Link
+                      href="/subscribe"
+                      className='text-2xl text-neutral-800 hover:text-black transition-colors'
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Login
+                    </Link>
+                  </motion.div>
+                )}
                 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + (navLinks.length + 1) * 0.05 }}
+                  transition={{ delay: 0.1 + (navLinks.length + 2) * 0.05 }}
                   className='w-full pt-8   flex flex-col items-center'
                 >
                   <Link 
@@ -340,4 +361,3 @@ export function NavbarDashboard() {
     </>
   );
 }
-

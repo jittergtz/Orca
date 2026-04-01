@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { getSupabase } from '@/lib/supabaseClient'
-import { main } from 'framer-motion/client'
 
 type Plan = 'go' | 'pro'
 
@@ -18,26 +18,78 @@ export default function SubscribeAuth({
   const [error, setError] = useState<string | null>(null)
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
   const [sessionUserId, setSessionUserId] = useState<string | null>(null)
+  const [checkingAccess, setCheckingAccess] = useState(true)
+  const [hasActiveAccess, setHasActiveAccess] = useState(false)
+  const router = useRouter()
+
+  const refreshAuthAndAccess = async () => {
+    const s = getSupabase()
+    if (!s) {
+      setSessionEmail(null)
+      setSessionUserId(null)
+      setHasActiveAccess(false)
+      setCheckingAccess(false)
+      return
+    }
+
+    const { data } = await s.auth.getSession()
+    const session = data.session
+    setSessionEmail(session?.user.email ?? null)
+    setSessionUserId(session?.user.id ?? null)
+
+    if (!session?.user.id) {
+      setHasActiveAccess(false)
+      setCheckingAccess(false)
+      return
+    }
+
+    const result = (await s
+      .from('billing_subscriptions')
+      .select('status')
+      .eq('user_id', session.user.id)
+      .maybeSingle()) as any
+
+    const status = String(result?.data?.status ?? '').toLowerCase()
+    const activeStates = ['active', 'trialing', 'canceling']
+    const isActive = !!result?.data && activeStates.includes(status)
+
+    setHasActiveAccess(isActive)
+    setCheckingAccess(false)
+  }
 
   useEffect(() => {
+    refreshAuthAndAccess()
     const s = getSupabase()
     if (!s) return
-    s.auth.getSession().then(({ data }) => {
-      setSessionEmail(data.session?.user.email ?? null)
-      setSessionUserId(data.session?.user.id ?? null)
+    const { data } = s.auth.onAuthStateChange(() => {
+      setCheckingAccess(true)
+      refreshAuthAndAccess()
     })
+    return () => data.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!checkingAccess && sessionUserId && hasActiveAccess) {
+      router.replace('/dashboard')
+    }
+  }, [checkingAccess, sessionUserId, hasActiveAccess, router])
 
   const signIn = async () => {
     setLoading(true)
     setError(null)
     const s = getSupabase()
-    if (!s) return
+    if (!s) {
+      setLoading(false)
+      return
+    }
     const { error } = await s.auth.signInWithPassword({ email, password })
-    if (error) setError(error.message)
-    const { data } = await s.auth.getSession()
-    setSessionEmail(data.session?.user.email ?? null)
-    setSessionUserId(data.session?.user.id ?? null)
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+    setCheckingAccess(true)
+    await refreshAuthAndAccess()
     setLoading(false)
   }
 
@@ -45,12 +97,18 @@ export default function SubscribeAuth({
     setLoading(true)
     setError(null)
     const s = getSupabase()
-    if (!s) return
+    if (!s) {
+      setLoading(false)
+      return
+    }
     const { error } = await s.auth.signUp({ email, password })
-    if (error) setError(error.message)
-    const { data } = await s.auth.getSession()
-    setSessionEmail(data.session?.user.email ?? null)
-    setSessionUserId(data.session?.user.id ?? null)
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+    setCheckingAccess(true)
+    await refreshAuthAndAccess()
     setLoading(false)
   }
 
@@ -87,16 +145,33 @@ export default function SubscribeAuth({
     <div className=" max-w-md  w-full p-6 ">
       <div className="mb-4 font-serif italic text-2xl text-stone-900">Orca Login</div>
       <div className="mb-2 font-sans text-sm text-stone-500">Selected plan: {plan === 'pro' ? 'Pro' : 'Go'}</div>
-      {sessionEmail ? (
+      {checkingAccess ? (
+        <div className="flex flex-col gap-3">
+          <div className="font-sans text-sm text-stone-600">Checking your subscription...</div>
+          <div className="w-full rounded-full bg-stone-100 text-stone-400 font-sans text-sm font-medium py-3 text-center">
+            Loading
+          </div>
+        </div>
+      ) : sessionEmail ? (
         <div className="flex flex-col gap-3">
           <div className="font-sans text-sm text-stone-600">Signed in as {sessionEmail}</div>
-          <button
-            onClick={continueToCheckout}
-            disabled={loading}
-            className="w-full rounded-full bg-black text-white font-sans text-sm font-medium py-3 hover:bg-stone-800 transition-colors disabled:opacity-50"
-          >
-            Continue to Checkout
-          </button>
+          {hasActiveAccess ? (
+            <button
+              onClick={() => router.replace('/dashboard')}
+              disabled={loading}
+              className="w-full rounded-full bg-black text-white font-sans text-sm font-medium py-3 hover:bg-stone-800 transition-colors disabled:opacity-50"
+            >
+              Go to Dashboard
+            </button>
+          ) : (
+            <button
+              onClick={continueToCheckout}
+              disabled={loading}
+              className="w-full rounded-full bg-black text-white font-sans text-sm font-medium py-3 hover:bg-stone-800 transition-colors disabled:opacity-50"
+            >
+              Continue to Checkout
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
