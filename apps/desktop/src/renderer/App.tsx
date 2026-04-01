@@ -423,7 +423,7 @@ export default function App() {
   const appReady = view === "app";
 
   return (
-    <div className="h-screen w-screen text-neutral-900 dark:text-neutral-100">
+    <div className="h-screen  w-screen text-neutral-900 dark:text-neutral-100">
       {appReady ? (
         <div className="h-full flex flex-col relative">
           <header 
@@ -532,7 +532,7 @@ export default function App() {
           </div>
         </div>
       ) : (
-        <div className="auth-layer">
+        <div className="auth-layer ">
           {view === "loading" ? (
             <div className="glass-card backdrop-blur-md max-w-sm">
               <h1 className="text-2xl font-semibold">Orca</h1>
@@ -624,7 +624,7 @@ export default function App() {
               </div>
             </div>
           ) : view === "paywall" ? (
-            <div className="  max-w-sm">
+            <div className=" bg-red-500 max-w-sm">
               <h1 className="text-2xl font-serif italic mb-1">Plan inactive</h1>
               <p className="text-sm opacity-80 mb-4">
                 Your account is signed in as {sessionEmail ?? "unknown user"}, but your plan is not active.
@@ -641,7 +641,7 @@ export default function App() {
                 <button
                   onClick={() => void handleSignOut()}
                   disabled={signOutLoading}
-                  className="w-full rounded-lg border border-white/25 px-3 py-2 text-sm disabled:opacity-50"
+                  className="w-full rounded-full border border-white/25 px-3 py-2 text-sm disabled:opacity-50"
                 >
                   {signOutLoading ? "Signing out..." : "Sign out"}
                 </button>
