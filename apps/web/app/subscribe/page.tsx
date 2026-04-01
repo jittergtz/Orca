@@ -35,7 +35,6 @@ function SubscribeInner() {
           height={640}
           alt='Subscribe Image'
           className='w-full hidden md:flex h-[600px] object-cover rounded-2xl'/>
-          <h1 className='absolute hidden md:block top-5 italic font-serif text-[100px] left-10 z-50 text-[#fffffff7]'>Orca</h1>
            <p className='absolute hidden md:block bottom-5   font-serif text-[36px] w-2/3 text-end right-10 z-50 text-[#fdfcf9ba]'>Changing How You Stay Informed.</p>
           </div>
 
