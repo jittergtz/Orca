@@ -11,6 +11,7 @@ import AuthRedirect from "@/components/Auth/AuthRedirect";
 import BlankBlock from "@/components/Mission/Learn";
 import SideBySideTabs from "@/components/Landing/Exp";
 import Notify from "@/components/Landing/Notify";
+import BlogSection from "@/components/Landing/BlogSection";
 
 export default function Page() {
   return (
@@ -33,6 +34,8 @@ export default function Page() {
      <SideBySideTabs/>
 
          <Notify/>
+
+     <BlogSection />
 
      <ContainerPreview/>
      
