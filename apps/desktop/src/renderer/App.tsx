@@ -3,7 +3,7 @@ import { Settings, ArrowUp, Cpu, PanelLeft, LogOut, ExternalLink } from "lucide-
 import Sidebar from "./components/Sidebar";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import ArticleView from "./components/ArticleView";
-import { getDesktopSupabaseClient } from "./lib/supabase";
+import { getDesktopSupabaseClient, refreshSessionOnFocus } from "./lib/supabase";
 
 export interface Note {
   id: string;
@@ -185,14 +185,41 @@ export default function App() {
 
         await syncAuthState();
         const supabase = getDesktopSupabaseClient();
-        const authSubscription = supabase.auth.onAuthStateChange(() => {
-          void syncAuthState().catch((error: any) => {
-            setView(`error: ${error.message || String(error)}`);
-          });
+
+        // Re-sync auth state only on meaningful auth events, not all changes.
+        const authSubscription = supabase.auth.onAuthStateChange((event) => {
+          if (
+            event === "SIGNED_OUT" ||
+            event === "SIGNED_IN" ||
+            event === "TOKEN_REFRESHED" ||
+            event === "USER_UPDATED"
+          ) {
+            void syncAuthState().catch((error: any) => {
+              setView(`error: ${error.message || String(error)}`);
+            });
+          }
         });
         unsubscribeAuth = () => {
           authSubscription.data.subscription.unsubscribe();
         };
+
+        // ── Session keep-alive ──────────────────────────────────────────────
+        // When the Electron window is backgrounded or the machine sleeps, the
+        // Supabase JS auto-refresh timer is throttled and never fires. We
+        // proactively refresh the access_token every time the window gets
+        // focus so the session stays alive indefinitely, exactly like
+        // Linear / Cursor / VS Code extensions do.
+        const handleWindowFocus = () => {
+          void refreshSessionOnFocus();
+        };
+        window.addEventListener("focus", handleWindowFocus);
+        const originalUnsubscribeAuth = unsubscribeAuth;
+        unsubscribeAuth = () => {
+          originalUnsubscribeAuth();
+          window.removeEventListener("focus", handleWindowFocus);
+        };
+        // Refresh immediately in case the app was opened after a long idle.
+        void refreshSessionOnFocus();
         console.log("[ORCA-RENDERER] Registering onOAuthCallback listener");
         unsubscribeOAuthCallback = window.orca.onOAuthCallback((url) => {
           console.log("[ORCA-RENDERER] ★ onOAuthCallback fired! URL:", url);
