@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NewsFlow — System Design</title>
+<title>Orca — System Design</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -370,7 +370,7 @@
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-logo">NewsFlow</div>
+    <div class="sidebar-logo">Orca</div>
     <div class="sidebar-sub">System Design Doc</div>
   </div>
   <div class="nav-section">
@@ -487,7 +487,7 @@
       <div class="layer-box" style="background:#1a0d20">
         <div class="layer-title" style="color:#c084fc">AI Layer</div>
         <div class="layer-item">GPT-4o-mini (summarize)</div>
-        <div class="layer-item">Perplexity sonar-pro (search)</div>
+        <div class="layer-item">Serper.dev + Scraping (search)</div>
         <div class="layer-item">ElevenLabs (TTS audio)</div>
       </div>
       <div class="layer-box" style="background:#1a1205">
@@ -521,8 +521,9 @@
 
 <span class="cm">// Step 2 — Fetch</span>
 <span class="kw">Worker</span> picks up job
-  → Calls <span class="fn">Perplexity sonar-pro</span> with engineered query
-  → Returns 5–10 articles with source URLs + raw text
+  → Calls <span class="fn">Serper.dev</span> with smart Google operator query
+  → Scrapes top URLs via Readability.js / JSDOM
+  → Returns clean raw text from diverse sources
 
 <span class="cm">// Step 3 — Summarize</span>
 <span class="kw">GPT-4o-mini</span> via Vercel AI SDK <span class="fn">generateObject()</span>
@@ -539,7 +540,7 @@
 
   <div class="card">
     <div class="card-title">Electron ↔ Backend Security Model</div>
-    <p>The Electron app is a <strong>read-only consumer</strong>. It holds only a Supabase user JWT (stored via Electron's <em>safeStorage</em> API, encrypted at rest). All writes and sensitive operations go through Supabase Row Level Security or Edge Functions with a server-side service key. <strong>No API keys for Perplexity, OpenAI, or ElevenLabs ever touch the Electron client.</strong></p>
+    <p>The Electron app is a <strong>read-only consumer</strong>. It holds only a Supabase user JWT (stored via Electron's <em>safeStorage</em> API, encrypted at rest). All writes and sensitive operations go through Supabase Row Level Security or Edge Functions with a server-side service key. <strong>No API keys for Serper, OpenAI, or ElevenLabs ever touch the Electron client.</strong></p>
   </div>
 
   <div class="card">
@@ -649,7 +650,7 @@
     <div class="card-title">AI Layer — Modular by Design</div>
     <p style="margin-bottom:12px;font-style:italic;color:var(--muted);font-size:12px">Vercel AI SDK wraps everything — swap providers without refactoring.</p>
     <div class="stack-row"><div><div class="stack-tech">Vercel AI SDK</div><div class="stack-note">Provider abstraction (OpenAI, Anthropic, etc), streaming hooks, <em>streamText()</em> + <em>generateObject()</em></div></div><span class="stack-cat chip green">Core</span></div>
-    <div class="stack-row"><div><div class="stack-tech">Perplexity sonar-pro</div><div class="stack-note">Purpose-built for real-time web search with citations. Far better than raw scraping or Google Custom Search.</div></div><span class="stack-cat">Search</span></div>
+    <div class="stack-row"><div><div class="stack-tech">Serper.dev + Readability</div><div class="stack-note">Decoupled real-time search + scraping. Gives total control over extraction, deduplication, and prevents API hallucinations.</div></div><span class="stack-cat">Search</span></div>
     <div class="stack-row"><div><div class="stack-tech">GPT-4o-mini</div><div class="stack-note">Summarization + TL;DR. $0.60/1M tokens vs $15 for 4o — same quality for structured tasks. Use 4o only for dialogue.</div></div><span class="stack-cat">LLM</span></div>
     <div class="stack-row"><div><div class="stack-tech">ElevenLabs</div><div class="stack-note">Highest-quality TTS. Lazy generation + permanent caching keeps costs manageable.</div></div><span class="stack-cat">Audio</span></div>
   </div>
@@ -674,7 +675,7 @@
     <div class="dialogue">
       <div class="d-user">User</div>
       <div class="d-text">"TSMC company finances"</div>
-      <div class="d-agent">NewsFlow Agent</div>
+      <div class="d-agent">Orca Agent</div>
       <div class="d-text">"Got it — a few quick questions to sharpen your feed:<br>① Track earnings calls & quarterly financial results?<br>② Include deal announcements (fab expansions, partnerships)?<br>③ Stock price movements & analyst ratings?"</div>
       <div class="d-user" style="margin-top:10px">User</div>
       <div class="d-text">"Yes to ① and ③, skip ②"</div>
@@ -685,13 +686,13 @@
   </div>
 
   <div class="card blue">
-    <div class="card-title">Agent 2 — News Fetcher (Perplexity sonar-pro)</div>
+    <div class="card-title">Agent 2 — News Fetcher (Serper.dev + Scraping)</div>
     <ul class="dot-list">
-      <li>Worker constructs targeted query from topic config: <code style="font-family:JetBrains Mono,monospace;font-size:11px;color:#79e8b0">"TSMC earnings financial results analyst ratings site:reuters.com OR site:ft.com OR site:bloomberg.com"</code></li>
-      <li>Perplexity returns 5–10 articles with source URLs, publication dates, and raw content — no scraping needed</li>
-      <li>Deduplication: SHA256 hash of source URL stored per topic. Articles already seen are skipped.</li>
+      <li>Worker constructs targeted Google Dork query from topic config: <code style="font-family:JetBrains Mono,monospace;font-size:11px;color:#79e8b0">"TSMC" AND "earnings" (site:reuters.com OR site:bloomberg.com)</code></li>
+      <li>Serper.dev returns top real-time URLs. Worker fetches HTML and extracts clean text using Readability.js / JSDOM.</li>
+      <li>LLM strictly synthesizes the scraped text, reducing hallucination risks on specific topics and clustering general news.</li>
       <li>Runs on user's schedule via BullMQ job queue — not on every app launch</li>
-      <li>Batch optimization: users with identical broad topics (e.g. "AI news") share one Perplexity call → split results per user</li>
+      <li>Batch optimization: users with identical broad topics (e.g. "AI news") share one Serper call → split results per user</li>
     </ul>
   </div>
 
@@ -800,7 +801,7 @@
     .single()
 
   <span class="kw">if</span> (user.subscription_status !== <span class="str">'active'</span>) {
-    shell.<span class="fn">openExternal</span>(<span class="str">`https://newsflow.app/subscribe?email=${session.user.email}`</span>)
+    shell.<span class="fn">openExternal</span>(<span class="str">`https://orca.app/subscribe?email=${session.user.email}`</span>)
     <span class="fn">showPaywallScreen</span>()  <span class="cm">// soft block, don't just quit</span>
   } <span class="kw">else</span> {
     <span class="fn">loadDashboard</span>()
@@ -903,10 +904,10 @@
       <thead><tr><th>Service</th><th>Usage Estimate</th><th>Cost</th><th>Basis</th></tr></thead>
       <tbody>
         <tr>
-          <td style="color:#eef2ff;font-weight:600;font-size:12px">Perplexity sonar-pro</td>
+          <td style="color:#eef2ff;font-weight:600;font-size:12px">Serper.dev Search</td>
           <td class="td-note">~200 searches/mo (5 topics × 40 fetches)</td>
           <td style="color:#79e8b0;font-family:JetBrains Mono,monospace;font-weight:700">$0.20</td>
-          <td class="td-note">$1/1k queries</td>
+          <td class="td-note">~$1/1k queries. Free local scraping.</td>
         </tr>
         <tr>
           <td style="color:#eef2ff;font-weight:600;font-size:12px">GPT-4o-mini (summaries)</td>
@@ -962,7 +963,7 @@
     <div class="card-title">Cost Optimization Strategies</div>
     <ul class="dot-list">
       <li><strong>ElevenLabs:</strong> Lazy generation only — never pre-generate. Delete cached audio files after 90 days. This alone saves ~60% of audio cost.</li>
-      <li><strong>Perplexity:</strong> Batch users with identical broad categories (e.g. all "AI news" subscribers) into a single search call, then split results.</li>
+      <li><strong>Serper Batching:</strong> Batch users with identical broad categories (e.g. all "AI news" subscribers) into a single search call to save search volume.</li>
       <li><strong>GPT-4o-mini not GPT-4o</strong> for summarization — 25× cheaper, same quality for structured extraction tasks. Reserve GPT-4o for the onboarding dialogue only.</li>
       <li><strong>Supabase Storage lifecycle:</strong> Auto-delete audio files and raw article cache older than 90 days via storage policies.</li>
       <li><strong>Deduplication:</strong> URL hash prevents re-summarizing the same article even if it appears in multiple topic searches.</li>
@@ -995,7 +996,7 @@
     </div>
     <div class="phase-item"><div class="phase-num">1</div>Topic onboarding UI: category grid + free-text prompt input screen</div>
     <div class="phase-item"><div class="phase-num">2</div>LLM dialogue flow with Vercel AI SDK (streamText) — topic refinement conversation</div>
-    <div class="phase-item"><div class="phase-num">3</div>Perplexity sonar-pro integration — news search from topic config</div>
+    <div class="phase-item"><div class="phase-num">3</div>Serper.dev + Readability integration — news search & scrub from topic config</div>
     <div class="phase-item"><div class="phase-num">4</div>GPT-4o-mini summarizer with Zod schema (generateObject) — TL;DR + body output</div>
     <div class="phase-item"><div class="phase-num">5</div>Railway worker setup + BullMQ job queue with Upstash Redis</div>
     <div class="phase-item"><div class="phase-num">6</div>First end-to-end test: user creates topic → articles appear in dashboard</div>
@@ -1030,7 +1031,7 @@
   <div class="card accent">
     <div class="card-title">Key Decision Summary</div>
     <div class="decision-grid">
-      <div class="decision-cell"><div class="decision-cat">News Search</div><div class="decision-choice">Perplexity sonar-pro</div><div class="decision-reason">Purpose-built real-time web search. Far better than scraping.</div></div>
+      <div class="decision-cell"><div class="decision-cat">News Search</div><div class="decision-choice">Serper + Readability</div><div class="decision-reason">Decoupled pipeline. Better cost, zero hallucinations, full control.</div></div>
       <div class="decision-cell"><div class="decision-cat">Summarization LLM</div><div class="decision-choice">GPT-4o-mini</div><div class="decision-reason">25× cheaper than 4o. Same quality for structured extraction.</div></div>
       <div class="decision-cell"><div class="decision-cat">AI SDK</div><div class="decision-choice">Vercel AI SDK</div><div class="decision-reason">streamText + generateObject + provider swap = future-proof.</div></div>
       <div class="decision-cell"><div class="decision-cat">Database</div><div class="decision-choice">Supabase</div><div class="decision-reason">Auth + DB + Storage + Realtime. One bill, one SDK.</div></div>
