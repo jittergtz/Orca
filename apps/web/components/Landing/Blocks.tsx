@@ -36,7 +36,7 @@ const cardData: Record<Tab, Card[]> = {
     {
       id: "h2",
       title: "Matthew's story: writing with AI for the first time",
-      image: "/gra2.webp",
+      image: "/blocks/q2.jpg",
       size: "wide",
     },
     {
@@ -56,7 +56,7 @@ const cardData: Record<Tab, Card[]> = {
     {
       id: "h5",
       title: "Inside the newsroom of the future",
-      image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80",
+      image: "/carousel/oldpaper.jpg",
       size: "image",
     },
   ],
@@ -158,7 +158,7 @@ function TallCard({ card }: { card: Card }) {
   return (
     <motion.div
       variants={cardVariants}
-      className="relative rounded-3xl overflow-hidden min-h-[280px] md:min-h-[340px] lg:row-span-2 group cursor-pointer"
+      className="relative shadow-lg shadow-black/80 rounded-3xl overflow-hidden min-h-[280px] md:min-h-[340px] lg:row-span-2  group cursor-pointer"
     >
       {card.image && (
         <Image
@@ -174,7 +174,7 @@ function TallCard({ card }: { card: Card }) {
       )}
       {card.logo && (
         <div className="absolute top-4 left-4">
-          <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-md border border-white/30">
+          <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-4 py-1 rounded-full border border-white/30">
             {card.logo}
           </span>
         </div>
@@ -190,7 +190,7 @@ function WideCard({ card }: { card: Card }) {
   return (
     <motion.div
       variants={cardVariants}
-      className="relative rounded-3xl overflow-hidden min-h-[220px] group cursor-pointer"
+      className="relative rounded-3xl shadow-lg shadow-black/70 overflow-hidden min-h-[220px]  group cursor-pointer"
     >
       {card.image && (
         <Image
@@ -238,22 +238,22 @@ function TextCard({ card }: { card: Card }) {
   return (
     <motion.div
       variants={cardVariants}
-      className="rounded-3xl bg-neutral-100 p-5 flex flex-col justify-between min-h-[160px] md:min-h-[180px] cursor-default"
+      className="rounded-3xl bg-neutral-900 p-5 flex flex-col justify-between min-h-[160px] md:min-h-[180px] cursor-default"
     >
       <div className="flex flex-col gap-2">
         {card.eyebrow && (
-          <span className="text-[10px] font-semibold tracking-widest text-neutral-400 uppercase">
+          <span className="text-[10px] font-semibold tracking-widest text-neutral-100 uppercase">
             {card.eyebrow}
           </span>
         )}
         {card.headline && (
-          <h3 className="text-sm font-semibold text-neutral-900 leading-snug">
+          <h3 className="text-sm font-semibold text-neutral-500 leading-snug">
             {card.headline}
           </h3>
         )}
       </div>
       {card.body && (
-        <p className="text-xs text-neutral-500 leading-relaxed mt-2">
+        <p className="text-xs text-neutral-400 leading-relaxed mt-2">
           {card.body}
         </p>
       )}
@@ -268,7 +268,7 @@ export default function Blocks() {
   const cards = cardData[activeTab];
 
   return (
-    <section className="w-full max-w-5xl mx-auto px-4 py-20">
+    <section className="w-full max-w-5xl mx-auto px-4 py-20 md:py-40">
       {/* Heading */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

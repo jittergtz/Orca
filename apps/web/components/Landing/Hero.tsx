@@ -4,7 +4,7 @@ import OrcaPreview from './OrcaPreview'
 
 function Hero({ImgClassName, text}: {ImgClassName?: string, text: string}) {
   return (
-    <main className='w-full    relative shadow-md shadow-black/20  overflow-hidden rounded-[50px] max-w-6xl h-full max-h-[650px] bg-[#222222]'>
+    <main className='w-full    relative shadow-md shadow-black/20  overflow-hidden rounded-[40px] max-w-6xl h-full max-h-[650px] bg-[#222222]'>
 
 
        <Image
@@ -13,7 +13,7 @@ function Hero({ImgClassName, text}: {ImgClassName?: string, text: string}) {
        height={982}
        priority
        quality={100}
-       className={(`select-none pointer-events-none  ${ImgClassName}`)}
+       className={(`select-none h-96 md:h-full object-cover pointer-events-none  ${ImgClassName}`)}
        alt='Hero Background Orca'/>
 
 
@@ -36,7 +36,7 @@ function Hero({ImgClassName, text}: {ImgClassName?: string, text: string}) {
         width={700}
         height={400}
         alt='Orca Preview Image'
-        className='absolute -bottom-16 w-72 sm:w-96 md:w-[600px] lg:hidden object-cover rounded-xl left-1/2 -translate-x-1/2'/>
+        className='absolute bottom-16 w-72 sm:w-96 md:w-[600px] lg:hidden object-cover rounded-xl left-1/2 -translate-x-1/2'/>
        </div>
 
 
@@ -61,16 +61,16 @@ export function MissionHero({ImgClassName, text}: {ImgClassName?: string, text: 
        height={982}
        priority
        quality={100} 
-       className={(`select-none pointer-events-none  ${ImgClassName}`)}
+       className={(`select-none h-96 md:h-full object-cover pointer-events-none  ${ImgClassName}`)}
        alt='Hero Background Orca'/>
 
 
 
-       <h1 className='absolute text-white left-5 top-3 md:top-20 md:left-20 text-[43px] md:text-[80px] md:mt-10 w-full font-serif italic'>
+       <h1 className='absolute text-white left-4 top-10 md:top-20 md:left-20 text-[43px] md:text-[80px] md:mt-10 w-full font-serif italic'>
       {text}
      </h1>
 
-        <h1 className='absolute text-white right-5 bottom-3 md:bottom-20 md:right-20 text-[43px] md:text-[80px] md:mt-10  font-serif italic'>
+        <h1 className='absolute text-white right-10 bottom-10 md:bottom-20 md:right-20 text-[43px] md:text-[80px] md:mt-10  font-serif italic'>
        Is Quality
      </h1>
 

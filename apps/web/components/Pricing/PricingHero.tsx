@@ -43,7 +43,7 @@ function PlanCard({
           src={img}
           alt={`${name} plan background`}
           fill
-          className="object-cover transition-all duration-500 hover:scale-110"
+          className="object-cover  transition-all duration-500 hover:scale-110"
         />
         {/* Plan name */}
         <span className="absolute top-4 left-5 font-sans text-lg font-medium text-stone-50">
@@ -103,13 +103,13 @@ function PricingHero() {
 
         {/* Go plan */}
         <div className="flex flex-col gap-0">
-          <PlanCard img='/gra3.webp' name="Go" price="$9" cta="Choose Go" onChoose={() => router.push('/subscribe?plan=go')} />
+          <PlanCard img='/pricing/goplan2.png' name="Go" price="$9" cta="Choose Go" onChoose={() => router.push('/subscribe?plan=go')} />
           <FeatureList features={GO_FEATURES} />
         </div>
 
         {/* Pro plan */}
         <div className="flex flex-col gap-0">
-          <PlanCard img='/gra2.webp' name="Pro" price="$17" cta="Choose Pro" onChoose={() => router.push('/subscribe?plan=pro')} />
+          <PlanCard img='/pricing/larca3.png' name="Pro" price="$17" cta="Choose Pro" onChoose={() => router.push('/subscribe?plan=pro')} />
           <FeatureList features={PRO_FEATURES} />
         </div>
       </div>

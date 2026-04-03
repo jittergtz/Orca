@@ -42,9 +42,13 @@ export function createWindow() {
   const devUrl = rendererUrl();
   if (devUrl) {
     mainWindow.loadURL(devUrl);
+    // Always open DevTools in dev so renderer logs are visible
     mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), "dist", "index.html"));
   }
-  mainWindow.once("ready-to-show", () => mainWindow?.show());
+  mainWindow.once("ready-to-show", () => {
+    console.log("[ORCA-WINDOW] ready-to-show");
+    mainWindow?.show();
+  });
 }

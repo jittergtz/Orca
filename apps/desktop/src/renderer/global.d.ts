@@ -2,6 +2,8 @@ import 'react';
 
 declare global {
   interface ImportMetaEnv {
+    readonly DEV: boolean;
+    readonly MODE: string;
     readonly VITE_SUPABASE_URL?: string;
     readonly VITE_SUPABASE_ANON_KEY?: string;
     readonly VITE_APP_URL?: string;
@@ -42,8 +44,10 @@ declare global {
       changePin: (currentPin: string, nextPin: string) => Promise<{ ok: boolean }>;
       setPinEnabled: (enabled: boolean) => Promise<{ ok: boolean }>;
       verifyPin: (pin: string) => Promise<{ ok: boolean; error?: string }>;
+      openExternal: (url: string) => Promise<{ ok: boolean }>;
     };
     onSystemThemeChanged: (callback: (theme: string) => void) => () => void;
+    onOAuthCallback: (callback: (url: string) => void) => () => void;
   }
 
   interface Window {

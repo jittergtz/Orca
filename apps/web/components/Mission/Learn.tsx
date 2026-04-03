@@ -1,17 +1,17 @@
 import React from 'react'
 
-function Learn() {
+function BlankBlock({Headline, text} : {Headline: string, text: string}) {
   return (
     <div className='my-20 rounded-[40px] flex justify-center p-4 bg-neutral-200 w-full h-[40vh]'>
         <div className='w-full max-w-5xl felx flex-col' >
-            <h1 className='text-4xl text-black mt-7 sm:mt-10 mb-7'>Orca Learn</h1>
-            <p className='text-black sm:w-1/2'>Learn is a feature we implemented internally for staying not only uptodate but quickly get into a new topic with understanding a broad picture od current situations.</p>
+            <h1 className='text-4xl text-black mt-7 sm:mt-10 mb-7'>{Headline}</h1>
+            <p className='text-black sm:w-1/2'>{text}</p>
             </div>
         </div>
   )
 }
 
-export default Learn
+export default BlankBlock
 
 
 export function Table() {

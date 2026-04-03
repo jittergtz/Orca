@@ -49,7 +49,7 @@
   }
 
   .auth-layer {
-    @apply grid h-full place-items-center rounded-2xl border border-white/20 bg-white/30 p-6 backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/40;
+    @apply grid h-full place-items-center rounded-2xl border border-white/20 bg-white/30 p-6  dark:border-white/10 dark:bg-neutral-900/40;
   }
 
   .glass-card {
