@@ -28,7 +28,23 @@ export default function DashboardPage() {
       } else {
         setEmail(data.session.user.email ?? null)
         setUserId(data.session.user.id ?? null)
-        setCreatedAt(data.session.user.created_at ?? null)
+        
+        // @ts-ignore - Types for users may not be generated yet
+        const userQuery = s.from('users')
+          .select('created_at')
+          .eq('id', data.session.user.id)
+          .maybeSingle() as Promise<any>;
+
+        userQuery.then((res: any) => {
+          const { data: userData, error } = res;
+          if (error) {
+            console.error("Supabase Error fetching user created_at:", error);
+            return;
+          }
+          setCreatedAt(userData?.created_at ?? null)
+        }).catch((err: any) => {
+          console.error("Network Error fetching user created_at:", err);
+        })
         
         // @ts-ignore - Types for billing_subscriptions may not be generated yet
         const query = s.from('billing_subscriptions')

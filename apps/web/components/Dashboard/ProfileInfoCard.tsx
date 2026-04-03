@@ -161,7 +161,7 @@ export default function ProfileInfoCard({ email, createdAt }: ProfileInfoCardPro
 
           <button
             onClick={handleOpenModal}
-            className="rounded-full border border-red-200 bg-red-50 px-4 py-2 font-sans text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+            className="rounded-full w-40  border border-red-200 bg-red-50 px-4 py-2 font-sans text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
           >
             Delete your account
           </button>
