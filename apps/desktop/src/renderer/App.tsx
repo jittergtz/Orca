@@ -472,14 +472,7 @@ export default function App() {
               </button>
             </div>
             <div className="flex items-center pt-2 gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
-              <button
-                onClick={() => void handleSignOut()}
-                disabled={signOutLoading}
-                className="px-3 py-1 rounded-full border border-white/20 text-xs dark:text-neutral-300 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
-              >
-                <LogOut size={12} />
-                {signOutLoading ? "Signing out..." : "Sign Out"}
-              </button>
+            
               <button 
               style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.4)" }}
                 className="p-2  border border-white/10 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
@@ -687,6 +680,14 @@ export default function App() {
                 <div>
                   <h2 className="text-xl font-semibold">Profile Settings</h2>
                   <p className="mt-2 text-sm opacity-80">Profile management coming soon.</p>
+                    <button
+                onClick={() => void handleSignOut()}
+                disabled={signOutLoading}
+                className=" mt-2 px-3 py-1 rounded-full border border-black/20 text-xs dark:text-neutral-300 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                <LogOut size={12} />
+                {signOutLoading ? "Signing out..." : "Sign Out"}
+              </button>
                 </div>
               )}
 
