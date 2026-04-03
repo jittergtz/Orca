@@ -89,7 +89,7 @@ function Navbar() {
                 href={session ? "/dashboard" : "/pricing"} 
                 className='text-sm bg-black text-white px-4 py-2 rounded-full hover:bg-neutral-800 transition-all hover:scale-105 active:scale-95'
               >
-                {session ? "Dashboard" : "Get Started"}
+                {session ? "Dashboard" : "Download for mac"}
               </Link>
             </div>
             
@@ -177,7 +177,7 @@ function Navbar() {
                     className='w-full text-center bg-black text-white px-6 py-4 rounded-full text-lg  hover:bg-neutral-800 transition-all active:scale-95'
                     onClick={() => setIsOpen(false)}
                   >
-                    {session ? "Dashboard" : "Get Started"}
+                    {session ? "Dashboard" : "Download"}
                   </Link>
                 </motion.div>
               </div>
