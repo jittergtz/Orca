@@ -31,7 +31,9 @@ function getPricingUrl(baseUrl: string, email: string | null) {
 
 export default function App() {
   const appBaseUrl = useMemo(
-    () => import.meta.env.VITE_APP_URL || import.meta.env.NEXT_PUBLIC_APP_URL || "https://newsflow.app",
+    () =>
+      import.meta.env.VITE_APP_URL ||
+      (import.meta.env.DEV ? "http://localhost:3000" : "https://orca.app"),
     []
   );
   const [view, setView] = useState("loading");
