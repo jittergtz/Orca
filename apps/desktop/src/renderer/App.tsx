@@ -521,7 +521,8 @@ export default function App() {
                />
             </div>
           )}
-          <main className="flex flex-1 min-h-0 w-full relative">
+          <main className="flex flex-1  min-h-0 w-full relative">
+         
             <ArticleView />
           </main>
         </div>
@@ -529,14 +530,14 @@ export default function App() {
     ) : (
         <div className="auth-layer ">
           {view === "loading" ? (
-            <div className="glass-card backdrop-blur-md max-w-sm">
+            <div className=" backdrop-blur-md max-w-sm">
               <h1 className="text-2xl font-semibold">Orca</h1>
               <p className="mt-2 text-sm opacity-80">Loading...</p>
             </div>
           ) : view.startsWith("error:") ? (
-            <div className="glass-card backdrop-blur-md max-w-sm border border-red-500/50">
-              <h1 className="text-2xl font-semibold text-red-500">Error Hook</h1>
-              <p className="mt-2 text-sm opacity-80 font-mono text-red-400">{view.replace("error: ", "")}</p>
+            <div className=" backdrop-blur-md max-w-sm border border-red-200/50">
+              <h1 className="text-2xl font-semibold text-red-700">Error Hook</h1>
+              <p className="mt-2 text-sm opacity-80 font-mono text-neutral-400">{view.replace("error: ", "")}</p>
             </div>
           ) : view === "auth" ? (
             <div className="max-w-md  ">

@@ -32,7 +32,7 @@ export default function ArticleView() {
   }
 
   return (
-    <div className="absolute inset-0 overflow-y-auto scroll-smooth bg-transparent text-neutral-900 dark:text-neutral-100 flex justify-center pb-32 pt-8">
+    <div className="absolute inset-0 overflow-y-auto scroll-smooth bg-transparent text-neutral-900 dark:text-neutral-100 flex justify-center  ">
       <style>{`
         .article-body p { margin-bottom: 1.5rem; }
         .article-body mark {
@@ -42,7 +42,7 @@ export default function ArticleView() {
         }
       `}</style>
 
-      <div className="max-w-2xl px-8 w-full flex flex-col">
+      <div className="max-w-2xl  px-8 w-full flex flex-col">
         
         {/* Top Header Row */}
         <div className="flex items-center justify-between mb-8">
@@ -77,9 +77,9 @@ export default function ArticleView() {
       </div>
 
       {/* Floating Pill Player Placeholder */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center justify-center p-1.5 bg-white/70 dark:bg-[#13151f]/80 backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full w-64 h-12 z-50">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center p-1.5 bg-white/70 dark:bg-[#161616] backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full w-64 h-12 z-50">
         <div className="w-full h-full bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center text-xs font-medium text-neutral-500 opacity-60">
-           ...
+          
         </div>
       </div>
 
