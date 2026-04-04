@@ -1,10 +1,10 @@
-import { type EnvSource } from "@newsflow/config";
+import { type EnvSource, resolveSerperEnv } from "@newsflow/config";
 
 export interface WorkerRuntimeEnv {
   workerPollCron: string;
   topicDialogueModel: string;
-  newsSearchModel: string;
   articleSummaryModel: string;
+  serperApiKey: string;
   upstashRestUrl?: string;
   upstashRestToken?: string;
   railwayEnvironment?: string;
@@ -21,11 +21,13 @@ export function readEnvValue(source: EnvSource, key: string) {
 }
 
 export function resolveWorkerRuntimeEnv(source: EnvSource = defaultEnvSource()): WorkerRuntimeEnv {
+  const { serperApiKey } = resolveSerperEnv(source);
+
   return {
     workerPollCron: readEnvValue(source, "WORKER_POLL_CRON") ?? "*/15 * * * *",
     topicDialogueModel: readEnvValue(source, "TOPIC_DIALOGUE_MODEL") ?? "gpt-4o",
-    newsSearchModel: readEnvValue(source, "NEWS_SEARCH_MODEL") ?? "sonar-pro",
     articleSummaryModel: readEnvValue(source, "ARTICLE_SUMMARY_MODEL") ?? "gpt-4o-mini",
+    serperApiKey,
     upstashRestUrl: readEnvValue(source, "UPSTASH_REDIS_REST_URL"),
     upstashRestToken: readEnvValue(source, "UPSTASH_REDIS_REST_TOKEN"),
     railwayEnvironment: readEnvValue(source, "RAILWAY_ENVIRONMENT"),

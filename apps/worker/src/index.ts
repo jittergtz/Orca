@@ -20,7 +20,7 @@ async function bootstrap() {
     void shutdown();
   });
 
-  logger.info("NewsFlow worker started");
+  logger.info("Orca worker started");
 }
 
 void bootstrap();

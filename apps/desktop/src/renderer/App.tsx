@@ -464,7 +464,7 @@ export default function App() {
           >
             <div className="flex items-center " style={{ WebkitAppRegion: 'no-drag' }}>
               <button 
-                className="p-1 z-50 rounded-full  dark:text-neutral-400 text-neutral-700 hover:text-black dark:hover:text-white/90 transition-colors flex items-center justify-center auto-cols-auto" 
+                className="p-1 z-50 rounded-full  dark:text-neutral-600 text-neutral-400 hover:text-black dark:hover:text-white/90 transition-colors flex items-center justify-center auto-cols-auto" 
                 onClick={() => setSidebarOpen(prev => !prev)}
                 title="Toggle Sidebar (Cmd+B)"
               >

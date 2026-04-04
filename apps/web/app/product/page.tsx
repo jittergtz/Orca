@@ -10,7 +10,7 @@ function page() {
   <main className="bg-black min-h-screen">
       {/* Hero Section */}
       <section className="h-screen flex flex-col justify-center items-center px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-blue-900/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/30 via-black to-blue-600/20" />
         
         <div className="relative z-10 text-center max-w-5xl mx-auto">
           <motion.div
@@ -18,14 +18,14 @@ function page() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-6xl md:text-8xl font-bold text-white tracking-tight mb-6">
+            <h1 className="text-6xl md:text-8xl font-serif italic text-white tracking-tight mb-6">
               Workdone.
-              <span className="block text-gray-500">On the run.</span>
+              <span className="block text-neutral-500">On the run.</span>
             </h1>
           </motion.div>
           
           <motion.p 
-            className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mt-8"
+            className="text-xl md:text-2xl text-neutral-300 font-light max-w-2xl mx-auto mt-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.8 }}
@@ -40,10 +40,10 @@ function page() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.8 }}
           >
-            <button className="px-8 py-4 bg-white text-black rounded-full font-semibold text-lg hover:bg-gray-100 transition-colors">
-              Download for iOS
+            <button className="px-8 py-3 bg-white text-black rounded-full font-semibold text-lg hover:bg-gray-100 transition-colors">
+              Download for Mac
             </button>
-            <button className="px-8 py-4 bg-white/10 text-white border border-white/20 rounded-full font-semibold text-lg hover:bg-white/20 transition-colors">
+            <button className="px-8 py-3 bg-white/10 text-white border border-white/20 rounded-full font-semibold text-lg hover:bg-white/20 transition-colors">
               View Demo
             </button>
           </motion.div>
