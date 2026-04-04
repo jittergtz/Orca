@@ -649,9 +649,9 @@ export default function App() {
 
       {settingsOpen ? (
         <div className="modal-overlay flex items-center justify-center p-4">
-          <div className="glass-card backdrop-blur-md w-full max-w-3xl flex overflow-hidden p-0 h-[500px]">
-            <div className="w-48 border-r border-neutral-200 dark:border-white/10 p-4 flex flex-col gap-2">
-              <h2 className="text-sm font-semibold mb-2 px-2 text-neutral-500 dark:text-white/50 uppercase tracking-wider">Settings</h2>
+          <div className="  dark:bg-black/40 bg-white/40 rounded-2xl  w-full max-w-3xl flex overflow-hidden p-0 h-[500px]">
+            <div className="w-48 backdrop-blur-xl border-r border-neutral-200 dark:border-white/10 p-4 flex flex-col gap-2">
+              <h2 className="text-sm  mb-2 px-2 text-neutral-900 dark:text-white/90 uppercase tracking-wider">Settings</h2>
               {["profile", "themes", "api-key"].map((cat) => (
                 <button
                   key={cat}
@@ -669,7 +669,7 @@ export default function App() {
               ))}
             </div>
 
-            <div className="flex-1 p-6 flex flex-col relative overflow-y-auto">
+            <div className="flex-1 dark:bg-neutral-900 bg-neutral-100 p-6 flex flex-col relative overflow-y-auto">
               <button 
                 className="absolute top-4 right-4 text-neutral-400 dark:text-white/40 hover:text-neutral-900 dark:hover:text-white transition-colors"
                 onClick={() => setSettingsOpen(false)}
@@ -679,7 +679,7 @@ export default function App() {
 
               {settingsCategory === "profile" && (
                 <div>
-                  <h2 className="text-xl font-semibold">Profile Settings</h2>
+                  <h2 className="text-xl font-medium">Profile Settings</h2>
                   <p className="mt-2 text-sm opacity-80">Profile management coming soon.</p>
                     <button
                 onClick={() => void handleSignOut()}
@@ -694,13 +694,13 @@ export default function App() {
 
               {settingsCategory === "themes" && (
                 <div>
-                  <h2 className="text-xl font-semibold">Appearance</h2>
+                  <h2 className="text-xl font-medium">Appearance</h2>
                   <p className="mt-2 text-sm opacity-80 mb-6">Customize how Orca Notes looks.</p>
                   
                   <label className="flex items-center gap-3 text-sm flex-row">
                     <span>Theme mode:</span>
                     <select
-                      className="glass-input h-9 w-32 rounded-lg px-2 text-sm outline-none"
+                      className="glass-input bg-neutral-200  h-9 w-32 rounded-xl px-3 text-sm outline-none"
                       value={theme}
                       onChange={(event) => void changeTheme(event.target.value)}
                     >
@@ -714,7 +714,7 @@ export default function App() {
 
               {settingsCategory === "api-key" && (
                 <div>
-                  <h2 className="text-xl font-semibold">API Keys</h2>
+                  <h2 className="text-xl font-medium">API Keys</h2>
                   <p className="mt-2 text-sm opacity-80">API configuration coming soon.</p>
                 </div>
               )}
