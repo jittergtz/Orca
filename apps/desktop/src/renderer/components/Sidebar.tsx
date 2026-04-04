@@ -8,20 +8,20 @@ export default function Sidebar({
 }: SidebarProps) {
   return (
     <aside
-      className={`absolute z-10 top-1 bottom-1 bg-white/70 dark:bg-neutral-900/90  left-1 border border-white dark:border-white/10  rounded-[20px] py-2 px-1 transition-all duration-300 ease-in-out flex flex-col pt-3 ${
+      className={`absolute z-10 top-1 bottom-1 bg-white/0 dark:bg-neutral-900/0 backdrop-blur-2xl  left-1 border border-white/60 dark:border-white/10  rounded-[20px] py-2 px-1 transition-all duration-200 ease-in-out flex flex-col pt-3 ${
         isOpen
           ? "w-[240px] opacity-100 translate-x-0"
-          : "w-0 opacity-0 -translate-x-full overflow-hidden border-none p-0 [&>*]:hidden"
+          : "w-[200px] opacity-0 -translate-x-full overflow-hidden border-none p-0 [&>*]:hidden"
       }`}
     >
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold"></h2>
         <button
           type="button"
-          className="primary-button rounded-full px-4 text-sm"
+          className="primary-button rounded-full px-3 text-sm"
           onClick={() => void createNote()}
         >
-          New
+          New Topic
         </button>
       </div>
 
