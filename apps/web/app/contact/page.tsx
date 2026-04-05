@@ -1,9 +1,11 @@
+import Navbar from '@/components/Landing/Navbar'
 import React from 'react'
 
 function page() {
   return (
-    <div className='min-h-screen bg-white flex flex-col items-center py-24 px-6'>
-       <div className='flex flex-col gap-8 items-start max-w-3xl w-full'>
+    <div className='min-h-screen p-2 bg-white flex flex-col items-center '>
+      <Navbar/>
+       <div className='flex  px-6 py-24 flex-col gap-8 items-start max-w-3xl w-full'>
             <div className='w-full border-b border-gray-100 pb-6'>
               <h1 className='text-black text-4xl font-serif italic '>Contact Us</h1>
               <p className='text-gray-500 mt-2 text-sm'>We are here to help you get the most out of Orca.</p>
