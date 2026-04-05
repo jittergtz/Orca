@@ -54,8 +54,8 @@ export default function ScrollStep({ step, progress, start, end }: ScrollStepPro
       }}
     >
       <motion.h2 
-        className={`text-5xl md:text-7xl font-bold tracking-tight mb-6 ${
-          isLight ? 'text-gray-900' : 'text-white'
+        className={`text-4xl md:text-7xl font-serif italic tracking-tight mb-6 ${
+          isLight ? 'text-black' : 'text-white'
         }`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -65,8 +65,8 @@ export default function ScrollStep({ step, progress, start, end }: ScrollStepPro
       </motion.h2>
       
       <motion.p 
-        className={`text-xl md:text-2xl max-w-2xl leading-relaxed ${
-          isLight ? 'text-gray-700' : 'text-gray-300'
+        className={`text-md md:text-xl max-w-2xl leading-relaxed ${
+          isLight ? 'text-neutral-800' : 'text-gray-300'
         }`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -120,7 +120,7 @@ export default function ScrollStep({ step, progress, start, end }: ScrollStepPro
 
 function Tag({ text, isLight }: { text: string; isLight: boolean }) {
   return (
-    <span className={`px-4 py-2 rounded-full text-sm font-medium border ${
+    <span className={`px-4 py-2 h-10 rounded-full text-sm font-medium border ${
       isLight 
         ? 'bg-white/80 border-gray-200 text-gray-800' 
         : 'bg-white/10 border-white/20 text-white/90'

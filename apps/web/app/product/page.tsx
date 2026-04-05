@@ -77,12 +77,12 @@ function page() {
           <p className="text-xl text-gray-400 mb-12">
             Join thousands of teams already using Sana to work smarter.
           </p>
-          <button className="px-10 py-5 bg-white text-black rounded-full font-semibold text-xl hover:scale-105 transition-transform">
+          <button className="px-7 py-4 bg-white text-black rounded-full font-semibold text-sm hover:scale-105 transition-transform">
             Download the App
           </button>
           
           <p className="mt-8 text-gray-500">
-            Coming soon to Android. <a href="#" className="text-white underline">Join the waitlist</a>
+            Coming soon to mobile. <a href="#" className="text-white underline">Join the waitlist</a>
           </p>
         </div>
       </section>

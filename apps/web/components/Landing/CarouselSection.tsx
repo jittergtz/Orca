@@ -338,6 +338,7 @@ function CarouselCardItem({ card, isActive }: { card: CarouselCard; isActive: bo
             src={card.imageSrc}
             alt={card.imageAlt ?? card.label}
             fill
+            sizes="(max-width: 768px) 100vw, 340px"
             className="w-full pointer-events-none saturate-80 opacity-80   h-full object-cover"
           />
         </div>
