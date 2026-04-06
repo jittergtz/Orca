@@ -1,0 +1,1 @@
+take a look at the @beautifulMention determine inside @beautifulMention and @apps/desktop  where we are right now and figure out the next step our Goal for today is the first subcriped topic and testing the complete flow so getting the first article shown that uses our new flow with supabase serper openai etc all that 

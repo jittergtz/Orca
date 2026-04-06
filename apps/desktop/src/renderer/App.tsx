@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, ArrowUp, Cpu, PanelLeft, LogOut, ExternalLink } from "lucide-react";
+import { Settings, PanelLeft, LogOut, ExternalLink } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import ArticleView from "./components/ArticleView";
 import { getDesktopSupabaseClient, refreshSessionOnFocus } from "./lib/supabase";
+import { useFeedStore } from "./stores/feedStore";
 
 export interface Note {
   id: string;
@@ -30,13 +31,19 @@ function getPricingUrl(baseUrl: string, email: string | null) {
 }
 
 export default function App() {
+  console.log("[APP] ════ App component rendering ════");
   const appBaseUrl = useMemo(
-    () =>
-      import.meta.env.VITE_APP_URL ||
-      (import.meta.env.DEV ? "http://localhost:3000" : "https://orca.app"),
+    () => {
+      const url = import.meta.env.VITE_APP_URL ||
+        (import.meta.env.DEV ? "http://localhost:3000" : "https://orca.app");
+      console.log("[APP] appBaseUrl:", url, "DEV:", import.meta.env.DEV);
+      return url;
+    },
     []
   );
   const [view, setView] = useState("loading");
+  console.log("[APP] Initial view state:", "loading");
+  console.log("[APP] Initial view state:", "loading");
   const [theme, setTheme] = useState("system");
   const [systemTheme, setSystemTheme] = useState("light");
   const [notes, setNotes] = useState<Note[]>([]);
@@ -120,76 +127,109 @@ export default function App() {
   }, []);
 
   const enterApp = useCallback(
-    async (selectId: string | null = null) => {
+    async (selectId: string | null = null, userId?: string) => {
       await refreshNotes(selectId);
       setView("app");
+      // Bootstrap feed store with user's topics
+      if (userId) {
+        void useFeedStore.getState().bootstrap(userId);
+      }
     },
     [refreshNotes]
   );
 
   const syncAuthState = useCallback(async () => {
+    console.log("[AUTH] ════ syncAuthState running ════");
     const supabase = getDesktopSupabaseClient();
+    console.log("[AUTH] Step 1: Getting session...");
     const {
       data: { session },
       error: sessionError,
     } = await supabase.auth.getSession();
+    console.log("[AUTH] Step 1 result: session=", session?.user?.email ?? null, "error=", sessionError?.message ?? null);
     if (sessionError) {
+      console.error("[AUTH] Session error, throwing:", sessionError.message);
       throw sessionError;
     }
 
     if (!session) {
+      console.log("[AUTH] No session → setting view to 'auth'");
       setSessionEmail(null);
       setSubscriptionStatus(null);
       setView("auth");
       return;
     }
 
+    console.log("[AUTH] Step 2: Session exists, email=", session.user.email);
     setSessionEmail(session.user.email ?? null);
+    console.log("[AUTH] Step 3: Querying billing_subscriptions for user_id=", session.user.id);
     const { data: sub, error: subError } = await supabase
       .from("billing_subscriptions")
       .select("status")
       .eq("user_id", session.user.id)
       .maybeSingle();
+    console.log("[AUTH] Step 3 result: sub=", JSON.stringify(sub), "subError=", subError?.message ?? null);
       
     if (subError) {
+      console.error("[AUTH] Subscription query error, throwing:", subError.message, "details:", subError);
       throw subError;
     }
     
     const nextSubscriptionStatus =
       (sub as { status?: string } | null)?.status ?? "canceled";
+    console.log("[AUTH] Step 4: nextSubscriptionStatus=", nextSubscriptionStatus);
     setSubscriptionStatus(nextSubscriptionStatus);
 
     if (hasActivePlan(nextSubscriptionStatus)) {
-      await enterApp();
+      console.log("[AUTH] Active plan detected → calling enterApp with userId=", session.user.id);
+      await enterApp(null, session.user.id);
+      console.log("[AUTH] enterApp completed");
       return;
     }
 
+    console.log("[AUTH] No active plan → setting view to 'paywall'");
     setView("paywall");
   }, [enterApp]);
 
   useEffect(() => {
+    console.log("[APP-INIT] ════ useEffect init running ════");
     let unsubscribe: (() => void) | null = null;
     let unsubscribeAuth: (() => void) | null = null;
     let unsubscribeOAuthCallback: (() => void) | null = null;
 
     const init = async () => {
       try {
+        console.log("[APP-INIT] Step 1: Checking window.orca...");
+        if (!window.orca) {
+          throw new Error("window.orca is undefined — preload script not loaded!");
+        }
+        console.log("[APP-INIT] Step 1 OK: window.orca exists");
+        console.log("[APP-INIT] Step 2: Getting theme settings...");
         const [savedTheme, effectiveTheme] = await Promise.all([
           window.orca.settings.getTheme(),
           window.orca.settings.getEffectiveTheme()
         ]);
+        console.log("[APP-INIT] Step 2 OK: savedTheme=", savedTheme, "effectiveTheme=", effectiveTheme);
         setTheme(savedTheme);
         setSystemTheme(effectiveTheme);
 
+        console.log("[APP-INIT] Step 3: Registering theme change listener...");
         unsubscribe = window.orca.onSystemThemeChanged((mode) => {
           setSystemTheme(mode);
         });
+        console.log("[APP-INIT] Step 3 OK");
 
+        console.log("[APP-INIT] Step 4: Calling syncAuthState...");
         await syncAuthState();
+        console.log("[APP-INIT] Step 4 OK: syncAuthState completed, current view:", view);
+        
+        console.log("[APP-INIT] Step 5: Setting up Supabase auth listener...");
         const supabase = getDesktopSupabaseClient();
+        console.log("[APP-INIT] Step 5 OK: Supabase client created");
 
         // Re-sync auth state only on meaningful auth events, not all changes.
         const authSubscription = supabase.auth.onAuthStateChange((event) => {
+          console.log("[APP-INIT] Auth state change event:", event);
           if (
             event === "SIGNED_OUT" ||
             event === "SIGNED_IN" ||
@@ -197,6 +237,7 @@ export default function App() {
             event === "USER_UPDATED"
           ) {
             void syncAuthState().catch((error: any) => {
+              console.error("[APP-INIT] syncAuthState error in auth listener:", error);
               setView(`error: ${error.message || String(error)}`);
             });
           }
@@ -221,8 +262,11 @@ export default function App() {
           window.removeEventListener("focus", handleWindowFocus);
         };
         // Refresh immediately in case the app was opened after a long idle.
+        console.log("[APP-INIT] Step 6: Refreshing session on focus...");
         void refreshSessionOnFocus();
-        console.log("[ORCA-RENDERER] Registering onOAuthCallback listener");
+        console.log("[APP-INIT] Step 6 OK");
+        
+        console.log("[APP-INIT] Step 7: Registering onOAuthCallback listener");
         unsubscribeOAuthCallback = window.orca.onOAuthCallback((url) => {
           console.log("[ORCA-RENDERER] ★ onOAuthCallback fired! URL:", url);
           void (async () => {
@@ -269,8 +313,10 @@ export default function App() {
             }
           })();
         });
+        console.log("[APP-INIT] ════ All init steps completed successfully ════");
       } catch (error: any) {
-        console.error("Initialization failed", error);
+        console.error("[APP-INIT] ════ INITIALIZATION FAILED ════", error);
+        console.error("[APP-INIT] Error stack:", error.stack);
         setView(`error: ${error.message || String(error)}`);
       }
     };
@@ -278,6 +324,7 @@ export default function App() {
     void init();
 
     return () => {
+      console.log("[APP-INIT] Cleanup running");
       if (unsubscribe) {
         unsubscribe();
       }
@@ -484,8 +531,8 @@ export default function App() {
             </div>
           </header>
             <Sidebar 
-              createNote={createNote}
               isOpen={sidebarOpen}
+              onNewTopic={() => setOnboardingOpen(true)}
             />
 
           <div className="flex flex-1  w-full relative">
@@ -499,17 +546,29 @@ export default function App() {
                      const { data: sessionData } = await supabase.auth.getSession();
                      const userId = sessionData?.session?.user?.id;
                      if (userId) {
+                       // Build a proper TopicConfig from the onboarding data
+                       const topicConfig = data.topicConfig ?? {
+                         signals: [],
+                         exclude: [],
+                         searchQuery: data.prompt || "",
+                       };
                        const { error } = await (supabase as any).from('topics').insert({
                          user_id: userId,
-                         name: data.prompt || "Custom Topic",
-                         category: data.category || "other",
+                         name: topicConfig.topic || data.prompt || "Custom Topic",
+                         category: topicConfig.category || data.category || "other",
                          frequency: data.frequency,
-                         config: data.chatHistory,
+                         config: {
+                           signals: topicConfig.signals ?? [],
+                           exclude: topicConfig.exclude ?? [],
+                           searchQuery: topicConfig.searchQuery ?? data.prompt ?? "",
+                         },
                        });
                        if (error) {
                          console.error("Failed to insert topic", error);
                        } else {
                          console.log("Topic successfully saved to Supabase!");
+                         // Refresh the feed store to pick up the new topic
+                         await useFeedStore.getState().refreshTopics(userId);
                        }
                      }
                    } catch (e) {
