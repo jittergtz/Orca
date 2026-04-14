@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, ArrowUp, Cpu, PanelLeft, LogOut, ExternalLink } from "lucide-react";
+import { Settings, PanelLeft, LogOut, ExternalLink } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import ArticleView from "./components/ArticleView";
 import { getDesktopSupabaseClient, refreshSessionOnFocus } from "./lib/supabase";
+import { useFeedStore } from "./stores/feedStore";
 
 export interface Note {
   id: string;
@@ -30,13 +31,19 @@ function getPricingUrl(baseUrl: string, email: string | null) {
 }
 
 export default function App() {
+  console.log("[APP] ════ App component rendering ════");
   const appBaseUrl = useMemo(
-    () =>
-      import.meta.env.VITE_APP_URL ||
-      (import.meta.env.DEV ? "http://localhost:3000" : "https://orca.app"),
+    () => {
+      const url = import.meta.env.VITE_APP_URL ||
+        (import.meta.env.DEV ? "http://localhost:3000" : "https://orca.app");
+      console.log("[APP] appBaseUrl:", url, "DEV:", import.meta.env.DEV);
+      return url;
+    },
     []
   );
   const [view, setView] = useState("loading");
+  console.log("[APP] Initial view state:", "loading");
+  console.log("[APP] Initial view state:", "loading");
   const [theme, setTheme] = useState("system");
   const [systemTheme, setSystemTheme] = useState("light");
   const [notes, setNotes] = useState<Note[]>([]);
@@ -120,76 +127,109 @@ export default function App() {
   }, []);
 
   const enterApp = useCallback(
-    async (selectId: string | null = null) => {
+    async (selectId: string | null = null, userId?: string) => {
       await refreshNotes(selectId);
       setView("app");
+      // Bootstrap feed store with user's topics
+      if (userId) {
+        void useFeedStore.getState().bootstrap(userId);
+      }
     },
     [refreshNotes]
   );
 
   const syncAuthState = useCallback(async () => {
+    console.log("[AUTH] ════ syncAuthState running ════");
     const supabase = getDesktopSupabaseClient();
+    console.log("[AUTH] Step 1: Getting session...");
     const {
       data: { session },
       error: sessionError,
     } = await supabase.auth.getSession();
+    console.log("[AUTH] Step 1 result: session=", session?.user?.email ?? null, "error=", sessionError?.message ?? null);
     if (sessionError) {
+      console.error("[AUTH] Session error, throwing:", sessionError.message);
       throw sessionError;
     }
 
     if (!session) {
+      console.log("[AUTH] No session → setting view to 'auth'");
       setSessionEmail(null);
       setSubscriptionStatus(null);
       setView("auth");
       return;
     }
 
+    console.log("[AUTH] Step 2: Session exists, email=", session.user.email);
     setSessionEmail(session.user.email ?? null);
+    console.log("[AUTH] Step 3: Querying billing_subscriptions for user_id=", session.user.id);
     const { data: sub, error: subError } = await supabase
       .from("billing_subscriptions")
       .select("status")
       .eq("user_id", session.user.id)
       .maybeSingle();
+    console.log("[AUTH] Step 3 result: sub=", JSON.stringify(sub), "subError=", subError?.message ?? null);
       
     if (subError) {
+      console.error("[AUTH] Subscription query error, throwing:", subError.message, "details:", subError);
       throw subError;
     }
     
     const nextSubscriptionStatus =
       (sub as { status?: string } | null)?.status ?? "canceled";
+    console.log("[AUTH] Step 4: nextSubscriptionStatus=", nextSubscriptionStatus);
     setSubscriptionStatus(nextSubscriptionStatus);
 
     if (hasActivePlan(nextSubscriptionStatus)) {
-      await enterApp();
+      console.log("[AUTH] Active plan detected → calling enterApp with userId=", session.user.id);
+      await enterApp(null, session.user.id);
+      console.log("[AUTH] enterApp completed");
       return;
     }
 
+    console.log("[AUTH] No active plan → setting view to 'paywall'");
     setView("paywall");
   }, [enterApp]);
 
   useEffect(() => {
+    console.log("[APP-INIT] ════ useEffect init running ════");
     let unsubscribe: (() => void) | null = null;
     let unsubscribeAuth: (() => void) | null = null;
     let unsubscribeOAuthCallback: (() => void) | null = null;
 
     const init = async () => {
       try {
+        console.log("[APP-INIT] Step 1: Checking window.orca...");
+        if (!window.orca) {
+          throw new Error("window.orca is undefined — preload script not loaded!");
+        }
+        console.log("[APP-INIT] Step 1 OK: window.orca exists");
+        console.log("[APP-INIT] Step 2: Getting theme settings...");
         const [savedTheme, effectiveTheme] = await Promise.all([
           window.orca.settings.getTheme(),
           window.orca.settings.getEffectiveTheme()
         ]);
+        console.log("[APP-INIT] Step 2 OK: savedTheme=", savedTheme, "effectiveTheme=", effectiveTheme);
         setTheme(savedTheme);
         setSystemTheme(effectiveTheme);
 
+        console.log("[APP-INIT] Step 3: Registering theme change listener...");
         unsubscribe = window.orca.onSystemThemeChanged((mode) => {
           setSystemTheme(mode);
         });
+        console.log("[APP-INIT] Step 3 OK");
 
+        console.log("[APP-INIT] Step 4: Calling syncAuthState...");
         await syncAuthState();
+        console.log("[APP-INIT] Step 4 OK: syncAuthState completed, current view:", view);
+        
+        console.log("[APP-INIT] Step 5: Setting up Supabase auth listener...");
         const supabase = getDesktopSupabaseClient();
+        console.log("[APP-INIT] Step 5 OK: Supabase client created");
 
         // Re-sync auth state only on meaningful auth events, not all changes.
         const authSubscription = supabase.auth.onAuthStateChange((event) => {
+          console.log("[APP-INIT] Auth state change event:", event);
           if (
             event === "SIGNED_OUT" ||
             event === "SIGNED_IN" ||
@@ -197,6 +237,7 @@ export default function App() {
             event === "USER_UPDATED"
           ) {
             void syncAuthState().catch((error: any) => {
+              console.error("[APP-INIT] syncAuthState error in auth listener:", error);
               setView(`error: ${error.message || String(error)}`);
             });
           }
@@ -221,8 +262,11 @@ export default function App() {
           window.removeEventListener("focus", handleWindowFocus);
         };
         // Refresh immediately in case the app was opened after a long idle.
+        console.log("[APP-INIT] Step 6: Refreshing session on focus...");
         void refreshSessionOnFocus();
-        console.log("[ORCA-RENDERER] Registering onOAuthCallback listener");
+        console.log("[APP-INIT] Step 6 OK");
+        
+        console.log("[APP-INIT] Step 7: Registering onOAuthCallback listener");
         unsubscribeOAuthCallback = window.orca.onOAuthCallback((url) => {
           console.log("[ORCA-RENDERER] ★ onOAuthCallback fired! URL:", url);
           void (async () => {
@@ -269,8 +313,10 @@ export default function App() {
             }
           })();
         });
+        console.log("[APP-INIT] ════ All init steps completed successfully ════");
       } catch (error: any) {
-        console.error("Initialization failed", error);
+        console.error("[APP-INIT] ════ INITIALIZATION FAILED ════", error);
+        console.error("[APP-INIT] Error stack:", error.stack);
         setView(`error: ${error.message || String(error)}`);
       }
     };
@@ -278,6 +324,7 @@ export default function App() {
     void init();
 
     return () => {
+      console.log("[APP-INIT] Cleanup running");
       if (unsubscribe) {
         unsubscribe();
       }
@@ -464,7 +511,7 @@ export default function App() {
           >
             <div className="flex items-center " style={{ WebkitAppRegion: 'no-drag' }}>
               <button 
-                className="p-1 z-50 rounded-full  dark:text-neutral-400 text-neutral-700 hover:text-black dark:hover:text-white/90 transition-colors flex items-center justify-center auto-cols-auto" 
+                className="p-1 z-50 rounded-full  dark:text-neutral-600 text-neutral-400 hover:text-black dark:hover:text-white/90 transition-colors flex items-center justify-center auto-cols-auto" 
                 onClick={() => setSidebarOpen(prev => !prev)}
                 title="Toggle Sidebar (Cmd+B)"
               >
@@ -472,14 +519,7 @@ export default function App() {
               </button>
             </div>
             <div className="flex items-center pt-2 gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
-              <button
-                onClick={() => void handleSignOut()}
-                disabled={signOutLoading}
-                className="px-3 py-1 rounded-full border border-white/20 text-xs dark:text-neutral-300 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
-              >
-                <LogOut size={12} />
-                {signOutLoading ? "Signing out..." : "Sign Out"}
-              </button>
+            
               <button 
               style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.4)" }}
                 className="p-2  border border-white/10 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
@@ -491,8 +531,8 @@ export default function App() {
             </div>
           </header>
             <Sidebar 
-              createNote={createNote}
               isOpen={sidebarOpen}
+              onNewTopic={() => setOnboardingOpen(true)}
             />
 
           <div className="flex flex-1  w-full relative">
@@ -506,29 +546,76 @@ export default function App() {
                      const { data: sessionData } = await supabase.auth.getSession();
                      const userId = sessionData?.session?.user?.id;
                      if (userId) {
+                       // Build a proper TopicConfig from the onboarding data
+                       const topicConfig = data.topicConfig ?? {
+                         signals: [],
+                         exclude: [],
+                         searchQuery: data.prompt || "",
+                       };
                        const { error } = await (supabase as any).from('topics').insert({
                          user_id: userId,
-                         name: data.prompt || "Custom Topic",
-                         category: data.category || "other",
+                         name: topicConfig.topic || data.prompt || "Custom Topic",
+                         category: topicConfig.category || data.category || "other",
                          frequency: data.frequency,
-                         config: data.chatHistory,
+                         config: {
+                           signals: topicConfig.signals ?? [],
+                           exclude: topicConfig.exclude ?? [],
+                           searchQuery: topicConfig.searchQuery ?? data.prompt ?? "",
+                         },
                        });
-                       if (error) {
-                         console.error("Failed to insert topic", error);
-                       } else {
-                         console.log("Topic successfully saved to Supabase!");
-                       }
-                     }
-                   } catch (e) {
-                     console.error("Error saving topic", e);
-                   }
-                   setOnboardingOpen(false);
+                        if (error) {
+                          console.error("Failed to insert topic", error);
+                        } else {
+                          console.log("Topic successfully saved to Supabase!");
+                          // Refresh the feed store to pick up the new topic
+                          await useFeedStore.getState().refreshTopics(userId);
+
+                          // Trigger immediate article fetch via worker
+                          const workerUrl = import.meta.env.VITE_WORKER_URL;
+                          if (workerUrl) {
+                            console.log("[ONBOARDING] Triggering immediate fetch via worker:", workerUrl);
+                            try {
+                              const { data: insertedTopics } = await (supabase as any)
+                                .from('topics')
+                                .select('id')
+                                .eq('user_id', userId)
+                                .order('created_at', { ascending: false })
+                                .limit(1);
+
+                              if (insertedTopics && insertedTopics.length > 0) {
+                                const topicId = insertedTopics[0].id;
+                                const response = await fetch(`${workerUrl}/trigger-fetch`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ topicId, initiatedBy: "manual" }),
+                                });
+
+                                if (response.ok) {
+                                  console.log("[ONBOARDING] Fetch triggered successfully for topic:", topicId);
+                                } else {
+                                  const errText = await response.text();
+                                  console.warn("[ONBOARDING] Worker returned non-OK:", errText);
+                                }
+                              }
+                            } catch (fetchErr) {
+                              console.warn("[ONBOARDING] Failed to trigger immediate fetch (worker may not be running):", fetchErr);
+                            }
+                          } else {
+                            console.log("[ONBOARDING] VITE_WORKER_URL not set — skipping immediate fetch trigger");
+                          }
+                        }
+                      }
+                    } catch (e) {
+                      console.error("Error saving topic", e);
+                    }
+                    setOnboardingOpen(false);
                  }}
                  onCancel={() => setOnboardingOpen(false)}
                />
             </div>
           )}
-          <main className="flex flex-1 min-h-0 w-full relative">
+          <main className="flex flex-1  min-h-0 w-full relative">
+         
             <ArticleView />
           </main>
         </div>
@@ -536,14 +623,14 @@ export default function App() {
     ) : (
         <div className="auth-layer ">
           {view === "loading" ? (
-            <div className="glass-card backdrop-blur-md max-w-sm">
+            <div className=" backdrop-blur-md max-w-sm">
               <h1 className="text-2xl font-semibold">Orca</h1>
               <p className="mt-2 text-sm opacity-80">Loading...</p>
             </div>
           ) : view.startsWith("error:") ? (
-            <div className="glass-card backdrop-blur-md max-w-sm border border-red-500/50">
-              <h1 className="text-2xl font-semibold text-red-500">Error Hook</h1>
-              <p className="mt-2 text-sm opacity-80 font-mono text-red-400">{view.replace("error: ", "")}</p>
+            <div className=" backdrop-blur-md max-w-sm border border-red-200/50">
+              <h1 className="text-2xl font-semibold text-red-700">Error Hook</h1>
+              <p className="mt-2 text-sm opacity-80 font-mono text-neutral-400">{view.replace("error: ", "")}</p>
             </div>
           ) : view === "auth" ? (
             <div className="max-w-md  ">
@@ -655,9 +742,9 @@ export default function App() {
 
       {settingsOpen ? (
         <div className="modal-overlay flex items-center justify-center p-4">
-          <div className="glass-card backdrop-blur-md w-full max-w-3xl flex overflow-hidden p-0 h-[500px]">
-            <div className="w-48 border-r border-neutral-200 dark:border-white/10 p-4 flex flex-col gap-2">
-              <h2 className="text-sm font-semibold mb-2 px-2 text-neutral-500 dark:text-white/50 uppercase tracking-wider">Settings</h2>
+          <div className="  dark:bg-black/40 bg-white/40 rounded-2xl  w-full max-w-3xl flex overflow-hidden p-0 h-[500px]">
+            <div className="w-48 backdrop-blur-xl border-r border-neutral-200 dark:border-white/10 p-4 flex flex-col gap-2">
+              <h2 className="text-sm  mb-2 px-2 text-neutral-900 dark:text-white/90 uppercase tracking-wider">Settings</h2>
               {["profile", "themes", "api-key"].map((cat) => (
                 <button
                   key={cat}
@@ -675,7 +762,7 @@ export default function App() {
               ))}
             </div>
 
-            <div className="flex-1 p-6 flex flex-col relative overflow-y-auto">
+            <div className="flex-1 dark:bg-neutral-900 bg-neutral-100 p-6 flex flex-col relative overflow-y-auto">
               <button 
                 className="absolute top-4 right-4 text-neutral-400 dark:text-white/40 hover:text-neutral-900 dark:hover:text-white transition-colors"
                 onClick={() => setSettingsOpen(false)}
@@ -685,20 +772,28 @@ export default function App() {
 
               {settingsCategory === "profile" && (
                 <div>
-                  <h2 className="text-xl font-semibold">Profile Settings</h2>
+                  <h2 className="text-xl font-medium">Profile Settings</h2>
                   <p className="mt-2 text-sm opacity-80">Profile management coming soon.</p>
+                    <button
+                onClick={() => void handleSignOut()}
+                disabled={signOutLoading}
+                className=" mt-2 px-3 py-1 rounded-full border border-black/20 text-xs dark:text-neutral-300 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                <LogOut size={12} />
+                {signOutLoading ? "Signing out..." : "Sign Out"}
+              </button>
                 </div>
               )}
 
               {settingsCategory === "themes" && (
                 <div>
-                  <h2 className="text-xl font-semibold">Appearance</h2>
+                  <h2 className="text-xl font-medium">Appearance</h2>
                   <p className="mt-2 text-sm opacity-80 mb-6">Customize how Orca Notes looks.</p>
                   
                   <label className="flex items-center gap-3 text-sm flex-row">
                     <span>Theme mode:</span>
                     <select
-                      className="glass-input h-9 w-32 rounded-lg px-2 text-sm outline-none"
+                      className="glass-input bg-neutral-200  h-9 w-32 rounded-xl px-3 text-sm outline-none"
                       value={theme}
                       onChange={(event) => void changeTheme(event.target.value)}
                     >
@@ -712,7 +807,7 @@ export default function App() {
 
               {settingsCategory === "api-key" && (
                 <div>
-                  <h2 className="text-xl font-semibold">API Keys</h2>
+                  <h2 className="text-xl font-medium">API Keys</h2>
                   <p className="mt-2 text-sm opacity-80">API configuration coming soon.</p>
                 </div>
               )}

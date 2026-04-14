@@ -2,7 +2,7 @@ import type { EnvSource } from "@newsflow/config";
 import { Redis } from "@upstash/redis";
 import {
   resolveOpenAIEnv,
-  resolvePerplexityEnv,
+  resolveSerperEnv,
   resolvePublicSupabaseEnv,
   resolveRedisEnv,
   resolveServiceRoleSupabaseEnv,
@@ -14,7 +14,7 @@ export async function runHealthcheck(source?: EnvSource) {
   const supabasePublic = resolvePublicSupabaseEnv(source);
   const supabaseService = resolveServiceRoleSupabaseEnv(source);
   const openai = resolveOpenAIEnv(source);
-  const perplexity = resolvePerplexityEnv(source);
+  const serper = resolveSerperEnv(source);
   const redis = resolveRedisEnv(source);
   const runtime = resolveWorkerRuntimeEnv(source);
 
@@ -37,12 +37,11 @@ export async function runHealthcheck(source?: EnvSource) {
         supabasePublicUrl: supabasePublic.supabaseUrl,
         supabaseServiceUrl: supabaseService.supabaseUrl,
         openaiConfigured: Boolean(openai.openaiApiKey),
-        perplexityConfigured: Boolean(perplexity.perplexityApiKey),
+        serperConfigured: Boolean(serper.serperApiKey),
         redisUrl: redis.redisUrl,
         upstashRestConfigured: Boolean(upstashRest),
         workerPollCron: runtime.workerPollCron,
         topicDialogueModel: runtime.topicDialogueModel,
-        newsSearchModel: runtime.newsSearchModel,
         articleSummaryModel: runtime.articleSummaryModel,
         railwayEnvironment: runtime.railwayEnvironment ?? null,
       },

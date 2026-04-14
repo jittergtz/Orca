@@ -75,9 +75,9 @@ export function resolveOpenAIEnv(source: EnvSource = defaultEnvSource()) {
   };
 }
 
-export function resolvePerplexityEnv(source: EnvSource = defaultEnvSource()) {
+export function resolveSerperEnv(source: EnvSource = defaultEnvSource()) {
   return {
-    perplexityApiKey: requireEnvValue("Perplexity API key", ["PERPLEXITY_API_KEY"], source)
+    serperApiKey: requireEnvValue("Serper API key", ["SERPER_API_KEY"], source)
   };
 }
 
