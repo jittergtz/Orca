@@ -5,6 +5,7 @@ export interface WorkerRuntimeEnv {
   topicDialogueModel: string;
   articleSummaryModel: string;
   serperApiKey: string;
+  workerAuthToken?: string;
   upstashRestUrl?: string;
   upstashRestToken?: string;
   railwayEnvironment?: string;
@@ -28,6 +29,7 @@ export function resolveWorkerRuntimeEnv(source: EnvSource = defaultEnvSource()):
     topicDialogueModel: readEnvValue(source, "TOPIC_DIALOGUE_MODEL") ?? "gpt-4o",
     articleSummaryModel: readEnvValue(source, "ARTICLE_SUMMARY_MODEL") ?? "gpt-4o-mini",
     serperApiKey,
+    workerAuthToken: readEnvValue(source, "WORKER_AUTH_TOKEN"),
     upstashRestUrl: readEnvValue(source, "UPSTASH_REDIS_REST_URL"),
     upstashRestToken: readEnvValue(source, "UPSTASH_REDIS_REST_TOKEN"),
     railwayEnvironment: readEnvValue(source, "RAILWAY_ENVIRONMENT"),

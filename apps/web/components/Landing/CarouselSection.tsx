@@ -43,7 +43,7 @@ const defaultCards: CarouselCard[] = [
     label: "Sport",
     bgColor: "#000",
     badge: "2026 Start",
-    imageSrc: "/carousel/sport.jpg",
+    imageSrc: "/carousel/Sport.jpg",
     imageAlt: "Indoor garden waterfall",
     
     GlassChatparagraph: "Orca is a powerful learning platform that helps you create and manage your work.",
@@ -63,7 +63,7 @@ const defaultCards: CarouselCard[] = [
     label: "Technology",
     bgColor: "#000",
     badge: "2026 Start",
-    imageSrc: "/carousel/datacenter.jpg",
+    imageSrc: "/carousel/Datacenter.jpg",
     imageAlt: "Indoor garden waterfall",
 
       GlassChatparagraph: "300B Data Center build",
@@ -90,7 +90,7 @@ const defaultCards: CarouselCard[] = [
     label: "Singapore",
     bgColor: "#2d5a45",
     badge: "Daily News",
-    imageSrc: "/carousel/season.jpg",
+    imageSrc: "/carousel/Season.jpg",
     imageAlt: "Indoor garden waterfall",
   },
 ];
@@ -100,7 +100,7 @@ const SecondaryCards: CarouselCard[] = [
     label: "Sport",
     bgColor: "#5C2D30",
     badge: "2026 Start",
-    imageSrc: "/carousel/season.jpg",
+    imageSrc: "/carousel/Season.jpg",
     imageAlt: "Indoor garden waterfall",
   },
   {

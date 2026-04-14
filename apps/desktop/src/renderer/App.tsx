@@ -563,18 +563,52 @@ export default function App() {
                            searchQuery: topicConfig.searchQuery ?? data.prompt ?? "",
                          },
                        });
-                       if (error) {
-                         console.error("Failed to insert topic", error);
-                       } else {
-                         console.log("Topic successfully saved to Supabase!");
-                         // Refresh the feed store to pick up the new topic
-                         await useFeedStore.getState().refreshTopics(userId);
-                       }
-                     }
-                   } catch (e) {
-                     console.error("Error saving topic", e);
-                   }
-                   setOnboardingOpen(false);
+                        if (error) {
+                          console.error("Failed to insert topic", error);
+                        } else {
+                          console.log("Topic successfully saved to Supabase!");
+                          // Refresh the feed store to pick up the new topic
+                          await useFeedStore.getState().refreshTopics(userId);
+
+                          // Trigger immediate article fetch via worker
+                          const workerUrl = import.meta.env.VITE_WORKER_URL;
+                          if (workerUrl) {
+                            console.log("[ONBOARDING] Triggering immediate fetch via worker:", workerUrl);
+                            try {
+                              const { data: insertedTopics } = await (supabase as any)
+                                .from('topics')
+                                .select('id')
+                                .eq('user_id', userId)
+                                .order('created_at', { ascending: false })
+                                .limit(1);
+
+                              if (insertedTopics && insertedTopics.length > 0) {
+                                const topicId = insertedTopics[0].id;
+                                const response = await fetch(`${workerUrl}/trigger-fetch`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ topicId, initiatedBy: "manual" }),
+                                });
+
+                                if (response.ok) {
+                                  console.log("[ONBOARDING] Fetch triggered successfully for topic:", topicId);
+                                } else {
+                                  const errText = await response.text();
+                                  console.warn("[ONBOARDING] Worker returned non-OK:", errText);
+                                }
+                              }
+                            } catch (fetchErr) {
+                              console.warn("[ONBOARDING] Failed to trigger immediate fetch (worker may not be running):", fetchErr);
+                            }
+                          } else {
+                            console.log("[ONBOARDING] VITE_WORKER_URL not set — skipping immediate fetch trigger");
+                          }
+                        }
+                      }
+                    } catch (e) {
+                      console.error("Error saving topic", e);
+                    }
+                    setOnboardingOpen(false);
                  }}
                  onCancel={() => setOnboardingOpen(false)}
                />
