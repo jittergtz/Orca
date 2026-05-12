@@ -11,6 +11,8 @@ export type {
   Topic,
   Article,
   ArticleRead,
+  ArticleSummary,
+  TopicRefinementResult,
   BillingPlanCode,
   BillingProvider,
   BillingSubscriptionStatus,
