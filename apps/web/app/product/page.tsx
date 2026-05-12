@@ -71,13 +71,13 @@ function page() {
       {/* CTA Section */}
       <section className="h-screen flex flex-col justify-center items-center px-6 bg-black relative">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">
+          <h2 className="text-4xl md:text-6xl  text-white mb-6">
             Ready to get started?
           </h2>
           <p className="text-xl text-gray-400 mb-12">
             Join thousands of teams already using Sana to work smarter.
           </p>
-          <button className="px-7 py-4 bg-white text-black rounded-full font-semibold text-sm hover:scale-105 transition-transform">
+          <button className="px-4 py-2 bg-white text-black rounded-full font-semibold text-sm hover:scale-105 transition-transform">
             Download the App
           </button>
           

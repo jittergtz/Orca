@@ -9,7 +9,7 @@ export default function AuthRedirect() {
   useEffect(() => {
     const s = getSupabase()
     if (!s) return
-    s.auth.getSession().then(({ data }) => {
+    s.auth.getSession().then(({ data }: {data: any}) => {
       if (data.session) {
         router.push('/dashboard')
       }
