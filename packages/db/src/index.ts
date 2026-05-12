@@ -10,6 +10,7 @@ export type {
   TopicConfig,
   Topic,
   Article,
+  ArticleCandidate,
   ArticleRead,
   ArticleSummary,
   TopicRefinementResult,
