@@ -10,14 +10,14 @@ const steps = [
     id: 1,
     title: "Connect all your work apps",
     subtitle: "Google Drive, Slack, Notion, and 100+ integrations",
-    image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=2070&auto=format&fit=crop",
+    image: "/product/background.jpg",
     theme: "light"
   },
   {
     id: 2,
     title: "Search for anything, from anywhere",
     subtitle: "Unified search across all your connected tools and documents",
-    image: "https://images.unsplash.com/photo-1555421689-d68471e189f2?q=80&w=2070&auto=format&fit=crop",
+    image: "/heroBackgroundNoNoise.png",
     theme: "dark"
   },
   {
@@ -219,7 +219,7 @@ function ProgressDot({
 
   return (
     <motion.div
-      className="w-2 h-2 rounded-full bg-white"
+      className="w-1 h-5 rounded-full bg-white/90"
       style={{ opacity, scale }}
     />
   );

@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orca — System Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090f;
+    --surface: #0e1018;
+    --surface2: #13151f;
+    --border: rgba(255,255,255,0.06);
+    --accent: #79e8b0;
+    --accent2: #5db8ef;
+    --accent3: #f0a070;
+    --text: #c8d4e8;
+    --muted: #4a5568;
+    --dim: #2d3748;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: #060810;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow-y: auto;
+  }
+  .sidebar-header {
+    padding: 28px 22px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    margin-bottom: 3px;
+  }
+  .sidebar-sub {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .nav-section {
+    padding: 16px 0 8px;
+  }
+  .nav-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 0 22px 8px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 22px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    font-weight: 500;
+    user-select: none;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.02); }
+  .nav-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(121,232,176,0.06);
+    font-weight: 600;
+  }
+  .nav-icon {
+    font-size: 9px;
+    opacity: 0.5;
+    width: 12px;
+    text-align: center;
+  }
+  .nav-item.active .nav-icon { opacity: 1; }
+
+  /* MAIN */
+  #main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 36px 42px;
+    scroll-behavior: smooth;
+  }
+  #main::-webkit-scrollbar { width: 4px; }
+  #main::-webkit-scrollbar-track { background: transparent; }
+  #main::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+
+  /* PAGE SECTIONS */
+  .page { display: none; animation: fadeIn 0.2s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: #eef2ff;
+    letter-spacing: -0.03em;
+    margin-bottom: 6px;
+  }
+  .page-sub {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+  }
+  .card.accent { border-left: 3px solid var(--accent); }
+  .card.blue { border-left: 3px solid var(--accent2); }
+  .card.orange { border-left: 3px solid var(--accent3); }
+  .card-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+  }
+  .card.blue .card-title { color: var(--accent2); }
+  .card.orange .card-title { color: var(--accent3); }
+  .card p { font-size: 13px; line-height: 1.75; color: var(--text); }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+
+  /* CHIP */
+  .chip {
+    display: inline-block;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 2px 4px 2px 0;
+  }
+  .chip.green { color: var(--accent); border-color: rgba(121,232,176,0.2); background: rgba(121,232,176,0.05); }
+  .chip.blue { color: var(--accent2); border-color: rgba(93,184,239,0.2); background: rgba(93,184,239,0.05); }
+  .chip.orange { color: var(--accent3); border-color: rgba(240,160,112,0.2); background: rgba(240,160,112,0.05); }
+
+  /* MINI CARD (inside grid) */
+  .mini-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .mini-card-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #eef2ff;
+    margin-bottom: 6px;
+  }
+  .mini-card p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* LIST */
+  .dot-list { list-style: none; }
+  .dot-list li {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 4px;
+  }
+  .dot-list li::before { content: "▸"; color: var(--accent); font-size: 9px; margin-top: 5px; flex-shrink: 0; }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: #050710;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.9;
+    color: #8899aa;
+    margin: 10px 0;
+    overflow-x: auto;
+  }
+  .code-block .kw { color: #79e8b0; }
+  .code-block .str { color: #f0a070; }
+  .code-block .fn { color: #5db8ef; }
+  .code-block .cm { color: #3a4a5a; }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th {
+    text-align: left;
+    padding: 6px 14px;
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td { padding: 7px 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .data-table tr:hover td { background: rgba(255,255,255,0.015); }
+  .td-col { color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .td-type { color: var(--accent2); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .td-note { color: var(--muted); font-size: 11px; }
+
+  /* LAYER BOX */
+  .layer-box {
+    border-radius: 8px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .layer-title { font-size: 11px; font-weight: 700; color: #eef2ff; margin-bottom: 8px; }
+  .layer-item {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.9;
+    padding-left: 10px;
+    border-left: 2px solid rgba(255,255,255,0.06);
+    margin-bottom: 2px;
+  }
+
+  /* FLOW STEPS */
+  .flow-steps { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; margin: 10px 0; }
+  .flow-step {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-width: 120px;
+    flex: 1;
+  }
+  .flow-num { font-size: 9px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .flow-name { font-size: 12px; font-weight: 700; color: #eef2ff; margin-bottom: 3px; }
+  .flow-desc { font-size: 10px; color: var(--muted); }
+  .flow-arrow { display: flex; align-items: center; color: var(--accent); opacity: 0.3; font-size: 16px; padding: 0 4px; }
+
+  /* PHASE */
+  .phase {
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .phase-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .phase-tag {
+    background: rgba(121,232,176,0.1);
+    color: var(--accent);
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .phase-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: #eef2ff; }
+  .phase-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 7px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .phase-num {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(121,232,176,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-size: 9px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* STACK ROW */
+  .stack-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 9px 12px;
+    margin-bottom: 6px;
+  }
+  .stack-tech { font-size: 12px; font-weight: 700; color: #eef2ff; flex: 1; }
+  .stack-cat {
+    font-size: 9px;
+    background: var(--surface);
+    color: var(--muted);
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .stack-note { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* COST HIGHLIGHT */
+  .cost-highlight {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+  .cost-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+  .cost-label { font-size: 11px; font-weight: 700; color: #eef2ff; margin-bottom: 2px; }
+  .cost-note { font-size: 10px; color: var(--muted); }
+
+  /* DIALOGUE BOX */
+  .dialogue { background: #050710; border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; margin: 12px 0; }
+  .d-user { color: var(--accent); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .d-agent { color: var(--accent2); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; margin-top: 10px; }
+  .d-text { font-size: 12.5px; color: #8899aa; line-height: 1.7; font-family: 'JetBrains Mono', monospace; }
+
+  /* DECISION TABLE */
+  .decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .decision-cell { background: var(--surface2); border-radius: 6px; padding: 10px 14px; }
+  .decision-cat { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 3px; }
+  .decision-choice { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+  .decision-reason { font-size: 11px; color: var(--muted); }
+
+  a { color: var(--accent); }
+  strong { color: #eef2ff; font-weight: 600; }
+  em { color: var(--accent2); font-style: normal; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">Orca</div>
+    <div class="sidebar-sub">System Design Doc</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Product</div>
+    <div class="nav-item active" onclick="show('overview', this)"><span class="nav-icon">◈</span> Overview</div>
+    <div class="nav-item" onclick="show('architecture', this)"><span class="nav-icon">⬡</span> Architecture</div>
+    <div class="nav-item" onclick="show('features', this)"><span class="nav-icon">◫</span> Features</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Engineering</div>
+    <div class="nav-item" onclick="show('techstack', this)"><span class="nav-icon">◎</span> Tech Stack</div>
+    <div class="nav-item" onclick="show('ai', this)"><span class="nav-icon">◇</span> AI & Agents</div>
+    <div class="nav-item" onclick="show('auth', this)"><span class="nav-icon">◉</span> Auth & Billing</div>
+    <div class="nav-item" onclick="show('database', this)"><span class="nav-icon">▣</span> Database</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Business</div>
+    <div class="nav-item" onclick="show('costs', this)"><span class="nav-icon">◈</span> Costs</div>
+    <div class="nav-item" onclick="show('roadmap', this)"><span class="nav-icon">▷</span> Roadmap</div>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main id="main">
+
+<!-- OVERVIEW -->
+<section class="page active" id="overview">
+  <div class="page-title">Product Overview</div>
+  <div class="page-sub">What you're building — and why it will work</div>
+
+  <div class="card accent">
+    <div class="card-title">The Vision</div>
+    <p>A beautiful, minimal <strong>desktop app</strong> that replaces the chaos of doom-scrolling with a curated, AI-filtered news experience. Users define their interests once — broadly or with surgical precision — and the app delivers clean, distraction-free briefings on their schedule. No ads. No clickbait. Just signal.</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Core Problem Solved</div>
+      <ul class="dot-list">
+        <li>News is noisy, clickbait-heavy, and time-consuming</li>
+        <li>No tool lets you define <em>exactly</em> what you care about</li>
+        <li>Desktop = focus-first reading environment</li>
+        <li>TL;DR-first format respects the user's time</li>
+        <li>AI dialogue for topic setup beats any dropdown</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">Key Differentiators</div>
+      <ul class="dot-list">
+        <li>LLM-powered topic refinement via conversation</li>
+        <li>AI-generated TL;DR (3–4 bullets) for every article</li>
+        <li>ElevenLabs audio playback — listen while you work</li>
+        <li>Frequency control: daily digest / weekly / realtime</li>
+        <li>Zero clutter: no ads, no tracking, no filler</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">User Journey — End to End</div>
+    <div class="flow-steps">
+      <div class="flow-step"><div class="flow-num">Step 1</div><div class="flow-name">Landing Page</div><div class="flow-desc">Sign up, choose plan, pay via Stripe</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="flow-num">Step 2</div><div class="flow-name">Onboarding</div><div class="flow-desc">Choose broad categories (AI, Sport, Finance…)</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="flow-num">Step 3</div><div class="flow-name">Sub-Topic</div><div class="flow-desc">Enter specific topic as natural language</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="flow-num">Step 4</div><div class="flow-name">LLM Dialogue</div><div class="flow-desc">AI asks 2–3 clarifying questions</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="flow-num">Step 5</div><div class="flow-name">Frequency</div><div class="flow-desc">Daily / Weekly / Realtime</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="flow-num">Step 6</div><div class="flow-name">Desktop App</div><div class="flow-desc">Sign in, subscription checked, dashboard loads</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="flow-num">Step 7</div><div class="flow-name">Reading</div><div class="flow-desc">TL;DR card → full article → audio</div></div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="mini-card">
+      <div class="mini-card-title">Monetization</div>
+      <p>$5/month subscription via Stripe. Simple. One tier to start. Upgrade path: $12/mo for unlimited topics + priority audio.</p>
+    </div>
+    <div class="mini-card">
+      <div class="mini-card-title">Target User</div>
+      <p>Knowledge workers, investors, engineers, founders — people who need signal, not noise. Already paying for tools. Will pay $5.</p>
+    </div>
+    <div class="mini-card">
+      <div class="mini-card-title">Distribution</div>
+      <p>Landing page (Next.js) handles signup + payment. Desktop app (Electron) is download-only, sign-in gated.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="page" id="architecture">
+  <div class="page-title">System Architecture</div>
+  <div class="page-sub">All six layers — built for scale and cost efficiency</div>
+
+  <div class="card accent">
+    <div class="card-title">Architecture Layers</div>
+    <div class="grid-3" style="margin-top:4px">
+      <div class="layer-box" style="background:#0d1a10">
+        <div class="layer-title" style="color:#79e8b0">Client Layer</div>
+        <div class="layer-item">Electron + React (Desktop App)</div>
+        <div class="layer-item">Next.js Landing Page</div>
+        <div class="layer-item">Stripe Checkout Flow</div>
+      </div>
+      <div class="layer-box" style="background:#0d1320">
+        <div class="layer-title" style="color:#5db8ef">API Layer</div>
+        <div class="layer-item">Next.js API Routes</div>
+        <div class="layer-item">Supabase Edge Functions</div>
+        <div class="layer-item">Stripe Webhook Handler</div>
+      </div>
+      <div class="layer-box" style="background:#1a0d20">
+        <div class="layer-title" style="color:#c084fc">AI Layer</div>
+        <div class="layer-item">GPT-4o-mini (summarize)</div>
+        <div class="layer-item">Serper.dev + Scraping (search)</div>
+        <div class="layer-item">ElevenLabs (TTS audio)</div>
+      </div>
+      <div class="layer-box" style="background:#1a1205">
+        <div class="layer-title" style="color:#f0a070">Data Layer</div>
+        <div class="layer-item">Supabase Postgres + Auth</div>
+        <div class="layer-item">Supabase Storage (MP3 cache)</div>
+        <div class="layer-item">Upstash Redis (job queue)</div>
+      </div>
+      <div class="layer-box" style="background:#0d1a1a">
+        <div class="layer-title" style="color:#67e8f9">Worker Layer</div>
+        <div class="layer-item">News fetch cron jobs</div>
+        <div class="layer-item">Article summarization pipeline</div>
+        <div class="layer-item">Audio generation queue</div>
+      </div>
+      <div class="layer-box" style="background:#1a0d1a">
+        <div class="layer-title" style="color:#f472b6">Infra Layer</div>
+        <div class="layer-item">Vercel (Landing + API)</div>
+        <div class="layer-item">Railway (Background Workers)</div>
+        <div class="layer-item">Supabase Platform</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card blue">
+    <div class="card-title">News Pipeline Data Flow</div>
+    <div class="code-block">
+<span class="cm">// Step 1 — Trigger</span>
+<span class="kw">Cron Job</span> fires per user schedule (daily 8am / weekly Mon)
+  → Reads user topic configs from <span class="fn">Supabase</span> DB
+  → Enqueues fetch jobs in <span class="fn">BullMQ</span> (Upstash Redis)
+
+<span class="cm">// Step 2 — Fetch</span>
+<span class="kw">Worker</span> picks up job
+  → Calls <span class="fn">Serper.dev</span> with smart Google operator query
+  → Scrapes top URLs via Readability.js / JSDOM
+  → Returns clean raw text from diverse sources
+
+<span class="cm">// Step 3 — Summarize</span>
+<span class="kw">GPT-4o-mini</span> via Vercel AI SDK <span class="fn">generateObject()</span>
+  → Input: raw article text
+  → Output: { tldr[], body, readMinutes, sentiment }
+  → Dedup via SHA256 URL hash → store in Supabase
+
+<span class="cm">// Step 4 — Serve</span>
+<span class="kw">Electron app</span> pulls via Supabase JS client (JWT auth)
+  → Renders home dashboard with topic cards + TL;DRs
+  → Audio generated <span class="fn">lazily</span> on first play button click
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Electron ↔ Backend Security Model</div>
+    <p>The Electron app is a <strong>read-only consumer</strong>. It holds only a Supabase user JWT (stored via Electron's <em>safeStorage</em> API, encrypted at rest). All writes and sensitive operations go through Supabase Row Level Security or Edge Functions with a server-side service key. <strong>No API keys for Serper, OpenAI, or ElevenLabs ever touch the Electron client.</strong></p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Realtime Updates</div>
+    <p>When a new article batch is processed, the worker marks articles as ready. Supabase Realtime (Postgres CDC) pushes a notification to any connected desktop clients for that user. The app can display a subtle "N new articles" badge without requiring a reload — works like a live feed.</p>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="page" id="features">
+  <div class="page-title">Feature Specifications</div>
+  <div class="page-sub">Every feature defined with implementation detail</div>
+
+  <div class="card accent">
+    <div class="card-title">Home Dashboard</div>
+    <p style="margin-bottom:10px">The main screen after login. One card per subscribed topic in a sidebar + main reading area.</p>
+    <ul class="dot-list">
+      <li>Sidebar shows all topics (TSMC, F1, AI, etc.) with unread badge counts</li>
+      <li>Main area: stacked cards, one per topic — latest TL;DR bullets + timestamp + source</li>
+      <li>Click topic in sidebar → article list view for that topic</li>
+      <li>Cards sorted by recency or user-pinned priority</li>
+      <li>"Mark all read" action globally or per topic</li>
+    </ul>
+  </div>
+
+  <div class="card blue">
+    <div class="card-title">Topic Onboarding Flow (5 Steps)</div>
+    <div class="flow-steps" style="flex-wrap:wrap;gap:6px;margin:8px 0">
+      <div class="flow-step" style="min-width:100px;flex:unset"><div class="flow-num">1</div><div class="flow-name">Category Grid</div><div class="flow-desc">AI, Finance, Sport, Tech, Science, Geopolitics, Health…</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="min-width:100px;flex:unset"><div class="flow-num">2</div><div class="flow-name">Prompt Input</div><div class="flow-desc">"TSMC company finances"</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="min-width:100px;flex:unset"><div class="flow-num">3</div><div class="flow-name">LLM Dialogue</div><div class="flow-desc">2–3 clarifying questions in chat UI</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="min-width:100px;flex:unset"><div class="flow-num">4</div><div class="flow-name">Frequency</div><div class="flow-desc">Daily 8am / Weekly Monday / As published</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="min-width:100px;flex:unset"><div class="flow-num">5</div><div class="flow-name">Confirm</div><div class="flow-desc">Save config, trigger first fetch immediately</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Article Reader</div>
+    <ul class="dot-list">
+      <li><strong>TL;DR section:</strong> 3–4 bullet points at top in large, readable font — most important facts only</li>
+      <li>Divider, then full body (250–350 words, AI-cleaned — ads/fluff stripped)</li>
+      <li>Source attribution + original link at bottom</li>
+      <li>Estimated read time (e.g. "2 min read")</li>
+      <li>Font size slider, dark/light mode toggle</li>
+      <li><strong>Audio player bar:</strong> play/pause, 0.75× / 1× / 1.25× / 1.5× speed</li>
+    </ul>
+  </div>
+
+  <div class="card orange">
+    <div class="card-title">Audio Playback (ElevenLabs)</div>
+    <ul class="dot-list">
+      <li>Play button triggers <strong>lazy generation</strong> — audio only created when first clicked</li>
+      <li>Loading state shown during first-time generation (~3–5 seconds)</li>
+      <li>MP3 cached to Supabase Storage → all future plays stream from cache</li>
+      <li>Mini player persists in bottom bar when navigating between articles</li>
+      <li>"Add to queue" — listen-later playlist for commutes</li>
+      <li>Voice selection in Settings (ElevenLabs prebuilt voices)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Settings & Account</div>
+    <div class="grid-2">
+      <ul class="dot-list">
+        <li>Manage topics: add, remove, edit configs</li>
+        <li>Change frequency per topic independently</li>
+        <li>System tray notification preferences</li>
+      </ul>
+      <ul class="dot-list">
+        <li>Audio voice selector</li>
+        <li>Email + password change</li>
+        <li>Link to Stripe customer portal (cancel, update card)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section class="page" id="techstack">
+  <div class="page-title">Tech Stack</div>
+  <div class="page-sub">Every choice justified — optimized for shipping speed, cost, and maintainability</div>
+
+  <div class="card accent">
+    <div class="card-title">Desktop App — Electron + React (Your Existing Base)</div>
+    <p style="margin-bottom:12px;font-style:italic;color:var(--muted);font-size:12px">You already have this. Upgrade it, don't replace it.</p>
+    <div class="stack-row"><div><div class="stack-tech">electron-vite</div><div class="stack-note">Replace CRA/webpack with Vite — 10× faster HMR, smaller bundles</div></div><span class="stack-cat">Build</span></div>
+    <div class="stack-row"><div><div class="stack-tech">Zustand</div><div class="stack-note">Minimal state management — no Redux boilerplate. Perfect for auth + article state.</div></div><span class="stack-cat">State</span></div>
+    <div class="stack-row"><div><div class="stack-tech">@supabase/supabase-js</div><div class="stack-note">Auth + DB client + Realtime in one SDK. Zero extra setup.</div></div><span class="stack-cat">Data</span></div>
+    <div class="stack-row"><div><div class="stack-tech">Tailwind CSS</div><div class="stack-note">Utility-first — fast to build, easy to maintain. Works perfectly in Electron.</div></div><span class="stack-cat">Styling</span></div>
+    <div class="stack-row"><div><div class="stack-tech">electron-updater</div><div class="stack-note">Auto-updates via GitHub Releases. Silent background updates.</div></div><span class="stack-cat">Updates</span></div>
+  </div>
+
+  <div class="card blue">
+    <div class="card-title">Landing Page + API — Next.js on Vercel</div>
+    <p style="margin-bottom:12px;font-style:italic;color:var(--muted);font-size:12px">Marketing site + Stripe webhooks + onboarding API in one deploy.</p>
+    <div class="stack-row"><div><div class="stack-tech">Next.js 14 (App Router)</div><div class="stack-note">SSR for landing page SEO + API routes for Stripe webhooks</div></div><span class="stack-cat">Framework</span></div>
+    <div class="stack-row"><div><div class="stack-tech">Vercel</div><div class="stack-note">Zero-config deploy. Free tier covers early stage. Scales automatically.</div></div><span class="stack-cat">Hosting</span></div>
+    <div class="stack-row"><div><div class="stack-tech">Stripe.js + stripe-node</div><div class="stack-note">Hosted Checkout (no PCI scope) + webhook handler for subscription events</div></div><span class="stack-cat">Payments</span></div>
+    <div class="stack-row"><div><div class="stack-tech">Resend</div><div class="stack-note">Transactional email: welcome, digest, payment failed. Simple API.</div></div><span class="stack-cat">Email</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">AI Layer — Modular by Design</div>
+    <p style="margin-bottom:12px;font-style:italic;color:var(--muted);font-size:12px">Vercel AI SDK wraps everything — swap providers without refactoring.</p>
+    <div class="stack-row"><div><div class="stack-tech">Vercel AI SDK</div><div class="stack-note">Provider abstraction (OpenAI, Anthropic, etc), streaming hooks, <em>streamText()</em> + <em>generateObject()</em></div></div><span class="stack-cat chip green">Core</span></div>
+    <div class="stack-row"><div><div class="stack-tech">Serper.dev + Readability</div><div class="stack-note">Decoupled real-time search + scraping. Gives total control over extraction, deduplication, and prevents API hallucinations.</div></div><span class="stack-cat">Search</span></div>
+    <div class="stack-row"><div><div class="stack-tech">GPT-4o-mini</div><div class="stack-note">Summarization + TL;DR. $0.60/1M tokens vs $15 for 4o — same quality for structured tasks. Use 4o only for dialogue.</div></div><span class="stack-cat">LLM</span></div>
+    <div class="stack-row"><div><div class="stack-tech">ElevenLabs</div><div class="stack-note">Highest-quality TTS. Lazy generation + permanent caching keeps costs manageable.</div></div><span class="stack-cat">Audio</span></div>
+  </div>
+
+  <div class="card orange">
+    <div class="card-title">Data + Background Workers</div>
+    <div class="stack-row"><div><div class="stack-tech">Supabase</div><div class="stack-note">Postgres + Auth + Storage + Realtime + Edge Functions. One bill, one SDK, one dashboard.</div></div><span class="stack-cat chip orange">Core</span></div>
+    <div class="stack-row"><div><div class="stack-tech">Railway</div><div class="stack-note">$5/mo always-on Node.js instance for background workers. Simple Docker deploy.</div></div><span class="stack-cat">Workers</span></div>
+    <div class="stack-row"><div><div class="stack-tech">BullMQ + Upstash Redis</div><div class="stack-note">Job queue for article fetch/summarize/audio tasks. Upstash = serverless Redis, pay per command.</div></div><span class="stack-cat">Queue</span></div>
+    <div class="stack-row"><div><div class="stack-tech">node-cron</div><div class="stack-note">Scheduling inside Railway worker. Triggers fetch batches per user frequency settings.</div></div><span class="stack-cat">Cron</span></div>
+  </div>
+</section>
+
+<!-- AI & AGENTS -->
+<section class="page" id="ai">
+  <div class="page-title">AI & Agent Design</div>
+  <div class="page-sub">Three purpose-built agents — topic refinement, news search, summarization</div>
+
+  <div class="card accent">
+    <div class="card-title">Agent 1 — Topic Refinement (Onboarding Dialogue)</div>
+    <p style="margin-bottom:12px">User enters a free-text sub-topic. The LLM runs a max 3-round dialogue to clarify intent, then produces a structured topic config object stored in the DB.</p>
+    <div class="dialogue">
+      <div class="d-user">User</div>
+      <div class="d-text">"TSMC company finances"</div>
+      <div class="d-agent">Orca Agent</div>
+      <div class="d-text">"Got it — a few quick questions to sharpen your feed:<br>① Track earnings calls & quarterly financial results?<br>② Include deal announcements (fab expansions, partnerships)?<br>③ Stock price movements & analyst ratings?"</div>
+      <div class="d-user" style="margin-top:10px">User</div>
+      <div class="d-text">"Yes to ① and ③, skip ②"</div>
+      <div class="d-agent">Stored Config</div>
+      <div class="d-text">{ topic: 'TSMC', signals: ['earnings', 'analyst_ratings', 'stock_moves'],<br>&nbsp;&nbsp;exclude: ['deals'], category: 'Finance' }</div>
+    </div>
+    <p style="margin-top:8px">Implemented with <em>streamText()</em> from Vercel AI SDK. System prompt ends with instruction: <strong>"After final confirmation, output ONLY a JSON config object and nothing else."</strong> Parse and store in Supabase topics table.</p>
+  </div>
+
+  <div class="card blue">
+    <div class="card-title">Agent 2 — News Fetcher (Serper.dev + Scraping)</div>
+    <ul class="dot-list">
+      <li>Worker constructs targeted Google Dork query from topic config: <code style="font-family:JetBrains Mono,monospace;font-size:11px;color:#79e8b0">"TSMC" AND "earnings" (site:reuters.com OR site:bloomberg.com)</code></li>
+      <li>Serper.dev returns top real-time URLs. Worker fetches HTML and extracts clean text using Readability.js / JSDOM.</li>
+      <li>LLM strictly synthesizes the scraped text, reducing hallucination risks on specific topics and clustering general news.</li>
+      <li>Runs on user's schedule via BullMQ job queue — not on every app launch</li>
+      <li>Batch optimization: users with identical broad topics (e.g. "AI news") share one Serper call → split results per user</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Agent 3 — Article Summarizer (GPT-4o-mini + Zod)</div>
+    <p style="margin-bottom:10px">Uses Vercel AI SDK's <em>generateObject()</em> with a Zod schema — guarantees structured output every time, no JSON parsing errors.</p>
+    <div class="code-block">
+<span class="cm">// Zod schema for article output</span>
+<span class="kw">const</span> ArticleSchema = z.object({
+  tldr:        z.array(z.string()).min(3).max(4),  <span class="cm">// 3–4 bullet TL;DR</span>
+  body:        z.string(),                          <span class="cm">// cleaned ~300 word body</span>
+  readMinutes: z.number(),                          <span class="cm">// estimated read time</span>
+  sentiment:   z.enum([<span class="str">'positive'</span>, <span class="str">'negative'</span>, <span class="str">'neutral'</span>]),
+  keyEntities: z.array(z.string()),                 <span class="cm">// TSMC, Jensen Huang...</span>
+})
+
+<span class="cm">// System prompt key instructions:</span>
+<span class="cm">// "Remove all ads, promotional content, author bios, and boilerplate."</span>
+<span class="cm">// "Body must be under 350 words. Target 2-minute read."</span>
+<span class="cm">// "TL;DR bullets: one key fact per bullet, no fluff."</span>
+    </div>
+  </div>
+
+  <div class="card orange">
+    <div class="card-title">ElevenLabs Audio — Lazy Generation Strategy</div>
+    <p style="margin-bottom:10px">Audio is <strong>never pre-generated</strong>. It's created on first play and cached permanently. This keeps costs near zero for articles users never listen to.</p>
+    <div class="flow-steps" style="flex-wrap:wrap;gap:6px">
+      <div class="flow-step" style="flex:unset;min-width:110px"><div class="flow-num">Click Play</div><div class="flow-desc">User hits play button in article</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="flex:unset;min-width:110px"><div class="flow-num">Check Cache</div><div class="flow-desc">Is audio_url set in DB?</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="flex:unset;min-width:110px"><div class="flow-num">Generate</div><div class="flow-desc">ElevenLabs API call with article body</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="flex:unset;min-width:110px"><div class="flow-num">Store</div><div class="flow-desc">Upload MP3 to Supabase Storage</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="flex:unset;min-width:110px"><div class="flow-num">Cache URL</div><div class="flow-desc">Save URL in article row, serve to client</div></div>
+    </div>
+    <p style="margin-top:10px;font-size:12px;color:var(--muted)">Cost: ~$0.36/article (2k chars × $0.18/1k). Most users listen to &lt;10 articles/month → ~$3.60 worst case. Usually far less. Delete audio files for articles older than 90 days to manage Storage costs.</p>
+  </div>
+</section>
+
+<!-- AUTH & BILLING -->
+<section class="page" id="auth">
+  <div class="page-title">Auth & Billing</div>
+  <div class="page-sub">Landing page handles sign-up + payment. Desktop handles sign-in only.</div>
+
+  <div class="grid-2">
+    <div class="card accent">
+      <div class="card-title">🌐 Landing Page (Next.js)</div>
+      <ul class="dot-list">
+        <li>Sign up: email + password via Supabase Auth</li>
+        <li>Stripe Checkout session created server-side</li>
+        <li>On <em>checkout.session.completed</em> webhook → set <code style="font-family:monospace;font-size:11px;color:#79e8b0">subscription_status = 'active'</code> in DB</li>
+        <li>Success page: "Download the app" + deep link to open it</li>
+        <li>Manage billing: link to Stripe customer portal</li>
+      </ul>
+    </div>
+    <div class="card blue">
+      <div class="card-title">🖥 Desktop App (Electron)</div>
+      <ul class="dot-list">
+        <li>Sign in ONLY — no sign up form in the app</li>
+        <li>JWT stored securely via Electron's <em>safeStorage</em> (OS-level encryption)</li>
+        <li>On launch: check <code style="font-family:monospace;font-size:11px;color:#5db8ef">subscription_status</code> from Supabase</li>
+        <li>If inactive → <code style="font-family:monospace;font-size:11px;color:#f87171">shell.openExternal(landingPage + '/subscribe')</code></li>
+        <li>If active → load main dashboard</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Stripe Webhook Events to Handle</div>
+    <div class="code-block">
+<span class="cm">// /api/stripe/webhook — Next.js API route</span>
+
+<span class="kw">checkout.session.completed</span>
+  → Extract customer email + stripe_customer_id
+  → Set subscription_status = <span class="str">'active'</span> in users table
+  → Send welcome email via Resend
+
+<span class="kw">customer.subscription.deleted</span>
+  → Set subscription_status = <span class="str">'canceled'</span>
+  → Desktop app will gate on next launch
+
+<span class="kw">invoice.payment_failed</span>
+  → Set subscription_status = <span class="str">'past_due'</span>
+  → Send payment failed email (Resend)
+  → App shows soft warning, 7-day grace period before gating
+
+<span class="kw">customer.subscription.updated</span>
+  → Sync plan changes (if you add tiers later)
+    </div>
+  </div>
+
+  <div class="card orange">
+    <div class="card-title">Subscription Check Logic (Electron Main Process)</div>
+    <div class="code-block">
+<span class="cm">// app/main/auth.ts</span>
+<span class="kw">async function</span> <span class="fn">checkSubscription</span>() {
+  <span class="kw">const</span> { data: session } = <span class="kw">await</span> supabase.auth.<span class="fn">getSession</span>()
+  <span class="kw">if</span> (!session) <span class="kw">return</span> <span class="fn">showSignIn</span>()
+
+  <span class="kw">const</span> { data: user } = <span class="kw">await</span> supabase
+    .from(<span class="str">'users'</span>)
+    .select(<span class="str">'subscription_status'</span>)
+    .eq(<span class="str">'id'</span>, session.user.id)
+    .single()
+
+  <span class="kw">if</span> (user.subscription_status !== <span class="str">'active'</span>) {
+    shell.<span class="fn">openExternal</span>(<span class="str">`https://orca.app/subscribe?email=${session.user.email}`</span>)
+    <span class="fn">showPaywallScreen</span>()  <span class="cm">// soft block, don't just quit</span>
+  } <span class="kw">else</span> {
+    <span class="fn">loadDashboard</span>()
+  }
+}
+    </div>
+  </div>
+</section>
+
+<!-- DATABASE -->
+<section class="page" id="database">
+  <div class="page-title">Database Schema</div>
+  <div class="page-sub">Supabase Postgres — key tables, columns, and RLS strategy</div>
+
+  <div class="card accent">
+    <div class="card-title">Table: users</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Extends Supabase auth.users via a trigger on new user creation.</p>
+    <table class="data-table">
+      <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="td-col">id</td><td class="td-type">uuid</td><td class="td-note">PK — mirrors auth.users.id</td></tr>
+        <tr><td class="td-col">email</td><td class="td-type">text</td><td class="td-note"></td></tr>
+        <tr><td class="td-col">stripe_customer_id</td><td class="td-type">text</td><td class="td-note">Set on first checkout</td></tr>
+        <tr><td class="td-col">subscription_status</td><td class="td-type">text</td><td class="td-note">'active' | 'trialing' | 'past_due' | 'canceled'</td></tr>
+        <tr><td class="td-col">subscription_expires_at</td><td class="td-type">timestamptz</td><td class="td-note">Grace period reference</td></tr>
+        <tr><td class="td-col">preferred_voice</td><td class="td-type">text</td><td class="td-note">ElevenLabs voice ID</td></tr>
+        <tr><td class="td-col">created_at</td><td class="td-type">timestamptz</td><td class="td-note">default now()</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card blue">
+    <div class="card-title">Table: topics</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">User's configured news topics — one row per topic per user.</p>
+    <table class="data-table">
+      <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="td-col">id</td><td class="td-type">uuid</td><td class="td-note">PK</td></tr>
+        <tr><td class="td-col">user_id</td><td class="td-type">uuid</td><td class="td-note">FK → users.id, indexed</td></tr>
+        <tr><td class="td-col">name</td><td class="td-type">text</td><td class="td-note">e.g. "TSMC Finances"</td></tr>
+        <tr><td class="td-col">category</td><td class="td-type">text</td><td class="td-note">Broad: "Finance", "AI", "Sport"</td></tr>
+        <tr><td class="td-col">config</td><td class="td-type">jsonb</td><td class="td-note">LLM-generated: { signals[], exclude[], searchQuery }</td></tr>
+        <tr><td class="td-col">frequency</td><td class="td-type">text</td><td class="td-note">'daily' | 'weekly' | 'realtime'</td></tr>
+        <tr><td class="td-col">last_fetched_at</td><td class="td-type">timestamptz</td><td class="td-note">Used by scheduler to decide when to re-fetch</td></tr>
+        <tr><td class="td-col">is_active</td><td class="td-type">boolean</td><td class="td-note">User can pause topics</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Table: articles</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Processed, deduplicated article store. Shared across users (same article can be in multiple topic feeds).</p>
+    <table class="data-table">
+      <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="td-col">id</td><td class="td-type">uuid</td><td class="td-note">PK</td></tr>
+        <tr><td class="td-col">topic_id</td><td class="td-type">uuid</td><td class="td-note">FK → topics.id</td></tr>
+        <tr><td class="td-col">url_hash</td><td class="td-type">text</td><td class="td-note">SHA256(source_url) — unique per topic, dedup key</td></tr>
+        <tr><td class="td-col">source_url</td><td class="td-type">text</td><td class="td-note">Original article URL</td></tr>
+        <tr><td class="td-col">source_name</td><td class="td-type">text</td><td class="td-note">Reuters, FT, Bloomberg, etc.</td></tr>
+        <tr><td class="td-col">title</td><td class="td-type">text</td><td class="td-note"></td></tr>
+        <tr><td class="td-col">tldr_bullets</td><td class="td-type">jsonb</td><td class="td-note">string[] — 3–4 TL;DR bullets</td></tr>
+        <tr><td class="td-col">body</td><td class="td-type">text</td><td class="td-note">AI-cleaned article body, max ~350 words</td></tr>
+        <tr><td class="td-col">read_minutes</td><td class="td-type">float</td><td class="td-note">Estimated read time</td></tr>
+        <tr><td class="td-col">sentiment</td><td class="td-type">text</td><td class="td-note">'positive' | 'negative' | 'neutral'</td></tr>
+        <tr><td class="td-col">audio_url</td><td class="td-type">text</td><td class="td-note">Supabase Storage URL — null until first play</td></tr>
+        <tr><td class="td-col">published_at</td><td class="td-type">timestamptz</td><td class="td-note">Original publication date</td></tr>
+        <tr><td class="td-col">created_at</td><td class="td-type">timestamptz</td><td class="td-note">When we processed it</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card orange">
+    <div class="card-title">Table: article_reads</div>
+    <table class="data-table">
+      <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="td-col">user_id</td><td class="td-type">uuid</td><td class="td-note">FK → users.id — composite PK with article_id</td></tr>
+        <tr><td class="td-col">article_id</td><td class="td-type">uuid</td><td class="td-note">FK → articles.id</td></tr>
+        <tr><td class="td-col">read_at</td><td class="td-type">timestamptz</td><td class="td-note">When user opened article</td></tr>
+        <tr><td class="td-col">listened_at</td><td class="td-type">timestamptz</td><td class="td-note">Nullable — set when audio played</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Row Level Security (RLS)</div>
+    <p>Every table has RLS enabled. Users can <strong>only read and write their own rows</strong> — enforced at the database level, not in application code. Articles are accessible only through topics owned by the user. Audio generation and article writes happen via <strong>Supabase Edge Functions using a server-side service key</strong> — never exposing elevated privileges to the Electron client.</p>
+  </div>
+</section>
+
+<!-- COSTS -->
+<section class="page" id="costs">
+  <div class="page-title">Cost Analysis</div>
+  <div class="page-sub">Per-user variable costs, fixed infra, and margin projections</div>
+
+  <div class="card accent">
+    <div class="card-title">Variable Cost Per User Per Month</div>
+    <table class="data-table">
+      <thead><tr><th>Service</th><th>Usage Estimate</th><th>Cost</th><th>Basis</th></tr></thead>
+      <tbody>
+        <tr>
+          <td style="color:#eef2ff;font-weight:600;font-size:12px">Serper.dev Search</td>
+          <td class="td-note">~200 searches/mo (5 topics × 40 fetches)</td>
+          <td style="color:#79e8b0;font-family:JetBrains Mono,monospace;font-weight:700">$0.20</td>
+          <td class="td-note">~$1/1k queries. Free local scraping.</td>
+        </tr>
+        <tr>
+          <td style="color:#eef2ff;font-weight:600;font-size:12px">GPT-4o-mini (summaries)</td>
+          <td class="td-note">~200 articles × ~800 tokens output</td>
+          <td style="color:#79e8b0;font-family:JetBrains Mono,monospace;font-weight:700">$0.10</td>
+          <td class="td-note">$0.60/1M output tokens</td>
+        </tr>
+        <tr>
+          <td style="color:#eef2ff;font-weight:600;font-size:12px">GPT-4o (dialogue)</td>
+          <td class="td-note">~5 topic setups/mo avg × 3 rounds</td>
+          <td style="color:#79e8b0;font-family:JetBrains Mono,monospace;font-weight:700">$0.02</td>
+          <td class="td-note">Minimal — one-time per topic</td>
+        </tr>
+        <tr>
+          <td style="color:#eef2ff;font-weight:600;font-size:12px">ElevenLabs TTS</td>
+          <td class="td-note">~20 articles listened × 2k chars avg</td>
+          <td style="color:#79e8b0;font-family:JetBrains Mono,monospace;font-weight:700">$0.72</td>
+          <td class="td-note">$0.18/1k chars — lazy gen saves most</td>
+        </tr>
+        <tr>
+          <td style="color:#eef2ff;font-weight:600;font-size:12px">Supabase</td>
+          <td class="td-note">DB + Storage + Auth per user share</td>
+          <td style="color:#79e8b0;font-family:JetBrains Mono,monospace;font-weight:700">$0.05</td>
+          <td class="td-note">$25/mo Pro plan ÷ users</td>
+        </tr>
+        <tr>
+          <td style="color:#eef2ff;font-weight:600;font-size:12px">Railway + Upstash</td>
+          <td class="td-note">Worker infra per user share</td>
+          <td style="color:#79e8b0;font-family:JetBrains Mono,monospace;font-weight:700">$0.05</td>
+          <td class="td-note">$10/mo ÷ users</td>
+        </tr>
+        <tr style="border-top:1px solid rgba(121,232,176,0.2)">
+          <td colspan="2" style="color:#eef2ff;font-weight:800;padding:10px 14px;font-size:13px">Total Variable Cost / User / Month</td>
+          <td style="color:#79e8b0;font-family:JetBrains Mono,monospace;font-weight:800;font-size:16px;padding:10px 14px">~$1.14</td>
+          <td class="td-note" style="padding:10px 14px"><strong style="color:#79e8b0">77% gross margin</strong> at $5/mo</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Fixed Monthly Infrastructure</div>
+    <div class="grid-4">
+      <div class="cost-highlight"><div class="cost-val">$20</div><div class="cost-label">Vercel Pro</div><div class="cost-note">Landing + API routes</div></div>
+      <div class="cost-highlight"><div class="cost-val">$25</div><div class="cost-label">Supabase Pro</div><div class="cost-note">DB + Auth + Storage</div></div>
+      <div class="cost-highlight"><div class="cost-val">$5</div><div class="cost-label">Railway</div><div class="cost-note">Background workers</div></div>
+      <div class="cost-highlight"><div class="cost-val">$10</div><div class="cost-label">Upstash</div><div class="cost-note">Redis job queue</div></div>
+    </div>
+    <p style="margin-top:12px;font-size:13px;color:var(--muted)">Total fixed: ~$60/mo. Break even at <strong style="color:#79e8b0">12 paying users</strong>. At 100 users: $500 revenue, ~$174 variable + $60 fixed = <strong style="color:#79e8b0">$266 profit (~53% margin)</strong>.</p>
+  </div>
+
+  <div class="card orange">
+    <div class="card-title">Cost Optimization Strategies</div>
+    <ul class="dot-list">
+      <li><strong>ElevenLabs:</strong> Lazy generation only — never pre-generate. Delete cached audio files after 90 days. This alone saves ~60% of audio cost.</li>
+      <li><strong>Serper Batching:</strong> Batch users with identical broad categories (e.g. all "AI news" subscribers) into a single search call to save search volume.</li>
+      <li><strong>GPT-4o-mini not GPT-4o</strong> for summarization — 25× cheaper, same quality for structured extraction tasks. Reserve GPT-4o for the onboarding dialogue only.</li>
+      <li><strong>Supabase Storage lifecycle:</strong> Auto-delete audio files and raw article cache older than 90 days via storage policies.</li>
+      <li><strong>Deduplication:</strong> URL hash prevents re-summarizing the same article even if it appears in multiple topic searches.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section class="page" id="roadmap">
+  <div class="page-title">Build Roadmap</div>
+  <div class="page-sub">12 weeks to a shippable product — phased by dependency, not features</div>
+
+  <div class="phase" style="background:#0d1a10">
+    <div class="phase-header">
+      <span class="phase-tag">Phase 1</span>
+      <span class="phase-title">Foundation — Weeks 1–3</span>
+    </div>
+    <div class="phase-item"><div class="phase-num">1</div>Set up Supabase project — schema, auth, RLS policies, storage buckets</div>
+    <div class="phase-item"><div class="phase-num">2</div>Landing page (Next.js) with waitlist capture or direct Stripe Checkout</div>
+    <div class="phase-item"><div class="phase-num">3</div>Stripe integration: Checkout + webhook handler → DB subscription status update</div>
+    <div class="phase-item"><div class="phase-num">4</div>Electron app: sign-in screen + subscription gate check on launch</div>
+    <div class="phase-item"><div class="phase-num">5</div>Basic dashboard shell in Electron (no real data yet — wireframe level)</div>
+    <div class="phase-item"><div class="phase-num">6</div>electron-vite migration if not already done — sets up dev environment properly</div>
+  </div>
+
+  <div class="phase" style="background:#0d1320">
+    <div class="phase-header">
+      <span class="phase-tag">Phase 2</span>
+      <span class="phase-title">AI Pipeline — Weeks 4–6</span>
+    </div>
+    <div class="phase-item"><div class="phase-num">1</div>Topic onboarding UI: category grid + free-text prompt input screen</div>
+    <div class="phase-item"><div class="phase-num">2</div>LLM dialogue flow with Vercel AI SDK (streamText) — topic refinement conversation</div>
+    <div class="phase-item"><div class="phase-num">3</div>Serper.dev + Readability integration — news search & scrub from topic config</div>
+    <div class="phase-item"><div class="phase-num">4</div>GPT-4o-mini summarizer with Zod schema (generateObject) — TL;DR + body output</div>
+    <div class="phase-item"><div class="phase-num">5</div>Railway worker setup + BullMQ job queue with Upstash Redis</div>
+    <div class="phase-item"><div class="phase-num">6</div>First end-to-end test: user creates topic → articles appear in dashboard</div>
+  </div>
+
+  <div class="phase" style="background:#1a0d20">
+    <div class="phase-header">
+      <span class="phase-tag">Phase 3</span>
+      <span class="phase-title">Core UX — Weeks 7–9</span>
+    </div>
+    <div class="phase-item"><div class="phase-num">1</div>Article reader: TL;DR card → full body → source link. Clean typography.</div>
+    <div class="phase-item"><div class="phase-num">2</div>Sidebar navigation: topic list + unread counts + active state</div>
+    <div class="phase-item"><div class="phase-num">3</div>ElevenLabs audio: lazy generation pipeline + Supabase Storage caching</div>
+    <div class="phase-item"><div class="phase-num">4</div>Frequency settings: daily / weekly / realtime per topic</div>
+    <div class="phase-item"><div class="phase-num">5</div>Read state tracking (article_reads table) — unread badges + mark as read</div>
+    <div class="phase-item"><div class="phase-num">6</div>Settings page: manage topics, account info, Stripe customer portal link</div>
+  </div>
+
+  <div class="phase" style="background:#1a1208">
+    <div class="phase-header">
+      <span class="phase-tag">Phase 4</span>
+      <span class="phase-title">Polish & Launch — Weeks 10–12</span>
+    </div>
+    <div class="phase-item"><div class="phase-num">1</div>Electron auto-updater — silent background updates via GitHub Releases</div>
+    <div class="phase-item"><div class="phase-num">2</div>System tray: notification badge on new articles, tray menu for quick actions</div>
+    <div class="phase-item"><div class="phase-num">3</div>Empty states, loading skeletons, error handling throughout</div>
+    <div class="phase-item"><div class="phase-num">4</div>macOS (.dmg) + Windows (.exe) builds via GitHub Actions CI</div>
+    <div class="phase-item"><div class="phase-num">5</div>Onboarding flow QA — end-to-end test: sign up → pay → download → first article</div>
+    <div class="phase-item"><div class="phase-num">6</div>Soft launch to waitlist — 20–30 beta users → collect feedback → iterate</div>
+  </div>
+
+  <div class="card accent">
+    <div class="card-title">Key Decision Summary</div>
+    <div class="decision-grid">
+      <div class="decision-cell"><div class="decision-cat">News Search</div><div class="decision-choice">Serper + Readability</div><div class="decision-reason">Decoupled pipeline. Better cost, zero hallucinations, full control.</div></div>
+      <div class="decision-cell"><div class="decision-cat">Summarization LLM</div><div class="decision-choice">GPT-4o-mini</div><div class="decision-reason">25× cheaper than 4o. Same quality for structured extraction.</div></div>
+      <div class="decision-cell"><div class="decision-cat">AI SDK</div><div class="decision-choice">Vercel AI SDK</div><div class="decision-reason">streamText + generateObject + provider swap = future-proof.</div></div>
+      <div class="decision-cell"><div class="decision-cat">Database</div><div class="decision-choice">Supabase</div><div class="decision-reason">Auth + DB + Storage + Realtime. One bill, one SDK.</div></div>
+      <div class="decision-cell"><div class="decision-cat">Payments</div><div class="decision-choice">Stripe Checkout</div><div class="decision-reason">Hosted = no PCI scope. Fastest path to taking money.</div></div>
+      <div class="decision-cell"><div class="decision-cat">Audio TTS</div><div class="decision-choice">ElevenLabs (lazy)</div><div class="decision-reason">High quality. Cost controlled by generating only on play.</div></div>
+      <div class="decision-cell"><div class="decision-cat">Workers</div><div class="decision-choice">Railway + BullMQ</div><div class="decision-reason">$5/mo always-on. Simple Docker. BullMQ handles retries.</div></div>
+      <div class="decision-cell"><div class="decision-cat">Desktop Base</div><div class="decision-choice">Electron + electron-vite</div><div class="decision-reason">Keep your existing base. Upgrade to electron-vite for DX.</div></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+function show(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('main').scrollTop = 0;
+}
+</script>
+</body>
+</html>

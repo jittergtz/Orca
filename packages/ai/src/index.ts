@@ -1,4 +1,4 @@
 export * from './topicAgent';
 export * from './summarizer';
-export * from './newsSearch';
+export * from './summarizer';
 export * from './models';

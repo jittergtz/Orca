@@ -1,11 +1,20 @@
 import React, { useState } from "react";
 import { ArrowLeft, Check, Cpu, Globe, Activity, Atom, Lightbulb, Briefcase, Plus, Send, Clock, CalendarDays, Zap } from "lucide-react";
 
+export interface OnboardingTopicConfig {
+  topic?: string;
+  category?: string;
+  signals?: string[];
+  exclude?: string[];
+  searchQuery?: string;
+}
+
 export interface OnboardingData {
   category: string;
   prompt: string;
   chatHistory: { role: "agent" | "user"; text: string }[];
   frequency: "daily" | "weekly" | "realtime";
+  topicConfig?: OnboardingTopicConfig;
 }
 
 interface OnboardingFlowProps {

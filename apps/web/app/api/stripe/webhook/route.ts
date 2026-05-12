@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { appendFileSync } from 'fs'
+import { sendWelcomeEmail, sendPaymentEmail } from '@/lib/email'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' })
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string
@@ -66,6 +67,30 @@ export async function POST(req: Request) {
         
         if (insertError) log(`Insert Error: ${JSON.stringify(insertError)}`)
         else log(`Insert Success!`)
+
+        // Send welcome + payment confirmation emails
+        try {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('email')
+            .eq('id', userId)
+            .single()
+
+          if (userData?.email) {
+            const planLabel = planCode === 'pro' ? 'Pro' : 'Go'
+            const amount = planCode === 'pro' ? '$12/mo' : '$5/mo'
+            const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+            await Promise.all([
+              sendWelcomeEmail(userData.email, planCode),
+              sendPaymentEmail(userData.email, planLabel, amount, date),
+            ])
+            log(`Emails sent to ${userData.email}`)
+          }
+        } catch (err: any) {
+          log(`Email send error (non-fatal): ${err.message}`)
+        }
+
         break
       }
 

@@ -10,13 +10,16 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@mozilla/readability": "^0.5.0",
     "bullmq": "^5.0.0",
     "@upstash/redis": "^1.30.0",
     "node-cron": "^3.0.3",
     "@ai-sdk/openai": "^0.0.14",
     "ai": "^3.1.18",
     "ioredis": "^5.8.1",
+    "jsdom": "^25.0.0",
     "zod": "^3.23.8",
+    "resend": "^3.2.0",
     "@newsflow/db": "*",
     "@newsflow/ai": "*",
     "@newsflow/config": "*"
@@ -25,6 +28,7 @@
     "typescript": "^5.4.5",
     "ts-node": "^10.9.2",
     "@types/node": "^20.12.12",
-    "@types/node-cron": "^3.0.11"
+    "@types/node-cron": "^3.0.11",
+    "@types/jsdom": "^21.1.7"
   }
 }

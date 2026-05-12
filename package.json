@@ -2,6 +2,9 @@
   "name": "newsflow",
   "private": true,
   "packageManager": "npm@11.6.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "turbo run dev",

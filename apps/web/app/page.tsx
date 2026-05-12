@@ -53,7 +53,7 @@ export default function Page() {
           label: "Speed",
           bgColor: "#5C2D30",
           badge: "2026 Start",
-          imageSrc: "/carousel/track.jpg",
+          imageSrc: "/carousel/Track.jpg",
           imageAlt: "Indoor garden waterfall",
         
         },
@@ -76,7 +76,7 @@ export default function Page() {
           label: "Endurance",
           bgColor: "#5C2D30",
           badge: "2026 Start",
-          imageSrc: "/carousel/tennis.jpg",
+          imageSrc: "/carousel/Tennis.jpg",
           imageAlt: "Indoor garden waterfall",
         },
           {

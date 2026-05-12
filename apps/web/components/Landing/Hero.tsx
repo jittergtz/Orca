@@ -6,13 +6,13 @@ function Hero({ImgClassName, text}: {ImgClassName?: string, text: string}) {
   return (
     <main className='w-full    relative shadow-md shadow-black/20  overflow-hidden rounded-[40px] max-w-6xl h-full max-h-[650px] bg-[#222222]'>
 
-
+ 
        <Image
        src={"/HeroBackground.png"}
        width={1512}
        height={982}
        priority
-       quality={100}
+       quality={80}
        className={(`select-none h-96 md:h-full object-cover pointer-events-none  ${ImgClassName}`)}
        alt='Hero Background Orca'/>
 
@@ -35,6 +35,8 @@ function Hero({ImgClassName, text}: {ImgClassName?: string, text: string}) {
         src={"/Prev2.png"}
         width={700}
         height={400}
+        priority
+        sizes="(max-width: 1024px) 100vw, 600px"
         alt='Orca Preview Image'
         className='absolute bottom-16 w-72 sm:w-96 md:w-[600px] lg:hidden object-cover rounded-xl left-1/2 -translate-x-1/2'/>
        </div>
@@ -60,7 +62,7 @@ export function MissionHero({ImgClassName, text}: {ImgClassName?: string, text: 
        width={1512}
        height={982}
        priority
-       quality={100} 
+       quality={80} 
        className={(`select-none h-96 md:h-full object-cover pointer-events-none  ${ImgClassName}`)}
        alt='Hero Background Orca'/>
 

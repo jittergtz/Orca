@@ -35,6 +35,7 @@ function OrangeSection() {
         width={1920}
         height={1080}
         quality={80}
+        sizes="256px"
         className='size-64 object-cover rounded-3xl'
         alt='Principles Images'/>
     <Image 
@@ -42,6 +43,7 @@ function OrangeSection() {
         width={1920}
         height={1080}
         quality={80}
+        sizes="192px"
         className='size-48 object-cover rounded-3xl'
         alt='Principles Images'/>
   
@@ -50,6 +52,7 @@ function OrangeSection() {
             width={1920}
             height={1080}
             quality={80}
+            sizes="256px"
             className=' size-64 object-cover rounded-3xl'
             alt='Principles Images'/>
 
@@ -59,6 +62,7 @@ function OrangeSection() {
             width={1920}
             height={1080}
             quality={80}
+            sizes="192px"
             className=' size-48 object-cover rounded-3xl'
             alt='Principles Images'/>
 
@@ -69,6 +73,7 @@ function OrangeSection() {
             width={1920}
             height={1080}
             quality={80}
+            sizes="192px"
             className=' size-48 object-cover rounded-3xl'
             alt='Principles Images'/>
 
@@ -86,6 +91,7 @@ function OrangeSection() {
         width={1920}
         height={1080}
         quality={80}
+        sizes="(max-width: 768px) 50vw, 256px"
         className='size-64 object-cover rounded-3xl'
         alt='Principles Images'/>
     <Image 
@@ -93,6 +99,7 @@ function OrangeSection() {
         width={1920}
         height={1080}
         quality={80}
+        sizes="(max-width: 768px) 50vw, 192px"
         className='size-48 object-cover rounded-3xl'
         alt='Principles Images'/>
   
@@ -101,6 +108,7 @@ function OrangeSection() {
             width={1920}
             height={1080}
             quality={80}
+            sizes="(max-width: 768px) 50vw, 256px"
             className=' size-64 object-cover rounded-3xl'
             alt='Principles Images'/>
 
@@ -110,6 +118,7 @@ function OrangeSection() {
             width={1920}
             height={1080}
             quality={80}
+            sizes="(max-width: 768px) 50vw, 192px"
             className=' size-48 object-cover rounded-3xl'
             alt='Principles Images'/>
 
@@ -120,6 +129,7 @@ function OrangeSection() {
             width={1920}
             height={1080}
             quality={80}
+            sizes="(max-width: 768px) 50vw, 192px"
             className=' size-48 object-cover rounded-3xl'
             alt='Principles Images'/>
 

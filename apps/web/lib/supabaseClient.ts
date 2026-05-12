@@ -1,5 +1,5 @@
 import type { EnvSource } from '@newsflow/config'
-import { createBrowserClient, type NewsflowSupabaseClient } from '@newsflow/db'
+import { createBrowserClient, NewsflowSupabaseClient } from '@newsflow/db/dist/client'
 
 let client: NewsflowSupabaseClient | null = null
 

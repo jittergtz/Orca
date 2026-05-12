@@ -24,7 +24,7 @@ function Navbar() {
   useEffect(() => {
     const s = getSupabase();
     if (!s) return;
-    s.auth.getSession().then(({ data }) => {
+    s.auth.getSession().then(({ data }: {data: any }) => {
       setSession(!!data.session);
     });
   }, []);
@@ -220,7 +220,7 @@ export function NavbarDashboard() {
   useEffect(() => {
     const s = getSupabase();
     if (!s) return;
-    s.auth.getSession().then(({ data }) => {
+    s.auth.getSession().then(({ data }: {data: any}) => {
       setSession(!!data.session);
     });
   }, []);

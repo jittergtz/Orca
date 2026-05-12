@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <title>Orca Notes</title>
+  </head>
+  <body>
+    <div id="root"><h1>INITIAL HTML</h1></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        document.body.innerHTML += '<pre style="color:red; font-family: monospace; background:white; position:fixed; top:0; left:0; right: 0; bottom: 0; z-index:9999; padding: 20px; white-space: pre-wrap;">ERROR VERBOSE: ' + (e.error ? e.error.stack : e.message) + '</pre>';
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        document.body.innerHTML += '<pre style="color:red; font-family: monospace; background:white; position:fixed; top:0; left:0; right: 0; bottom: 0; z-index:9999; padding: 20px; white-space: pre-wrap;">REJECTION: ' + (e.reason ? (e.reason.stack || e.reason.message || String(e.reason)) : "Unknown Promise Rejection") + '</pre>';
+      });
+    </script>
+    <script type="module" src="/src/renderer/main.tsx"></script>
+  </body>
+</html>

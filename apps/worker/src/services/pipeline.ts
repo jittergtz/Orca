@@ -13,6 +13,7 @@ import {
   type FetchNewsJobData,
   type SummarizeArticleJobData,
 } from "../queue";
+import { sendTopicDigest } from "./email";
 
 function dedupeBySourceUrl<T extends { sourceUrl: string }>(items: T[]) {
   const seen = new Set<string>();
@@ -71,6 +72,19 @@ export async function executeFetchPipeline(
     );
 
     await updateTopicFetchTimestamp(supabase, topic.id);
+
+    // Send digest email for daily/weekly topics
+    if (topic.frequency !== 'realtime' && articles.length > 0) {
+      await sendTopicDigest(
+        topic.id,
+        articles.map(a => ({
+          title: a.title,
+          sourceUrl: a.sourceUrl,
+          sourceName: a.sourceName,
+        })),
+        source
+      );
+    }
   }
 
   logger.info("Fetch pipeline completed", {
