@@ -88,6 +88,69 @@ export const ArticleSummarySchema = z.object({
   keyEntities: z.array(z.string()).default([]),
 });
 
+export const ArticleDistilledFactSchema = z.object({
+  text: z.string().min(1),
+  sourceUrl: z.string().url().optional(),
+  confidence: z.enum(["high", "medium", "low"]).default("medium"),
+});
+
+export const ArticleDistilledQuoteSchema = z.object({
+  text: z.string().min(1),
+  speaker: z.string().nullable().default(null),
+  sourceUrl: z.string().url().optional(),
+});
+
+export const ArticleDistilledMetricSchema = z.object({
+  label: z.string().min(1),
+  value: z.string().min(1),
+  change: z.string().nullable().default(null),
+  context: z.string().nullable().default(null),
+});
+
+export const ArticleDistilledTimelineItemSchema = z.object({
+  date: z.string().min(1),
+  event: z.string().min(1),
+});
+
+export const ArticleDistillationSchema = z.object({
+  keyFacts: z.array(ArticleDistilledFactSchema).min(1),
+  quotes: z.array(ArticleDistilledQuoteSchema).default([]),
+  metrics: z.array(ArticleDistilledMetricSchema).default([]),
+  timeline: z.array(ArticleDistilledTimelineItemSchema).default([]),
+  entities: z.array(z.string()).default([]),
+  sourceUrls: z.array(z.string().url()).default([]),
+});
+
+export const ArticleMdxComponentNameSchema = z.enum([
+  "DataTable",
+  "MetricCard",
+  "DataChart",
+]);
+
+export const ArticleMdxOutputSchema = z.object({
+  title: z.string().min(1),
+  tldr: z.array(z.string()).min(3).max(4),
+  contentMdx: z.string().min(1),
+  readMinutes: z.number().positive(),
+  sentiment: z.enum(["positive", "negative", "neutral"]),
+  imageSearchQuery: z.string().min(1).nullable().default(null),
+  usedComponents: z.array(ArticleMdxComponentNameSchema).default([]),
+});
+
+export const ArticleAssetSchema = z.object({
+  imageUrl: z.string().url().nullable(),
+  imageAttribution: z.string().nullable(),
+  source: z.enum(["unsplash", "open_graph", "none"]),
+});
+
+export const ArticleChunkInputSchema = z.object({
+  articleId: z.string(),
+  userId: z.string(),
+  chunkIndex: z.number().int().nonnegative(),
+  content: z.string().min(1),
+  embedding: z.array(z.number()).nullable().optional(),
+});
+
 export const TopicRefinementSchema = z.object({
   topic: z.string(),
   category: z.string(),

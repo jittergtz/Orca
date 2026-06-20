@@ -4,6 +4,10 @@ export interface WorkerRuntimeEnv {
   workerPollCron: string;
   topicDialogueModel: string;
   articleSummaryModel: string;
+  articleMdxPipelineEnabled: boolean;
+  articleDistillationModel: string;
+  articleMdxModel: string;
+  articleEmbeddingModel: string;
   serperApiKey: string;
   workerAuthToken?: string;
   upstashRestUrl?: string;
@@ -21,6 +25,16 @@ export function readEnvValue(source: EnvSource, key: string) {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
+export function readBooleanEnvValue(source: EnvSource, key: string, fallback = false) {
+  const value = readEnvValue(source, key)?.toLowerCase();
+
+  if (value === undefined) {
+    return fallback;
+  }
+
+  return ["1", "true", "yes", "on"].includes(value);
+}
+
 export function resolveWorkerRuntimeEnv(source: EnvSource = defaultEnvSource()): WorkerRuntimeEnv {
   const { serperApiKey } = resolveSerperEnv(source);
 
@@ -28,6 +42,10 @@ export function resolveWorkerRuntimeEnv(source: EnvSource = defaultEnvSource()):
     workerPollCron: readEnvValue(source, "WORKER_POLL_CRON") ?? "*/15 * * * *",
     topicDialogueModel: readEnvValue(source, "TOPIC_DIALOGUE_MODEL") ?? "gpt-4o",
     articleSummaryModel: readEnvValue(source, "ARTICLE_SUMMARY_MODEL") ?? "gpt-4o-mini",
+    articleMdxPipelineEnabled: readBooleanEnvValue(source, "ENABLE_ARTICLE_MDX_PIPELINE"),
+    articleDistillationModel: readEnvValue(source, "ARTICLE_DISTILLATION_MODEL") ?? "gpt-4o-mini",
+    articleMdxModel: readEnvValue(source, "ARTICLE_MDX_MODEL") ?? "gpt-4o",
+    articleEmbeddingModel: readEnvValue(source, "ARTICLE_EMBEDDING_MODEL") ?? "text-embedding-3-small",
     serperApiKey,
     workerAuthToken: readEnvValue(source, "WORKER_AUTH_TOKEN"),
     upstashRestUrl: readEnvValue(source, "UPSTASH_REDIS_REST_URL"),

@@ -14,6 +14,9 @@ export type BillingSubscriptionStatus =
   | "paused";
 export type CheckoutSessionStatus = "open" | "complete" | "expired";
 export type EmbeddingVector = number[];
+export type DistilledFactConfidence = "high" | "medium" | "low";
+export type ArticleMdxComponentName = "DataTable" | "MetricCard" | "DataChart";
+export type ArticleAssetSource = "unsplash" | "open_graph" | "none";
 
 export interface TopicConfig {
   signals: string[];
@@ -160,6 +163,63 @@ export interface ArticleSummary {
   readMinutes: number;
   sentiment: ArticleSentiment;
   keyEntities: string[];
+}
+
+export interface ArticleDistilledFact {
+  text: string;
+  sourceUrl?: string;
+  confidence: DistilledFactConfidence;
+}
+
+export interface ArticleDistilledQuote {
+  text: string;
+  speaker: string | null;
+  sourceUrl?: string;
+}
+
+export interface ArticleDistilledMetric {
+  label: string;
+  value: string;
+  change: string | null;
+  context: string | null;
+}
+
+export interface ArticleDistilledTimelineItem {
+  date: string;
+  event: string;
+}
+
+export interface ArticleDistillation {
+  keyFacts: ArticleDistilledFact[];
+  quotes: ArticleDistilledQuote[];
+  metrics: ArticleDistilledMetric[];
+  timeline: ArticleDistilledTimelineItem[];
+  entities: string[];
+  sourceUrls: string[];
+}
+
+export interface ArticleMdxOutput {
+  title: string;
+  tldr: string[];
+  contentMdx: string;
+  readMinutes: number;
+  sentiment: ArticleSentiment;
+  imageSearchQuery: string | null;
+  usedComponents: ArticleMdxComponentName[];
+}
+
+export interface ArticleAsset {
+  imageUrl: string | null;
+  imageAttribution: string | null;
+  source: ArticleAssetSource;
+}
+
+export interface ArticleChunkInput {
+  articleId: string;
+  userId: string;
+  chunkIndex: number;
+  content: string;
+  embedding?: EmbeddingVector | null;
 }
 
 export interface NewArticleRecord {
