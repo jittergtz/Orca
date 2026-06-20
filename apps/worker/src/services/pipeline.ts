@@ -20,6 +20,7 @@ import {
   type FetchNewsJobData,
   type SummarizeArticleJobData,
 } from "../queue";
+import { acquireArticleAsset } from "./articleAssets";
 import { sendTopicDigest } from "./email";
 
 function dedupeBySourceUrl<T extends { sourceUrl: string }>(items: T[]) {
@@ -162,6 +163,13 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
         },
         source
       );
+      const asset = await acquireArticleAsset(
+        {
+          imageSearchQuery: mdx.imageSearchQuery,
+          sourceUrl: data.sourceUrl,
+        },
+        source
+      );
       const article = await upsertArticle(supabase, {
         topic_id: data.topicId,
         url_hash: createHash("sha256").update(data.sourceUrl).digest("hex"),
@@ -174,8 +182,8 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
         sentiment: mdx.sentiment,
         audio_url: null,
         content_mdx: mdx.contentMdx,
-        image_url: null,
-        image_attribution: null,
+        image_url: asset.imageUrl,
+        image_attribution: asset.imageAttribution,
         published_at: data.publishedAt,
       });
 
@@ -185,6 +193,7 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
         sourceUrl: article.source_url,
         usedComponents: mdx.usedComponents,
         imageSearchQuery: mdx.imageSearchQuery,
+        assetSource: asset.source,
       });
 
       return {
@@ -192,6 +201,7 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
         topicId: article.topic_id,
         sourceUrl: article.source_url,
         contentMode: "mdx" as const,
+        assetSource: asset.source,
       };
     } catch (error) {
       logger.warn("MDX summarize pipeline failed; falling back to legacy summary", {

@@ -8,6 +8,7 @@ export interface WorkerRuntimeEnv {
   articleDistillationModel: string;
   articleMdxModel: string;
   articleEmbeddingModel: string;
+  unsplashAccessKey?: string;
   serperApiKey: string;
   workerAuthToken?: string;
   upstashRestUrl?: string;
@@ -46,6 +47,7 @@ export function resolveWorkerRuntimeEnv(source: EnvSource = defaultEnvSource()):
     articleDistillationModel: readEnvValue(source, "ARTICLE_DISTILLATION_MODEL") ?? "gpt-4o-mini",
     articleMdxModel: readEnvValue(source, "ARTICLE_MDX_MODEL") ?? "gpt-4o",
     articleEmbeddingModel: readEnvValue(source, "ARTICLE_EMBEDDING_MODEL") ?? "text-embedding-3-small",
+    unsplashAccessKey: readEnvValue(source, "UNSPLASH_ACCESS_KEY"),
     serperApiKey,
     workerAuthToken: readEnvValue(source, "WORKER_AUTH_TOKEN"),
     upstashRestUrl: readEnvValue(source, "UPSTASH_REDIS_REST_URL"),
