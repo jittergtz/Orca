@@ -1,8 +1,12 @@
 import type {
   Article,
+  ArticleChunk,
   ArticleRead,
+  NewArticleChunkRecord,
   NewArticleRecord,
+  NewTopicSummaryRecord,
   Topic,
+  TopicSummary,
   User,
 } from "./types";
 import type { NewsflowSupabaseClient } from "./client";
@@ -129,6 +133,78 @@ export async function markArticleRead(
   }
 
   return result.data as ArticleRead;
+}
+
+export async function getTopicSummary(
+  client: NewsflowSupabaseClient,
+  payload: { userId: string; topicQuery: string }
+) {
+  const { data, error } = await client
+    .from("topic_summaries")
+    .select("*")
+    .eq("user_id", payload.userId)
+    .eq("topic_query", payload.topicQuery)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as TopicSummary | null) ?? null;
+}
+
+export async function upsertTopicSummary(
+  client: NewsflowSupabaseClient,
+  summary: NewTopicSummaryRecord
+) {
+  const { data, error } = await (client
+    .from("topic_summaries") as any)
+    .upsert(summary, { onConflict: "user_id,topic_query" })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as TopicSummary;
+}
+
+export async function listArticleChunksForArticle(
+  client: NewsflowSupabaseClient,
+  articleId: string
+) {
+  const { data, error } = await client
+    .from("article_chunks")
+    .select("*")
+    .eq("article_id", articleId)
+    .order("chunk_index", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as ArticleChunk[]) ?? [];
+}
+
+export async function upsertArticleChunks(
+  client: NewsflowSupabaseClient,
+  chunks: NewArticleChunkRecord[]
+) {
+  if (chunks.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await (client
+    .from("article_chunks") as any)
+    .upsert(chunks, { onConflict: "article_id,chunk_index" })
+    .select("*");
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as ArticleChunk[]) ?? [];
 }
 
 export async function updateTopicFetchTimestamp(

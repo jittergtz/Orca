@@ -53,7 +53,30 @@ export const ArticleSchema = z.object({
   read_minutes: z.number(),
   sentiment: z.enum(["positive", "negative", "neutral"]),
   audio_url: z.string().nullable(),
+  content_mdx: z.string().nullable(),
+  image_url: z.string().nullable(),
+  image_attribution: z.string().nullable(),
   published_at: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const TopicSummarySchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  topic_query: z.string(),
+  rolling_summary: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export const ArticleChunkSchema = z.object({
+  id: z.string(),
+  article_id: z.string(),
+  user_id: z.string(),
+  chunk_index: z.number().int().nonnegative(),
+  content: z.string(),
+  embedding: z.array(z.number()).nullable(),
   created_at: z.string(),
 });
 

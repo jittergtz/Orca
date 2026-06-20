@@ -13,6 +13,7 @@ export type BillingSubscriptionStatus =
   | "incomplete_expired"
   | "paused";
 export type CheckoutSessionStatus = "open" | "complete" | "expired";
+export type EmbeddingVector = number[];
 
 export interface TopicConfig {
   signals: string[];
@@ -53,8 +54,12 @@ export interface Article {
   read_minutes: number;
   sentiment: ArticleSentiment;
   audio_url: string | null;
+  content_mdx: string | null;
+  image_url: string | null;
+  image_attribution: string | null;
   published_at: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface ArticleRead {
@@ -62,6 +67,39 @@ export interface ArticleRead {
   article_id: string;
   read_at: string;
   listened_at: string | null;
+}
+
+export interface TopicSummary {
+  id: string;
+  user_id: string;
+  topic_query: string;
+  rolling_summary: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewTopicSummaryRecord {
+  user_id: string;
+  topic_query: string;
+  rolling_summary: string;
+}
+
+export interface ArticleChunk {
+  id: string;
+  article_id: string;
+  user_id: string;
+  chunk_index: number;
+  content: string;
+  embedding: EmbeddingVector | null;
+  created_at: string;
+}
+
+export interface NewArticleChunkRecord {
+  article_id: string;
+  user_id: string;
+  chunk_index: number;
+  content: string;
+  embedding?: EmbeddingVector | null;
 }
 
 export interface BillingSubscription {
@@ -135,6 +173,9 @@ export interface NewArticleRecord {
   read_minutes: number;
   sentiment: ArticleSentiment;
   audio_url: string | null;
+  content_mdx?: string | null;
+  image_url?: string | null;
+  image_attribution?: string | null;
   published_at: string;
 }
 
@@ -163,6 +204,18 @@ export interface NewsflowDatabase {
         Row: ArticleRead;
         Insert: ArticleRead;
         Update: Partial<ArticleRead>;
+        Relationships: [];
+      };
+      topic_summaries: {
+        Row: TopicSummary;
+        Insert: NewTopicSummaryRecord;
+        Update: Partial<NewTopicSummaryRecord>;
+        Relationships: [];
+      };
+      article_chunks: {
+        Row: ArticleChunk;
+        Insert: NewArticleChunkRecord;
+        Update: Partial<NewArticleChunkRecord>;
         Relationships: [];
       };
       billing_subscriptions: {
