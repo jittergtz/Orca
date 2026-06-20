@@ -87,7 +87,7 @@ create table if not exists public.billing_subscriptions (
   stripe_subscription_id text not null unique,
   stripe_price_id text not null,
   plan_code text not null check (plan_code in ('go','pro')),
-  status text not null check (status in ('trialing','active','past_due','canceled','unpaid','incomplete','incomplete_expired')),
+  status text not null check (status in ('trialing','active','past_due','canceled','unpaid','incomplete','incomplete_expired','paused')),
   current_period_start timestamptz,
   current_period_end timestamptz,
   cancel_at_period_end boolean not null default false,

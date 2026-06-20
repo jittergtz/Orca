@@ -19,7 +19,8 @@ function sortNotes(notes: Note[]) {
 }
 
 function hasActivePlan(status: string | null) {
-  return status === "active" || status === "trialing";
+  const normalizedStatus = String(status ?? "").toLowerCase();
+  return normalizedStatus === "active" || normalizedStatus === "trialing";
 }
 
 function getPricingUrl(baseUrl: string, email: string | null) {
@@ -28,6 +29,23 @@ function getPricingUrl(baseUrl: string, email: string | null) {
     return `${normalizedBase}/pricing`;
   }
   return `${normalizedBase}/pricing?email=${encodeURIComponent(email)}`;
+}
+
+async function fetchBillingStatusFromApi(baseUrl: string, accessToken: string) {
+  const normalizedBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  const response = await fetch(`${normalizedBase}/api/billing/status`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Billing status request failed: ${response.status}`);
+  }
+
+  const payload = await response.json() as {
+    subscription?: { status?: string | null } | null;
+  };
+
+  return String(payload.subscription?.status ?? "canceled").toLowerCase();
 }
 
 export default function App() {
@@ -162,21 +180,29 @@ export default function App() {
 
     console.log("[AUTH] Step 2: Session exists, email=", session.user.email);
     setSessionEmail(session.user.email ?? null);
-    console.log("[AUTH] Step 3: Querying billing_subscriptions for user_id=", session.user.id);
-    const { data: sub, error: subError } = await supabase
-      .from("billing_subscriptions")
-      .select("status")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-    console.log("[AUTH] Step 3 result: sub=", JSON.stringify(sub), "subError=", subError?.message ?? null);
-      
-    if (subError) {
-      console.error("[AUTH] Subscription query error, throwing:", subError.message, "details:", subError);
-      throw subError;
+    console.log("[AUTH] Step 3: Resolving billing status for user_id=", session.user.id);
+    let nextSubscriptionStatus = "canceled";
+
+    try {
+      nextSubscriptionStatus = await fetchBillingStatusFromApi(appBaseUrl, session.access_token);
+      console.log("[AUTH] Step 3 API result: status=", nextSubscriptionStatus);
+    } catch (billingApiError: any) {
+      console.warn("[AUTH] Billing API failed, falling back to billing_subscriptions:", billingApiError?.message ?? billingApiError);
+      const { data: sub, error: subError } = await supabase
+        .from("billing_subscriptions")
+        .select("status")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      console.log("[AUTH] Step 3 fallback result: sub=", JSON.stringify(sub), "subError=", subError?.message ?? null);
+
+      if (subError) {
+        console.error("[AUTH] Subscription query error, throwing:", subError.message, "details:", subError);
+        throw subError;
+      }
+
+      nextSubscriptionStatus =
+        String((sub as { status?: string } | null)?.status ?? "canceled").toLowerCase();
     }
-    
-    const nextSubscriptionStatus =
-      (sub as { status?: string } | null)?.status ?? "canceled";
     console.log("[AUTH] Step 4: nextSubscriptionStatus=", nextSubscriptionStatus);
     setSubscriptionStatus(nextSubscriptionStatus);
 
@@ -189,7 +215,7 @@ export default function App() {
 
     console.log("[AUTH] No active plan → setting view to 'paywall'");
     setView("paywall");
-  }, [enterApp]);
+  }, [appBaseUrl, enterApp]);
 
   useEffect(() => {
     console.log("[APP-INIT] ════ useEffect init running ════");

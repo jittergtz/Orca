@@ -26,6 +26,7 @@ export const BillingSubscriptionStatusSchema = z.enum([
   "unpaid",
   "incomplete",
   "incomplete_expired",
+  "paused",
 ]);
 export const CheckoutSessionStatusSchema = z.enum(["open", "complete", "expired"]);
 

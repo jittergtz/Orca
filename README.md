@@ -2,6 +2,15 @@
 
 Welcome to the internal source code repository for Orca. This project is structured as a [Turborepo](https://turbo.build/) monorepo containing multiple applications and shared packages.
 
+## Agent Documentation
+
+For a deeper handoff map, read the root docs folder:
+
+- [`docs/README.md`](docs/README.md): where to start and what each app/package owns.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): system flows, billing, worker pipeline, and future shared topic/report model.
+- [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md): practical navigation guide for future agents.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md): product roadmap for personalized topic subscriptions, high-quality reports, dynamic images, scheduling, and cost-efficient shared generation.
+
 ## Workspace Structure
 
 ### Apps

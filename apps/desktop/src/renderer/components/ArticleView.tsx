@@ -2,7 +2,14 @@ import { useFeedStore } from "../stores/feedStore";
 import { ExternalLink } from "lucide-react";
 
 export default function ArticleView() {
-  const { activeTopicId, articlesByTopic, topics, status } = useFeedStore();
+  const {
+    activeTopicId,
+    activeArticleIndex,
+    articlesByTopic,
+    topics,
+    status,
+    setActiveArticleIndex,
+  } = useFeedStore();
 
   // No active topic
   if (!activeTopicId) {
@@ -48,8 +55,8 @@ export default function ArticleView() {
     );
   }
 
-  // Show the most recent article
-  const article = articles[0];
+  // Show the selected article, falling back to the newest one if the index is stale.
+  const article = articles[activeArticleIndex] ?? articles[0];
 
   return (
     <div className="absolute inset-0 overflow-y-auto scroll-smooth bg-transparent text-neutral-900 dark:text-neutral-100 flex justify-center">
@@ -164,30 +171,38 @@ export default function ArticleView() {
               More from {activeTopic?.name}
             </div>
             <div className="space-y-2">
-              {articles.slice(1).map((a) => (
-                <div
-                  key={a.id}
-                  className="p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200/40 dark:border-white/5 cursor-default"
-                >
-                  <div className="text-[13px] font-medium text-neutral-800 dark:text-neutral-200 mb-1 leading-snug">
-                    {a.title}
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] text-neutral-400">
-                    {a.source_name && <span>{a.source_name}</span>}
-                    {a.published_at && (
-                      <>
-                        <span>·</span>
-                        <span>
-                          {new Intl.DateTimeFormat("en-GB", {
-                            day: "numeric",
-                            month: "short",
-                          }).format(new Date(a.published_at))}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
+              {articles.map((a, index) => {
+                if (a.id === article.id) {
+                  return null;
+                }
+
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setActiveArticleIndex(index)}
+                    className="w-full p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200/40 dark:border-white/5 text-left transition-colors hover:bg-white dark:hover:bg-white/[0.05]"
+                  >
+                    <div className="text-[13px] font-medium text-neutral-800 dark:text-neutral-200 mb-1 leading-snug">
+                      {a.title}
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-neutral-400">
+                      {a.source_name && <span>{a.source_name}</span>}
+                      {a.published_at && (
+                        <>
+                          <span>·</span>
+                          <span>
+                            {new Intl.DateTimeFormat("en-GB", {
+                              day: "numeric",
+                              month: "short",
+                            }).format(new Date(a.published_at))}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

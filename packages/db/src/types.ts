@@ -10,7 +10,8 @@ export type BillingSubscriptionStatus =
   | "canceled"
   | "unpaid"
   | "incomplete"
-  | "incomplete_expired";
+  | "incomplete_expired"
+  | "paused";
 export type CheckoutSessionStatus = "open" | "complete" | "expired";
 
 export interface TopicConfig {

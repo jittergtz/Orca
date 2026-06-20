@@ -6,6 +6,39 @@ import { NavbarDashboard } from '@/components/Landing/Navbar'
 import ProfileInfoCard from '@/components/Dashboard/ProfileInfoCard'
 import { LogOut, CreditCard, Zap } from 'lucide-react'
 
+type BillingSubscriptionView = {
+  plan_code?: string | null
+  status?: string | null
+  current_period_end?: string | null
+  cancel_at_period_end?: boolean | null
+}
+
+async function fetchBillingStatus(accessToken: string) {
+  const res = await fetch('/api/billing/status', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    throw new Error(`Billing status request failed: ${res.status}`)
+  }
+
+  const data = await res.json()
+  return (data.subscription ?? null) as BillingSubscriptionView | null
+}
+
+function isActiveSubscriptionStatus(status: string) {
+  return status === 'active' || status === 'trialing'
+}
+
+function getStatusLabel(status: string) {
+  if (!status || status === 'canceled' || status === 'incomplete_expired') return 'Inactive'
+  return status
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [email, setEmail] = useState<string | null>(null)
@@ -46,46 +79,63 @@ export default function DashboardPage() {
           console.error("Network Error fetching user created_at:", err);
         })
         
-        // @ts-ignore - Types for billing_subscriptions may not be generated yet
-        const query = s.from('billing_subscriptions')
-          .select('plan_code, status, current_period_end, cancel_at_period_end')
-          .eq('user_id', data.session.user.id)
-          .maybeSingle() as Promise<any>;
+        const applySubscription = (sub: BillingSubscriptionView | null) => {
+          if (!sub) {
+            setPlan('Go')
+            setStatus('Inactive')
+            setNextPayment('N/A')
+            setWillCancel(false)
+            return
+          }
 
-        query.then((res: any) => {
-            const { data: sub, error } = res;
-            if (error) {
-              console.error("Supabase Error fetching plan:", error);
-            }
-            if (!error && sub) {
-              const pc = sub.plan_code ? String(sub.plan_code).trim().toLowerCase() : 'go';
-              const currentStatus = String(sub.status).toLowerCase();
-              setPlan(pc === 'pro' && currentStatus !== 'canceled' ? 'Pro' : 'Go')
-              
-              if (currentStatus === 'canceled' || currentStatus === 'past_due') {
-                 setStatus(currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1))
-                 setWillCancel(false)
-              } else if (sub.cancel_at_period_end) {
-                 setStatus('Canceling')
-                 setWillCancel(true)
-              } else {
-                 setStatus('Active')
-                 setWillCancel(false)
-              }
+          const pc = sub.plan_code ? String(sub.plan_code).trim().toLowerCase() : 'go'
+          const currentStatus = String(sub.status ?? '').toLowerCase()
+          const isActive = isActiveSubscriptionStatus(currentStatus)
+          setPlan(pc === 'pro' && currentStatus !== 'canceled' ? 'Pro' : 'Go')
 
-              if (sub.current_period_end) {
-                setNextPayment(new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
-              }
-            } else {
-              setPlan('Go')
-              setStatus('Inactive')
-              setWillCancel(false)
-            }
+          if (isActive && sub.cancel_at_period_end) {
+            setStatus('Canceling')
+            setWillCancel(true)
+          } else if (isActive) {
+            setStatus('Active')
+            setWillCancel(false)
+          } else {
+            setStatus(getStatusLabel(currentStatus))
+            setWillCancel(false)
+          }
+
+          if (sub.current_period_end) {
+            setNextPayment(new Date(sub.current_period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }))
+          } else {
+            setNextPayment('N/A')
+          }
+        }
+
+        fetchBillingStatus(data.session.access_token)
+          .then((sub) => {
+            applySubscription(sub)
             setLoading(false)
           })
           .catch((err: any) => {
-            console.error("Network Error fetching plan:", err);
-            setLoading(false)
+            console.error("Billing status API failed, falling back to Supabase:", err);
+            // @ts-ignore - Types for billing_subscriptions may not be generated yet
+            const query = s.from('billing_subscriptions')
+              .select('plan_code, status, current_period_end, cancel_at_period_end')
+              .eq('user_id', data.session.user.id)
+              .maybeSingle() as Promise<any>;
+
+            query.then((res: any) => {
+              const { data: sub, error } = res;
+              if (error) {
+                console.error("Supabase Error fetching plan:", error);
+              }
+              applySubscription(error ? null : sub)
+              setLoading(false)
+            }).catch((fallbackErr: any) => {
+              console.error("Network Error fetching plan:", fallbackErr);
+              applySubscription(null)
+              setLoading(false)
+            })
           })
       }
     })
@@ -151,7 +201,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen px-4 flex-col bg-neutral-50 items-center">
-      <NavbarDashboard />
+      <NavbarDashboard plan={plan} />
 
       <main className="w-full max-w-4xl pt-24 pb-12 flex flex-col gap-8">
         {/* Header */}

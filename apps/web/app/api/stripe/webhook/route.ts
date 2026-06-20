@@ -3,6 +3,12 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { appendFileSync } from 'fs'
 import { sendWelcomeEmail, sendPaymentEmail } from '@/lib/email'
+import {
+  getPlanCodeFromPriceId,
+  stripeSubscriptionToBillingRecord,
+  toStripeTimestampISO,
+  upsertBillingSubscription,
+} from '@/lib/stripeBilling'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: '2024-04-10' })
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string
@@ -15,11 +21,6 @@ export async function POST(req: Request) {
   const log = (msg: string) => {
     const timestamp = new Date().toISOString()
     appendFileSync('/tmp/webhook_logs.txt', `[${timestamp}] ${msg}\n`)
-  }
-
-  const toISO = (ts: any) => {
-    if (!ts || isNaN(Number(ts))) return null
-    return new Date(Number(ts) * 1000).toISOString()
   }
 
   try {
@@ -48,25 +49,21 @@ export async function POST(req: Request) {
 
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
         const priceId = subscription.items.data[0].price.id
-        const planCode = priceId === process.env.STRIPE_PRICE_GO ? 'go' : 'pro'
+        const planCode = getPlanCodeFromPriceId(priceId)
 
-        log(`Inserting sub ${subscription.id} for user ${userId}. End Date: ${toISO(subscription.current_period_end)}`)
-        const { error: insertError } = await supabase.from('billing_subscriptions').upsert({
-          user_id: userId,
-          provider: 'stripe',
-          stripe_customer_id: session.customer as string,
-          stripe_subscription_id: subscription.id,
-          stripe_price_id: priceId,
-          plan_code: planCode,
-          status: subscription.status,
-          current_period_start: toISO(subscription.current_period_start),
-          current_period_end: toISO(subscription.current_period_end),
-          cancel_at_period_end: subscription.cancel_at_period_end,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' })
-        
-        if (insertError) log(`Insert Error: ${JSON.stringify(insertError)}`)
-        else log(`Insert Success!`)
+        log(`Inserting sub ${subscription.id} for user ${userId}. End Date: ${toStripeTimestampISO(subscription.current_period_end)}`)
+        const record = stripeSubscriptionToBillingRecord(subscription, userId)
+        if (!record) {
+          log(`Insert skipped: subscription ${subscription.id} has no price item`)
+          break
+        }
+
+        try {
+          await upsertBillingSubscription(supabase, record)
+          log(`Insert Success!`)
+        } catch (insertError: any) {
+          log(`Insert Error: ${JSON.stringify(insertError)}`)
+        }
 
         // Send welcome + payment confirmation emails
         try {
@@ -100,18 +97,32 @@ export async function POST(req: Request) {
         
         // IMPORTANT: Always retrieve full object from Stripe to ensure all fields like current_period_end are present and correctly formatted
         const subscription = await stripe.subscriptions.retrieve(eventSubscription.id)
-        
-        const start = toISO(subscription.current_period_start)
-        const end = toISO(subscription.current_period_end)
+        const userId = subscription.metadata?.supabase_user_id || eventSubscription.metadata?.supabase_user_id
+
+        const start = toStripeTimestampISO(subscription.current_period_start)
+        const end = toStripeTimestampISO(subscription.current_period_end)
         log(`Updating sub ${subscription.id} (status: ${subscription.status}, canceling: ${subscription.cancel_at_period_end}, end: ${end})`)
-        
+
+        if (userId) {
+          const record = stripeSubscriptionToBillingRecord(subscription, userId)
+          if (record) {
+            try {
+              await upsertBillingSubscription(supabase, record)
+              log(`Upsert Success from subscription event!`)
+              break
+            } catch (upsertError: any) {
+              log(`Upsert DB error: ${JSON.stringify(upsertError)}`)
+            }
+          }
+        }
+
         const { data: updatedData, error: updateError } = await supabase.from('billing_subscriptions')
           .update({
             status: subscription.status,
             current_period_start: start,
             current_period_end: end,
             cancel_at_period_end: subscription.cancel_at_period_end,
-            canceled_at: toISO(subscription.canceled_at),
+            canceled_at: toStripeTimestampISO(subscription.canceled_at),
             updated_at: new Date().toISOString()
           })
           .eq('stripe_subscription_id', subscription.id)

@@ -5,24 +5,31 @@
 @layer base {
   :root {
     color-scheme: light dark;
+    --mac-window-radius: 24px;
   }
 
   html,
   body,
   #root {
-    @apply h-full;
+    @apply h-full overflow-hidden;
+    border-radius: var(--mac-window-radius);
   }
 
   body {
     font-family: "Avenir Next", "SF Pro Text", "Segoe UI", sans-serif;
     @apply m-0 overflow-hidden;
+    background: transparent;
+  }
+
+  #root {
     background:
       radial-gradient(circle at 20% 10%, rgba(133, 194, 255, 0.5), transparent 32%),
       radial-gradient(circle at 86% 85%, rgba(253, 197, 158, 0.42), transparent 35%),
       linear-gradient(135deg, #f1f4fa 0%, #cedbeb 100%);
+    clip-path: inset(0 round var(--mac-window-radius));
   }
 
-  .dark body {
+  .dark #root {
    
      background:
       radial-gradient(circle at 20% 10%, rgba(46, 64, 82, 0.5), transparent 32%),
@@ -41,7 +48,8 @@
 
 @layer components {
   .glass-shell {
-    @apply grid h-full grid-rows-[auto_1fr] overflow-hidden rounded-2xl border border-white/20 bg-white/80 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/80;
+    @apply grid h-full grid-rows-[auto_1fr] overflow-hidden border border-white/20 bg-white/80 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/80;
+    border-radius: var(--mac-window-radius);
   }
 
   .topbar {
@@ -49,7 +57,8 @@
   }
 
   .auth-layer {
-    @apply grid h-full place-items-center rounded-2xl border border-white/20 bg-white/30 p-6  dark:border-white/10 dark:bg-neutral-900/40;
+    @apply grid h-full place-items-center border border-white/20 bg-white/30 p-6  dark:border-white/10 dark:bg-neutral-900/40;
+    border-radius: var(--mac-window-radius);
   }
 
   .glass-card {

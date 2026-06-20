@@ -202,10 +202,20 @@ export default Navbar;
 
 
 
-export function NavbarDashboard() {
+type NavbarDashboardProps = {
+  plan?: string | null;
+}
+
+function getDashboardBrand(plan?: string | null) {
+  const normalizedPlan = String(plan ?? '').trim().toLowerCase();
+  return `Orca ${normalizedPlan === 'pro' ? 'Pro' : 'Go'}`;
+}
+
+export function NavbarDashboard({ plan }: NavbarDashboardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [session, setSession] = useState(false);
+  const brandLabel = getDashboardBrand(plan);
 
   // Handle scroll effect
   useEffect(() => {
@@ -237,11 +247,6 @@ export function NavbarDashboard() {
     };
   }, [isOpen]);
 
-  const navLinks = [
-    { name: 'Product', href: '/product' },
-    { name: 'blog', href: '/blog' },
-  ];
-
   return (
     <>
       <nav 
@@ -253,27 +258,13 @@ export function NavbarDashboard() {
           <div className='flex gap-10 items-center'>
           {/* Logo */}
           <Link href="/" className='flex items-center z-50'>
-            <h1 className='text-black text-2xl font-serif font-medium italic'>Orca Go</h1>
+            <h1 className='text-black text-2xl font-serif font-medium italic'>{brandLabel}</h1>
           </Link>
-
-          {/* Desktop Navigation */}
-          <div className='hidden md:flex items-center gap-8'>
-            <div className='flex items-center gap-6'>
-              {navLinks.map((link) => (
-                <Link key={link.name} href={link.href} className='text-sm text-neutral-600 hover:text-black transition-colors'>
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-          </div>
           </div>
 
           {/* Desktop Right Actions & Mobile Toggle */}
           <div className='flex items-center gap-4'>
             <div className='hidden md:flex items-center gap-4'>
-              <Link href="/mission" className='text-sm text-neutral-600 hover:text-black transition-colors'>
-                Mission
-              </Link>
               <Link 
                 href={session ? "/dashboard" : "/product"} 
                 className='text-sm bg-black text-white px-4 py-2 rounded-full hover:bg-neutral-800 transition-all hover:scale-105 active:scale-95'
@@ -308,41 +299,10 @@ export function NavbarDashboard() {
           >
             <div className='flex flex-col items-center mt-10  justify-start min-h-screen p-5'>
               <div className='flex flex-col items-center gap-8 w-full  max-w-sm'>
-                {navLinks.map((link, i) => (
-                  <motion.div
-                    key={link.name}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 + i * 0.05 }}
-                  >
-                    <Link 
-                      href={link.href} 
-                      className='text-2xl text-neutral-800  hover:text-black transition-colors'
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {link.name}
-                    </Link>
-                  </motion.div>
-                ))}
-                
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + navLinks.length * 0.05 }}
-                >
-                  <Link 
-                    href="/mission" 
-                    className='text-2xl  text-neutral-800 hover:text-black transition-colors'
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Mission
-                  </Link>
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + (navLinks.length + 1) * 0.05 }}
+                  transition={{ delay: 0.1 }}
                   className='w-full pt-8   flex flex-col items-center'
                 >
                   <Link 

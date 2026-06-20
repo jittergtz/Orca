@@ -4,6 +4,21 @@ import { useRouter } from 'next/navigation'
 import { getSupabase } from '@/lib/supabaseClient'
 
 type Plan = 'go' | 'pro'
+type BillingSubscriptionView = { status?: string | null }
+
+async function fetchBillingStatus(accessToken: string) {
+  const res = await fetch('/api/billing/status', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    throw new Error(`Billing status request failed: ${res.status}`)
+  }
+
+  const data = await res.json()
+  return (data.subscription ?? null) as BillingSubscriptionView | null
+}
 
 export default function SubscribeAuth({
   plan,
@@ -43,15 +58,24 @@ export default function SubscribeAuth({
       return
     }
 
-    const result = (await s
-      .from('billing_subscriptions')
-      .select('status')
-      .eq('user_id', session.user.id)
-      .maybeSingle()) as any
+    let subscription: BillingSubscriptionView | null = null
 
-    const status = String(result?.data?.status ?? '').toLowerCase()
-    const activeStates = ['active', 'trialing', 'canceling']
-    const isActive = !!result?.data && activeStates.includes(status)
+    try {
+      subscription = await fetchBillingStatus(session.access_token)
+    } catch (err) {
+      console.error('Billing status API failed, falling back to Supabase:', err)
+      const result = (await s
+        .from('billing_subscriptions')
+        .select('status')
+        .eq('user_id', session.user.id)
+        .maybeSingle()) as any
+
+      subscription = result?.data ?? null
+    }
+
+    const status = String(subscription?.status ?? '').toLowerCase()
+    const activeStates = ['active', 'trialing']
+    const isActive = !!subscription && activeStates.includes(status)
 
     setHasActiveAccess(isActive)
     setCheckingAccess(false)
