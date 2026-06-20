@@ -11,6 +11,7 @@ import {
 import { fetchNewsJob } from "./jobs/fetchNews";
 import { summarizeJob } from "./jobs/summarize";
 import { generateAudioJob } from "./jobs/audio";
+import { resolveWorkerRuntimeEnv } from "./lib/env";
 
 export const PIPELINE_QUEUE = "newsflow-pipeline";
 export const AUDIO_QUEUE = "newsflow-audio";
@@ -46,11 +47,13 @@ function defaultEnvSource(): EnvSource {
   return (((globalThis as { process?: { env?: EnvSource } }).process?.env ?? {}) as EnvSource);
 }
 
-function defaultJobOptions(): JobsOptions {
+function defaultJobOptions(source: EnvSource = defaultEnvSource()): JobsOptions {
+  const { workerJobAttempts } = resolveWorkerRuntimeEnv(source);
+
   return {
     removeOnComplete: 100,
     removeOnFail: 500,
-    attempts: 3,
+    attempts: workerJobAttempts,
     backoff: {
       type: "exponential",
       delay: 3_000,
@@ -67,23 +70,29 @@ export function createRedisConnection(source: EnvSource = defaultEnvSource()) {
   });
 }
 
-export function createPipelineQueue(connection = createRedisConnection()) {
+export function createPipelineQueue(
+  connection = createRedisConnection(),
+  source: EnvSource = defaultEnvSource()
+) {
   return new Queue<FetchNewsJobData | SummarizeArticleJobData>(PIPELINE_QUEUE, {
     connection,
-    defaultJobOptions: defaultJobOptions(),
+    defaultJobOptions: defaultJobOptions(source),
   });
 }
 
-export function createAudioQueue(connection = createRedisConnection()) {
+export function createAudioQueue(
+  connection = createRedisConnection(),
+  source: EnvSource = defaultEnvSource()
+) {
   return new Queue<GenerateAudioJobData>(AUDIO_QUEUE, {
     connection,
-    defaultJobOptions: defaultJobOptions(),
+    defaultJobOptions: defaultJobOptions(source),
   });
 }
 
 export async function enqueueFetchNews(data: FetchNewsJobData, source?: EnvSource) {
   const connection = createRedisConnection(source);
-  const queue = createPipelineQueue(connection);
+  const queue = createPipelineQueue(connection, source);
 
   try {
     return await queue.add(JOB_NAMES.fetchNews, data);
@@ -95,7 +104,7 @@ export async function enqueueFetchNews(data: FetchNewsJobData, source?: EnvSourc
 
 export async function enqueueSummarizeArticle(data: SummarizeArticleJobData, source?: EnvSource) {
   const connection = createRedisConnection(source);
-  const queue = createPipelineQueue(connection);
+  const queue = createPipelineQueue(connection, source);
 
   try {
     return await queue.add(JOB_NAMES.summarizeArticle, data);
@@ -107,12 +116,31 @@ export async function enqueueSummarizeArticle(data: SummarizeArticleJobData, sou
 
 export async function enqueueGenerateAudio(data: GenerateAudioJobData, source?: EnvSource) {
   const connection = createRedisConnection(source);
-  const queue = createAudioQueue(connection);
+  const queue = createAudioQueue(connection, source);
 
   try {
     return await queue.add(JOB_NAMES.generateAudio, data);
   } finally {
     await queue.close();
+    await connection.quit();
+  }
+}
+
+export async function clearQueues(source?: EnvSource) {
+  const connection = createRedisConnection(source);
+  const pipelineQueue = createPipelineQueue(connection, source);
+  const audioQueue = createAudioQueue(connection, source);
+
+  try {
+    await Promise.all([
+      pipelineQueue.obliterate({ force: true }),
+      audioQueue.obliterate({ force: true }),
+    ]);
+  } finally {
+    await Promise.all([
+      pipelineQueue.close(),
+      audioQueue.close(),
+    ]);
     await connection.quit();
   }
 }

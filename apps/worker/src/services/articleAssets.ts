@@ -1,5 +1,5 @@
 import { SCRAPE_TIMEOUT_MS, type EnvSource } from "@newsflow/config";
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import { ArticleAssetSchema, type ArticleAsset } from "@newsflow/db";
 import { readEnvValue } from "../lib/env";
 import { logger } from "../lib/logger";
@@ -7,6 +7,7 @@ import { logger } from "../lib/logger";
 const UNSPLASH_SEARCH_ENDPOINT = "https://api.unsplash.com/search/photos";
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
+const quietVirtualConsole = new VirtualConsole();
 
 type UnsplashSearchResponse = {
   results?: Array<{
@@ -181,7 +182,7 @@ async function fetchOpenGraphAsset(sourceUrl: string) {
     }
 
     const html = await response.text();
-    const dom = new JSDOM(html, { url: sourceUrl });
+    const dom = new JSDOM(html, { url: sourceUrl, virtualConsole: quietVirtualConsole });
     const document = dom.window.document;
     const imageUrl = normalizeUrl(
       document

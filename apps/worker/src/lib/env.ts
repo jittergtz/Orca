@@ -2,6 +2,11 @@ import { type EnvSource, resolveSerperEnv } from "@newsflow/config";
 
 export interface WorkerRuntimeEnv {
   workerPollCron: string;
+  workerSchedulerEnabled: boolean;
+  workerJobAttempts: number;
+  workerMaxArticlesPerFetch: number;
+  workerDigestEmailEnabled: boolean;
+  workerMdxFallbackEnabled: boolean;
   topicDialogueModel: string;
   articleSummaryModel: string;
   articleMdxPipelineEnabled: boolean;
@@ -36,11 +41,21 @@ export function readBooleanEnvValue(source: EnvSource, key: string, fallback = f
   return ["1", "true", "yes", "on"].includes(value);
 }
 
+export function readNumberEnvValue(source: EnvSource, key: string, fallback: number) {
+  const value = Number(readEnvValue(source, key));
+  return Number.isFinite(value) ? value : fallback;
+}
+
 export function resolveWorkerRuntimeEnv(source: EnvSource = defaultEnvSource()): WorkerRuntimeEnv {
   const { serperApiKey } = resolveSerperEnv(source);
 
   return {
     workerPollCron: readEnvValue(source, "WORKER_POLL_CRON") ?? "*/15 * * * *",
+    workerSchedulerEnabled: readBooleanEnvValue(source, "WORKER_SCHEDULER_ENABLED"),
+    workerJobAttempts: Math.max(1, readNumberEnvValue(source, "WORKER_JOB_ATTEMPTS", 1)),
+    workerMaxArticlesPerFetch: Math.max(1, readNumberEnvValue(source, "WORKER_MAX_ARTICLES_PER_FETCH", 1)),
+    workerDigestEmailEnabled: readBooleanEnvValue(source, "WORKER_DIGEST_EMAIL_ENABLED"),
+    workerMdxFallbackEnabled: readBooleanEnvValue(source, "WORKER_MDX_FALLBACK_ENABLED"),
     topicDialogueModel: readEnvValue(source, "TOPIC_DIALOGUE_MODEL") ?? "gpt-4o",
     articleSummaryModel: readEnvValue(source, "ARTICLE_SUMMARY_MODEL") ?? "gpt-4o-mini",
     articleMdxPipelineEnabled: readBooleanEnvValue(source, "ENABLE_ARTICLE_MDX_PIPELINE"),

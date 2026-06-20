@@ -14,6 +14,7 @@ import {
   runWorkerNewsSearch,
 } from "../ai";
 import { resolveWorkerRuntimeEnv } from "../lib/env";
+import { errorMessage, errorMetadata } from "../lib/errors";
 import { logger } from "../lib/logger";
 import {
   enqueueSummarizeArticle,
@@ -21,6 +22,7 @@ import {
   type SummarizeArticleJobData,
 } from "../queue";
 import { acquireArticleAsset } from "./articleAssets";
+import { indexArticleMemory } from "./articleMemory";
 import { sendTopicDigest } from "./email";
 
 function dedupeBySourceUrl<T extends { sourceUrl: string }>(items: T[]) {
@@ -50,12 +52,37 @@ function mdxToPlainText(content: string) {
     .trim();
 }
 
+function normalizePublishedAt(value: string) {
+  const parsed = new Date(value);
+
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString();
+  }
+
+  const relative = /^\s*(\d+)\s+(minute|minutes|hour|hours|day|days|week|weeks)\s+ago\s*$/i.exec(value);
+
+  if (relative) {
+    const amount = Number(relative[1]);
+    const unit = relative[2].toLowerCase();
+    const multiplier =
+      unit.startsWith("minute") ? 60 * 1000 :
+      unit.startsWith("hour") ? 60 * 60 * 1000 :
+      unit.startsWith("day") ? 24 * 60 * 60 * 1000 :
+      7 * 24 * 60 * 60 * 1000;
+
+    return new Date(Date.now() - amount * multiplier).toISOString();
+  }
+
+  return new Date().toISOString();
+}
+
 export async function executeFetchPipeline(
   data: FetchNewsJobData,
   source?: EnvSource,
   options?: { dryRun?: boolean }
 ) {
   const supabase = createServiceRoleClient(source);
+  const runtimeEnv = resolveWorkerRuntimeEnv(source);
   const topic = await getTopicById(supabase, data.topicId);
 
   if (!topic || !topic.is_active) {
@@ -70,10 +97,11 @@ export async function executeFetchPipeline(
       {
         topicName: topic.name,
         topicConfig: topic.config,
+        maxArticles: runtimeEnv.workerMaxArticlesPerFetch,
       },
       source
     )
-  );
+  ).slice(0, runtimeEnv.workerMaxArticlesPerFetch);
 
   if (!options?.dryRun) {
     await Promise.all(
@@ -85,7 +113,7 @@ export async function executeFetchPipeline(
             sourceUrl: article.sourceUrl,
             sourceName: article.sourceName,
             title: article.title,
-            publishedAt: article.publishedAt,
+            publishedAt: normalizePublishedAt(article.publishedAt),
             rawText: article.content,
           },
           source
@@ -96,7 +124,7 @@ export async function executeFetchPipeline(
     await updateTopicFetchTimestamp(supabase, topic.id);
 
     // Send digest email for daily/weekly topics
-    if (topic.frequency !== 'realtime' && articles.length > 0) {
+    if (runtimeEnv.workerDigestEmailEnabled && topic.frequency !== 'realtime' && articles.length > 0) {
       await sendTopicDigest(
         topic.id,
         articles.map(a => ({
@@ -124,7 +152,7 @@ export async function executeFetchPipeline(
       sourceUrl: article.sourceUrl,
       sourceName: article.sourceName,
       title: article.title,
-      publishedAt: article.publishedAt,
+        publishedAt: article.publishedAt,
     })),
     initiatedBy: data.initiatedBy,
   };
@@ -184,8 +212,38 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
         content_mdx: mdx.contentMdx,
         image_url: asset.imageUrl,
         image_attribution: asset.imageAttribution,
-        published_at: data.publishedAt,
+        published_at: normalizePublishedAt(data.publishedAt),
       });
+      let memoryResult:
+        | Awaited<ReturnType<typeof indexArticleMemory>>
+        | null = null;
+
+      if (topic?.user_id) {
+        try {
+          memoryResult = await indexArticleMemory(
+            supabase,
+            {
+              articleId: article.id,
+              userId: topic.user_id,
+              topicQuery,
+              sourceName: data.sourceName,
+              sourceUrl: data.sourceUrl,
+              publishedAt: data.publishedAt,
+              mdx,
+              distillation,
+              previousTopicSummary: topicSummary,
+            },
+            source
+          );
+        } catch (error) {
+          logger.warn("Article memory indexing failed", {
+            topicId: article.topic_id,
+            articleId: article.id,
+            sourceUrl: article.source_url,
+            error: errorMetadata(error),
+          });
+        }
+      }
 
       logger.info("MDX summarize pipeline completed", {
         topicId: article.topic_id,
@@ -194,6 +252,9 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
         usedComponents: mdx.usedComponents,
         imageSearchQuery: mdx.imageSearchQuery,
         assetSource: asset.source,
+        memoryIndexed: memoryResult !== null,
+        chunkCount: memoryResult?.chunkCount ?? 0,
+        embeddedChunkCount: memoryResult?.embeddedChunkCount ?? 0,
       });
 
       return {
@@ -202,12 +263,30 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
         sourceUrl: article.source_url,
         contentMode: "mdx" as const,
         assetSource: asset.source,
+        memoryIndexed: memoryResult !== null,
+        chunkCount: memoryResult?.chunkCount ?? 0,
+        embeddedChunkCount: memoryResult?.embeddedChunkCount ?? 0,
       };
     } catch (error) {
-      logger.warn("MDX summarize pipeline failed; falling back to legacy summary", {
+      logger.warn("MDX summarize pipeline failed", {
         topicId: data.topicId,
         sourceUrl: data.sourceUrl,
-        error: error instanceof Error ? error.message : String(error),
+        fallbackEnabled: runtimeEnv.workerMdxFallbackEnabled,
+        error: errorMetadata(error),
+      });
+
+      if (!runtimeEnv.workerMdxFallbackEnabled) {
+        return {
+          topicId: data.topicId,
+          sourceUrl: data.sourceUrl,
+          contentMode: "mdx_failed" as const,
+          error: errorMessage(error),
+        };
+      }
+
+      logger.warn("Falling back to legacy summary after MDX failure", {
+        topicId: data.topicId,
+        sourceUrl: data.sourceUrl,
       });
     }
   }
@@ -225,7 +304,7 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
     read_minutes: summary.readMinutes,
     sentiment: summary.sentiment,
     audio_url: null,
-    published_at: data.publishedAt,
+    published_at: normalizePublishedAt(data.publishedAt),
   });
 
   logger.info("Summarize pipeline completed", {

@@ -31,6 +31,7 @@ export async function runWorkerNewsSearch(
   logger.info("News search starting", {
     topicName: input.topicName,
     query,
+    maxArticles: input.maxArticles ?? 10,
   });
 
   // Step 1: Search Serper for real-time news URLs
@@ -49,8 +50,9 @@ export async function runWorkerNewsSearch(
   }
 
   // Step 2: Scrape the top N URLs
+  const scrapeLimit = Math.min(MAX_SCRAPE_URLS, Math.max(input.maxArticles ?? MAX_SCRAPE_URLS, 1));
   const urlsToScrape = serperResults
-    .slice(0, MAX_SCRAPE_URLS)
+    .slice(0, scrapeLimit)
     .map((r) => r.link);
 
   const scrapedArticles = await scrapeUrls(urlsToScrape);
@@ -60,11 +62,11 @@ export async function runWorkerNewsSearch(
     (scraped, index) => {
       // Find the matching Serper result for metadata
       const serperMatch = serperResults.find(
-        (r) => r.link === urlsToScrape[index]
+        (r) => r.link === scraped.url
       ) ?? serperResults[index];
 
       return {
-        sourceUrl: serperMatch?.link ?? urlsToScrape[index],
+        sourceUrl: serperMatch?.link ?? scraped.url,
         sourceName: scraped.siteName ?? serperMatch?.source ?? "Unknown",
         title: scraped.title || serperMatch?.title || "Untitled",
         publishedAt: serperMatch?.date ?? new Date().toISOString(),

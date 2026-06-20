@@ -1,11 +1,19 @@
 import { Resend } from 'resend'
 import { createServiceRoleClient, getTopicById } from '@newsflow/db'
 import type { EnvSource } from '@newsflow/config'
+import { readEnvValue } from '../lib/env'
 import { logger } from '../lib/logger'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const fromEmail = process.env.FROM_EMAIL || 'hello@orca-labs.app'
-const appUrl = process.env.APP_URL || 'http://localhost:3000'
+function defaultEnvSource(): EnvSource {
+  return (((globalThis as { process?: { env?: EnvSource } }).process?.env ?? {}) as EnvSource);
+}
+
+function createResendClient(source?: EnvSource) {
+  const env = source ?? defaultEnvSource()
+  const apiKey = readEnvValue(env, 'RESEND_API_KEY')
+
+  return apiKey ? new Resend(apiKey) : null
+}
 
 interface DigestArticle {
   title: string
@@ -24,6 +32,14 @@ export async function sendTopicDigest(
   }
 
   try {
+    const env = source ?? defaultEnvSource()
+    const resend = createResendClient(env)
+
+    if (!resend) {
+      logger.warn('Digest email skipped: missing RESEND_API_KEY', { topicId })
+      return
+    }
+
     const supabase = createServiceRoleClient(source)
     const topic = await getTopicById(supabase, topicId)
 
@@ -56,6 +72,8 @@ export async function sendTopicDigest(
       ? `Your ${topic.name} briefing`
       : `${topic.name}: ${articleCount} articles`
 
+    const fromEmail = readEnvValue(env, 'FROM_EMAIL') ?? 'hello@orca-labs.app'
+
     await resend.emails.send({
       from: `Orca <${fromEmail}>`,
       to: userEmail,
@@ -78,6 +96,9 @@ export async function sendTopicDigest(
 }
 
 function buildDigestHtml(topicName: string, articles: DigestArticle[]): string {
+  const appUrl =
+    (((globalThis as { process?: { env?: EnvSource } }).process?.env ?? {}) as EnvSource).APP_URL ||
+    'http://localhost:3000'
   const date = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',

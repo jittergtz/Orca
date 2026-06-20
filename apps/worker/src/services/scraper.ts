@@ -1,14 +1,17 @@
 import { Readability } from "@mozilla/readability";
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import { SCRAPE_TIMEOUT_MS } from "@newsflow/config";
 import { logger } from "../lib/logger";
 
 export interface ScrapedArticle {
+  url: string;
   title: string;
   content: string;
   textLength: number;
   siteName: string | null;
 }
+
+const quietVirtualConsole = new VirtualConsole();
 
 /**
  * Fetch a URL and extract clean article text using Mozilla's Readability
@@ -45,7 +48,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedArticle | null> {
     }
 
     const html = await response.text();
-    const dom = new JSDOM(html, { url });
+    const dom = new JSDOM(html, { url, virtualConsole: quietVirtualConsole });
     const reader = new Readability(dom.window.document);
     const article = reader.parse();
 
@@ -55,6 +58,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedArticle | null> {
     }
 
     return {
+      url,
       title: article.title,
       content: article.textContent,
       textLength: article.textContent.length,

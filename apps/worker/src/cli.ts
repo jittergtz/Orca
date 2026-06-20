@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import { parseArgs, readBooleanFlag, readOptionalStringFlag, readRequiredStringFlag } from "./lib/args";
 import { logger } from "./lib/logger";
+import { clearQueues } from "./queue";
 import { runHealthcheck } from "./services/healthcheck";
 import { executeFetchPipeline, executeSummarizePipeline } from "./services/pipeline";
 import { previewTopicRefinement } from "./services/topicRefinement";
@@ -59,6 +60,15 @@ async function main() {
       console.log(JSON.stringify(result, null, 2));
       return;
     }
+    case "clear-queues": {
+      if (!readBooleanFlag(flags, "yes")) {
+        throw new Error("Refusing to clear queues without --yes");
+      }
+
+      await clearQueues(process.env as Record<string, string | undefined>);
+      console.log(JSON.stringify({ ok: true, cleared: ["newsflow-pipeline", "newsflow-audio"] }, null, 2));
+      return;
+    }
     default: {
       console.log(
         [
@@ -67,6 +77,7 @@ async function main() {
           '  npm run cli -w apps/worker -- topic-refine --category Finance --prompt "TSMC company finances"',
           "  npm run cli -w apps/worker -- fetch-topic --topic-id <uuid> [--dry-run]",
           "  npm run cli -w apps/worker -- summarize-file --topic-id <uuid> --source-url <url> --source-name Reuters --title <title> --published-at <iso> --file <path>",
+          "  npm run cli -w apps/worker -- clear-queues --yes",
         ].join("\n")
       );
     }

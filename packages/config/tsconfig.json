@@ -5,8 +5,8 @@
     "rootDir": "src",
     "declaration": true,
     "target": "es2020",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "CommonJS",
+    "moduleResolution": "node",
     "esModuleInterop": true
   },
   "include": ["src/**/*"]

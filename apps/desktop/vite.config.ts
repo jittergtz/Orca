@@ -9,6 +9,8 @@ export default defineConfig(({ command }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src/renderer"),
+      "@newsflow/config": path.resolve(__dirname, "../../packages/config/src/index.ts"),
+      "@newsflow/db": path.resolve(__dirname, "../../packages/db/src/index.ts"),
     },
   },
   build: {
@@ -20,4 +22,3 @@ export default defineConfig(({ command }) => ({
     strictPort: true
   }
 }));
-

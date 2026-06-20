@@ -6,8 +6,12 @@ import { resolveWorkerRuntimeEnv } from "./lib/env";
 
 async function bootstrap() {
   const runtime = createWorkers();
-  const scheduler = startScheduler();
-  const { port, workerAuthToken } = resolveWorkerRuntimeEnv();
+  const { port, workerAuthToken, workerSchedulerEnabled } = resolveWorkerRuntimeEnv();
+  const scheduler = workerSchedulerEnabled ? startScheduler() : null;
+
+  if (!workerSchedulerEnabled) {
+    logger.info("Worker scheduler disabled");
+  }
 
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     res.setHeader("Content-Type", "application/json");
@@ -85,7 +89,7 @@ async function bootstrap() {
   });
 
   const shutdown = async () => {
-    scheduler.stop();
+    scheduler?.stop();
     await closeWorkerRuntime(runtime);
     server.close();
     process.exit(0);
