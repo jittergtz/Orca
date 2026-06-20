@@ -114,6 +114,7 @@ export default function Sidebar({ isOpen, onNewTopic }: SidebarProps) {
 
   return (
     <aside
+      style={{ WebkitAppRegion: "no-drag" }}
       className={`absolute z-10 top-1 bottom-1 bg-white/75 dark:bg-[#111111]/75 backdrop-blur-2xl left-1 border border-white/70 dark:border-white/10 rounded-[18px] py-2 px-2 transition-all duration-200 ease-in-out flex flex-col ${
         isOpen
           ? "w-[292px] opacity-100 translate-x-0"

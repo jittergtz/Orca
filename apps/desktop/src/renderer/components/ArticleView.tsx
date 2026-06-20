@@ -1,5 +1,6 @@
 import { useFeedStore } from "../stores/feedStore";
 import { ExternalLink } from "lucide-react";
+import { MdxArticleRenderer } from "./mdx/MdxArticleRenderer";
 
 export default function ArticleView() {
   const {
@@ -57,18 +58,10 @@ export default function ArticleView() {
 
   // Show the selected article, falling back to the newest one if the index is stale.
   const article = articles[activeArticleIndex] ?? articles[0];
+  const articleContent = article.content_mdx?.trim() ? article.content_mdx : article.body;
 
   return (
     <div className="absolute inset-0 overflow-y-auto scroll-smooth bg-transparent text-neutral-900 dark:text-neutral-100 flex justify-center">
-      <style>{`
-        .article-body p { margin-bottom: 1.5rem; }
-        .article-body mark {
-          background-color: transparent;
-          border-bottom: 1px solid rgba(120, 120, 120, 0.4);
-          color: inherit;
-        }
-      `}</style>
-
       <div className="max-w-2xl px-8 w-full flex flex-col pb-24">
 
         {/* Top Header Row */}
@@ -121,6 +114,21 @@ export default function ArticleView() {
           </div>
         </div>
 
+        {article.image_url && (
+          <figure className="mb-8 overflow-hidden rounded-lg border border-black/10 dark:border-white/10 bg-neutral-50 dark:bg-white/[0.03]">
+            <img
+              src={article.image_url}
+              alt={article.title}
+              className="h-64 w-full object-cover"
+            />
+            {article.image_attribution ? (
+              <figcaption className="px-4 py-2 text-[11px] text-neutral-400">
+                {article.image_attribution}
+              </figcaption>
+            ) : null}
+          </figure>
+        )}
+
         {/* TL;DR Bullets */}
         {article.tldr_bullets && article.tldr_bullets.length > 0 && (
           <div className="mb-8 p-5 rounded-2xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-200/60 dark:border-white/5">
@@ -139,15 +147,7 @@ export default function ArticleView() {
         )}
 
         {/* Body content */}
-        <div
-          className="article-body font-sans text-[16px] sm:text-[17px] leading-[1.8] text-neutral-700 dark:text-neutral-300"
-          dangerouslySetInnerHTML={{
-            __html:
-              "<p>" +
-              article.body.replace(/\n\n/g, "</p><p>") +
-              "</p>",
-          }}
-        />
+        <MdxArticleRenderer content={articleContent} />
 
         {/* Source link */}
         {article.source_url && (
