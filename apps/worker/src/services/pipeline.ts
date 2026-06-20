@@ -2,11 +2,18 @@ import { createHash } from "crypto";
 import type { EnvSource } from "@newsflow/config";
 import {
   createServiceRoleClient,
+  getTopicSummary,
   getTopicById,
   updateTopicFetchTimestamp,
   upsertArticle,
 } from "@newsflow/db";
-import { runWorkerArticleSummary, runWorkerNewsSearch } from "../ai";
+import {
+  runWorkerArticleDistillation,
+  runWorkerArticleMdxGeneration,
+  runWorkerArticleSummary,
+  runWorkerNewsSearch,
+} from "../ai";
+import { resolveWorkerRuntimeEnv } from "../lib/env";
 import { logger } from "../lib/logger";
 import {
   enqueueSummarizeArticle,
@@ -26,6 +33,20 @@ function dedupeBySourceUrl<T extends { sourceUrl: string }>(items: T[]) {
     seen.add(item.sourceUrl);
     return true;
   });
+}
+
+function mdxToPlainText(content: string) {
+  return content
+    .replace(/<DataTable\b[^>]*\/>/g, "")
+    .replace(/<MetricCard\b[^>]*\/>/g, "")
+    .replace(/<DataChart\b[^>]*\/>/g, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^[-*]\s+/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export async function executeFetchPipeline(
@@ -110,6 +131,77 @@ export async function executeFetchPipeline(
 
 export async function executeSummarizePipeline(data: SummarizeArticleJobData, source?: EnvSource) {
   const supabase = createServiceRoleClient(source);
+  const runtimeEnv = resolveWorkerRuntimeEnv(source);
+
+  if (runtimeEnv.articleMdxPipelineEnabled) {
+    try {
+      const topic = await getTopicById(supabase, data.topicId);
+      const topicQuery = topic?.config.searchQuery ?? data.topicName;
+      const topicSummary = topic?.user_id
+        ? await getTopicSummary(supabase, {
+            userId: topic.user_id,
+            topicQuery,
+          })
+        : null;
+      const distillation = await runWorkerArticleDistillation(
+        {
+          topicName: data.topicName,
+          sourceTitle: data.title,
+          sourceUrl: data.sourceUrl,
+          rawText: data.rawText,
+        },
+        source
+      );
+      const mdx = await runWorkerArticleMdxGeneration(
+        {
+          topicName: data.topicName,
+          sourceTitle: data.title,
+          sourceUrl: data.sourceUrl,
+          rollingSummary: topicSummary?.rolling_summary ?? null,
+          distillation,
+        },
+        source
+      );
+      const article = await upsertArticle(supabase, {
+        topic_id: data.topicId,
+        url_hash: createHash("sha256").update(data.sourceUrl).digest("hex"),
+        source_url: data.sourceUrl,
+        source_name: data.sourceName,
+        title: mdx.title || data.title,
+        tldr_bullets: mdx.tldr,
+        body: mdxToPlainText(mdx.contentMdx),
+        read_minutes: mdx.readMinutes,
+        sentiment: mdx.sentiment,
+        audio_url: null,
+        content_mdx: mdx.contentMdx,
+        image_url: null,
+        image_attribution: null,
+        published_at: data.publishedAt,
+      });
+
+      logger.info("MDX summarize pipeline completed", {
+        topicId: article.topic_id,
+        articleId: article.id,
+        sourceUrl: article.source_url,
+        usedComponents: mdx.usedComponents,
+        imageSearchQuery: mdx.imageSearchQuery,
+      });
+
+      return {
+        articleId: article.id,
+        topicId: article.topic_id,
+        sourceUrl: article.source_url,
+        contentMode: "mdx" as const,
+      };
+    } catch (error) {
+      logger.warn("MDX summarize pipeline failed; falling back to legacy summary", {
+        topicId: data.topicId,
+        sourceUrl: data.sourceUrl,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
   const summary = await runWorkerArticleSummary(data.rawText, source);
 
   const article = await upsertArticle(supabase, {
@@ -136,5 +228,6 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
     articleId: article.id,
     topicId: article.topic_id,
     sourceUrl: article.source_url,
+    contentMode: "legacy" as const,
   };
 }
