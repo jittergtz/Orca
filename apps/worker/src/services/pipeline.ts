@@ -79,7 +79,7 @@ function normalizePublishedAt(value: string) {
 export async function executeFetchPipeline(
   data: FetchNewsJobData,
   source?: EnvSource,
-  options?: { dryRun?: boolean }
+  options?: { dryRun?: boolean; inlineSummarize?: boolean }
 ) {
   const supabase = createServiceRoleClient(source);
   const runtimeEnv = resolveWorkerRuntimeEnv(source);
@@ -104,22 +104,27 @@ export async function executeFetchPipeline(
   ).slice(0, runtimeEnv.workerMaxArticlesPerFetch);
 
   if (!options?.dryRun) {
-    await Promise.all(
-      articles.map(article =>
-        enqueueSummarizeArticle(
-          {
-            topicId: topic.id,
-            topicName: topic.name,
-            sourceUrl: article.sourceUrl,
-            sourceName: article.sourceName,
-            title: article.title,
-            publishedAt: normalizePublishedAt(article.publishedAt),
-            rawText: article.content,
-          },
-          source
+    const summarizeJobs: SummarizeArticleJobData[] = articles.map(article => ({
+      topicId: topic.id,
+      topicName: topic.name,
+      sourceUrl: article.sourceUrl,
+      sourceName: article.sourceName,
+      title: article.title,
+      publishedAt: normalizePublishedAt(article.publishedAt),
+      rawText: article.content,
+    }));
+
+    if (options?.inlineSummarize) {
+      for (const summarizeJob of summarizeJobs) {
+        await executeSummarizePipeline(summarizeJob, source);
+      }
+    } else {
+      await Promise.all(
+        summarizeJobs.map(summarizeJob =>
+          enqueueSummarizeArticle(summarizeJob, source)
         )
-      )
-    );
+      );
+    }
 
     await updateTopicFetchTimestamp(supabase, topic.id);
 
@@ -141,12 +146,14 @@ export async function executeFetchPipeline(
     topicId: topic.id,
     articleCount: articles.length,
     dryRun: options?.dryRun === true,
+    inlineSummarize: options?.inlineSummarize === true,
   });
 
   return {
     topicId: topic.id,
     topicName: topic.name,
-    queued: options?.dryRun ? 0 : articles.length,
+    queued: options?.dryRun || options?.inlineSummarize ? 0 : articles.length,
+    summarizedInline: options?.inlineSummarize ? articles.length : 0,
     discovered: articles.length,
     articles: articles.map(article => ({
       sourceUrl: article.sourceUrl,

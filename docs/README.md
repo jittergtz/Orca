@@ -8,6 +8,7 @@ Orca is becoming a personalized news and research app. Users subscribe to broad 
 
 - [Architecture](./ARCHITECTURE.md): system overview, app/package ownership, data flow, billing flow, and report-generation flow.
 - [Agent Guide](./AGENT_GUIDE.md): practical navigation guide for future agents: where to edit, common workflows, and gotchas.
+- [Local Dev Setup](./LOCAL_DEV_SETUP.md): safe local startup guide for desktop, worker, web, and low-cost manual article tests.
 - [Roadmap](./ROADMAP.md): product direction, milestones, and technical design areas still to solve.
 
 ## Repository Shape
@@ -55,7 +56,7 @@ npm run build -w @newsflow/worker
 npm run build -w @newsflow/db
 ```
 
-For local development, see the root [README](../README.md). The common full-stack loop is:
+For local development, prefer the safe [Local Dev Setup](./LOCAL_DEV_SETUP.md). The common desktop loop is:
 
 ```bash
 cd apps/desktop && bun run dev:ui
@@ -80,4 +81,3 @@ Use this search order:
 5. Check `apps/worker/src/services/pipeline.ts` and `apps/worker/src/jobs` for content generation behavior.
 6. Check `apps/web/app/api` for server-side billing/auth/topic endpoints.
 7. Check `apps/desktop/src/renderer` for user-facing reader behavior.
-

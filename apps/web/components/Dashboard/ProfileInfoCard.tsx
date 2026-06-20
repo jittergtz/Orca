@@ -9,14 +9,14 @@ type ProfileInfoCardProps = {
   createdAt: string | null
 }
 
-const BADGE_GRADIENTS = [
+const BATCH_GRADIENTS = [
   'from-lime-200 via-emerald-100 to-green-200',
   'from-sky-200 via-cyan-100 to-blue-200',
   'from-violet-200 via-fuchsia-100 to-purple-200',
   'from-amber-200 via-yellow-100 to-orange-200',
   'from-rose-200 via-pink-100 to-red-200',
   'from-stone-300 via-zinc-100 to-stone-200',
-]
+] as const
 
 function getMembershipMonths(createdAt: string | null) {
   if (!createdAt) return 1
@@ -59,6 +59,8 @@ function getMemberForLabel(months: number) {
 export default function ProfileInfoCard({ email, createdAt }: ProfileInfoCardProps) {
   const router = useRouter()
   const membershipMonths = getMembershipMonths(createdAt)
+  const currentBatch = membershipMonths
+  const batchGradient = BATCH_GRADIENTS[(currentBatch - 1) % BATCH_GRADIENTS.length]
   const signupLabel = getSignupLabel(createdAt)
   const memberForLabel = getMemberForLabel(membershipMonths)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -147,16 +149,36 @@ export default function ProfileInfoCard({ email, createdAt }: ProfileInfoCardPro
           <p className="font-sans text-sm text-stone-600">{signupLabel}</p>
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div className="flex flex-wrap gap-2">
-            {Array.from({ length: membershipMonths }, (_, i) => i + 1).map((month) => (
-              <span
-                key={`batch-month-${month}`}
-                className={`inline-flex items-center rounded-full px-5 py-2 text-xs font-medium text-stone-800 border border-black/5 bg-gradient-to-br ${BADGE_GRADIENTS[(month - 1) % BADGE_GRADIENTS.length]}`}
-              >
-                Batch Month: {month}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-black/5 bg-gradient-to-br p-5 shadow-sm ring-1 ring-white/60">
+            <div className={`absolute inset-0 bg-gradient-to-br opacity-90 ${batchGradient}`} />
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/30 blur-2xl" />
+            <div className="relative flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/70 shadow-inner ring-1 ring-black/5 backdrop-blur-sm">
+                <span
+                  className="font-serif italic text-3xl leading-none text-stone-900"
+                  style={{ fontFamily: 'var(--font-instrument-serif), Georgia, serif' }}
+                >
+                  {currentBatch}
+                </span>
+              </div>
+              <div className="min-w-0">
+                <p className="font-sans text-[10px] font-medium uppercase tracking-[0.2em] text-stone-600">
+                  Current Batch
+                </p>
+                <p
+                  className="font-serif text-xl text-stone-900"
+                  style={{ fontFamily: 'var(--font-instrument-serif), Georgia, serif' }}
+                >
+                  Month {currentBatch}
+                </p>
+                <p className="font-sans text-xs text-stone-600/90">Your active content cycle</p>
+              </div>
+              <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/55 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-emerald-800 ring-1 ring-emerald-700/10 backdrop-blur-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Active
               </span>
-            ))}
+            </div>
           </div>
 
           <button

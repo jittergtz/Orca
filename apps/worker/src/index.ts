@@ -3,14 +3,29 @@ import { closeWorkerRuntime, createWorkers, enqueueFetchNews } from "./queue";
 import { logger } from "./lib/logger";
 import { startScheduler } from "./scheduler";
 import { resolveWorkerRuntimeEnv } from "./lib/env";
+import { executeFetchPipeline } from "./services/pipeline";
 
 async function bootstrap() {
-  const runtime = createWorkers();
-  const { port, workerAuthToken, workerSchedulerEnabled } = resolveWorkerRuntimeEnv();
-  const scheduler = workerSchedulerEnabled ? startScheduler() : null;
+  const {
+    port,
+    workerAuthToken,
+    workerSchedulerEnabled,
+    workerQueueEnabled,
+    workerManualTriggerMode,
+  } = resolveWorkerRuntimeEnv();
+  const runtime = workerQueueEnabled ? createWorkers() : null;
+  const scheduler = workerSchedulerEnabled && workerQueueEnabled ? startScheduler() : null;
 
   if (!workerSchedulerEnabled) {
     logger.info("Worker scheduler disabled");
+  }
+
+  if (!workerQueueEnabled) {
+    logger.info("Worker queue disabled");
+  }
+
+  if (workerSchedulerEnabled && !workerQueueEnabled) {
+    logger.warn("Worker scheduler requires the queue and was not started");
   }
 
   const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
@@ -53,18 +68,29 @@ async function bootstrap() {
           logger.info("Manual fetch trigger received", {
             topicId: payload.topicId,
             initiatedBy: payload.initiatedBy ?? "manual",
+            mode: workerManualTriggerMode,
           });
 
-          await enqueueFetchNews({
+          const jobData = {
             topicId: payload.topicId,
             initiatedBy: (payload.initiatedBy as "manual" | "schedule") ?? "manual",
-          });
+          };
+
+          const result =
+            workerManualTriggerMode === "inline"
+              ? await executeFetchPipeline(jobData, undefined, { inlineSummarize: true })
+              : await enqueueFetchNews(jobData);
 
           res.writeHead(200);
           res.end(JSON.stringify({
             ok: true,
             topicId: payload.topicId,
-            message: "Fetch job enqueued",
+            mode: workerManualTriggerMode,
+            result,
+            message:
+              workerManualTriggerMode === "inline"
+                ? "Fetch pipeline completed inline"
+                : "Fetch job enqueued",
           }));
         } catch (error) {
           logger.error("Failed to enqueue fetch job", {
@@ -90,7 +116,9 @@ async function bootstrap() {
 
   const shutdown = async () => {
     scheduler?.stop();
-    await closeWorkerRuntime(runtime);
+    if (runtime) {
+      await closeWorkerRuntime(runtime);
+    }
     server.close();
     process.exit(0);
   };

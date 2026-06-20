@@ -3,6 +3,8 @@ import { type EnvSource, resolveSerperEnv } from "@newsflow/config";
 export interface WorkerRuntimeEnv {
   workerPollCron: string;
   workerSchedulerEnabled: boolean;
+  workerQueueEnabled: boolean;
+  workerManualTriggerMode: "queue" | "inline";
   workerJobAttempts: number;
   workerMaxArticlesPerFetch: number;
   workerDigestEmailEnabled: boolean;
@@ -46,12 +48,20 @@ export function readNumberEnvValue(source: EnvSource, key: string, fallback: num
   return Number.isFinite(value) ? value : fallback;
 }
 
+function readManualTriggerMode(source: EnvSource) {
+  const value = readEnvValue(source, "WORKER_MANUAL_TRIGGER_MODE")?.toLowerCase();
+
+  return value === "inline" ? "inline" : "queue";
+}
+
 export function resolveWorkerRuntimeEnv(source: EnvSource = defaultEnvSource()): WorkerRuntimeEnv {
   const { serperApiKey } = resolveSerperEnv(source);
 
   return {
     workerPollCron: readEnvValue(source, "WORKER_POLL_CRON") ?? "*/15 * * * *",
     workerSchedulerEnabled: readBooleanEnvValue(source, "WORKER_SCHEDULER_ENABLED"),
+    workerQueueEnabled: readBooleanEnvValue(source, "WORKER_QUEUE_ENABLED", true),
+    workerManualTriggerMode: readManualTriggerMode(source),
     workerJobAttempts: Math.max(1, readNumberEnvValue(source, "WORKER_JOB_ATTEMPTS", 1)),
     workerMaxArticlesPerFetch: Math.max(1, readNumberEnvValue(source, "WORKER_MAX_ARTICLES_PER_FETCH", 1)),
     workerDigestEmailEnabled: readBooleanEnvValue(source, "WORKER_DIGEST_EMAIL_ENABLED"),
