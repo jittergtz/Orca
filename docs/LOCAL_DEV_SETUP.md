@@ -1,5 +1,36 @@
 # Local Dev Setup
 
+## TL;DR
+
+**Goal:** Run the desktop app + worker locally, create a topic, and get one article back — without scheduled jobs, Redis queues, or runaway API costs.
+
+**Before you start**
+
+1. Copy/fill env files: `apps/desktop/.env.local` (Supabase + `VITE_WORKER_URL=http://localhost:3001`) and `apps/worker/.env.local` (Supabase, OpenAI, Serper, safe worker flags below).
+2. Apply DB migration `packages/db/sql/0003_ai_content_engine_schema.sql` in Supabase.
+3. In `apps/worker/.env.local`, keep the safe local defaults: scheduler off, queue off, inline mode, 1 article / 1 attempt.
+
+**Start everything (3 terminals + 1 optional)**
+
+| # | What | Command |
+|---|------|---------|
+| 1 | Desktop UI (Vite) | `cd apps/desktop && bun run dev:ui` → wait for `http://localhost:5173` |
+| 2 | Electron app | `cd apps/desktop && bun run dev` |
+| 3 | Worker | from repo root: `set -a && source apps/worker/.env.local && set +a && npm run dev -w apps/worker` → expect `Worker HTTP server listening on port 3001` |
+| 4 | Web app *(optional)* | `cd apps/web && npm run dev` → `http://localhost:3000` for landing, auth, billing, dashboard |
+
+**Use it**
+
+1. Log in in the Electron window.
+2. Create a topic — desktop calls `POST http://localhost:3001/trigger-fetch`.
+3. Watch the worker terminal for `Manual fetch trigger received` → `articleCount:1`.
+4. The article should show up in the app.
+
+**Quick sanity check:** worker logs should show `mode:inline`, `attempted:1`, `articleCount:1`. If not, stop and fix env before retesting.
+
+Details, curl triggers, queue mode, and troubleshooting are below.
+
+---
 
 ## Start Order
 
