@@ -6,7 +6,12 @@ import {
 } from "@newsflow/db";
 import { resolveWorkerRuntimeEnv } from "./lib/env";
 import { logger } from "./lib/logger";
-import { enqueueFetchNews } from "./queue";
+import {
+  JOB_NAMES,
+  createPipelineQueue,
+  createRedisConnection,
+  fetchNewsJobOptions,
+} from "./queue";
 
 export function startScheduler(source?: EnvSource) {
   const { workerPollCron } = resolveWorkerRuntimeEnv(source);
@@ -20,17 +25,32 @@ export function startScheduler(source?: EnvSource) {
         workerPollCron,
       });
 
-      await Promise.all(
-        topics.map(topic =>
-          enqueueFetchNews(
-            {
+      if (topics.length === 0) {
+        return;
+      }
+
+      const connection = createRedisConnection(source);
+      const queue = createPipelineQueue(connection, source);
+
+      try {
+        await queue.addBulk(
+          topics.map(topic => {
+            const data = {
               topicId: topic.id,
               initiatedBy: "schedule",
-            },
-            source
-          )
-        )
-      );
+            } as const;
+
+            return {
+              name: JOB_NAMES.fetchNews,
+              data,
+              opts: fetchNewsJobOptions(data),
+            };
+          })
+        );
+      } finally {
+        await queue.close();
+        await connection.quit();
+      }
     } catch (error) {
       logger.error("Scheduler run failed", {
         message: error instanceof Error ? error.message : String(error),

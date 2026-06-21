@@ -11,6 +11,7 @@ async function bootstrap() {
     workerAuthToken,
     workerSchedulerEnabled,
     workerQueueEnabled,
+    workerAudioQueueEnabled,
     workerManualTriggerMode,
   } = resolveWorkerRuntimeEnv();
   const runtime = workerQueueEnabled ? createWorkers() : null;
@@ -22,6 +23,10 @@ async function bootstrap() {
 
   if (!workerQueueEnabled) {
     logger.info("Worker queue disabled");
+  }
+
+  if (workerQueueEnabled && !workerAudioQueueEnabled) {
+    logger.info("Worker audio queue disabled");
   }
 
   if (workerSchedulerEnabled && !workerQueueEnabled) {

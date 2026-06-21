@@ -44,6 +44,7 @@ interface FeedStore {
   articlesByTopic: Record<string, Article[]>;
   activeTopicId: string | null;
   activeArticleIndex: number;
+  bootstrappedUserId: string | null;
   error: string | null;
   realtimeSubscription: FeedRealtimeSubscription | null;
   bootstrap: (userId: string) => Promise<void>;
@@ -62,9 +63,18 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
   articlesByTopic: {},
   activeTopicId: null,
   activeArticleIndex: 0,
+  bootstrappedUserId: null,
   error: null,
   realtimeSubscription: null,
   bootstrap: async (userId: string) => {
+    const currentState = get();
+    const isAlreadyBootstrapped =
+      currentState.status === "ready" && currentState.bootstrappedUserId === userId;
+
+    if (isAlreadyBootstrapped) {
+      return;
+    }
+
     set({ status: "loading", error: null });
 
     try {
@@ -77,6 +87,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
         topics,
         activeTopicId,
         activeArticleIndex: 0,
+        bootstrappedUserId: userId,
         articlesByTopic,
       });
 
@@ -191,6 +202,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     set({
       realtimeSubscription: null,
       realtimeStatus: "idle",
+      bootstrappedUserId: null,
     });
   },
 }));

@@ -1,8 +1,10 @@
+import { createHash } from "crypto";
 import IORedis from "ioredis";
 import {
   Queue,
   Worker,
   type JobsOptions,
+  type WorkerOptions,
 } from "bullmq";
 import {
   type EnvSource,
@@ -61,6 +63,38 @@ function defaultJobOptions(source: EnvSource = defaultEnvSource()): JobsOptions 
   };
 }
 
+function hashJobPart(value: string) {
+  return createHash("sha256").update(value).digest("hex").slice(0, 24);
+}
+
+export function fetchNewsJobOptions(data: FetchNewsJobData): JobsOptions {
+  return {
+    jobId: `fetch-${data.initiatedBy}-${data.topicId}`,
+    removeOnComplete: true,
+    removeOnFail: true,
+  };
+}
+
+export function summarizeArticleJobOptions(data: SummarizeArticleJobData): JobsOptions {
+  return {
+    jobId: `summarize-${data.topicId}-${hashJobPart(data.sourceUrl)}`,
+  };
+}
+
+export function generateAudioJobOptions(data: GenerateAudioJobData): JobsOptions {
+  return {
+    jobId: `audio-${data.articleId}`,
+  };
+}
+
+function defaultWorkerOptions(connection: QueueConnection): WorkerOptions {
+  return {
+    connection,
+    drainDelay: 60,
+    stalledInterval: 5 * 60 * 1000,
+  };
+}
+
 export function createRedisConnection(source: EnvSource = defaultEnvSource()) {
   const { redisUrl } = resolveRedisEnv(source);
 
@@ -95,7 +129,7 @@ export async function enqueueFetchNews(data: FetchNewsJobData, source?: EnvSourc
   const queue = createPipelineQueue(connection, source);
 
   try {
-    return await queue.add(JOB_NAMES.fetchNews, data);
+    return await queue.add(JOB_NAMES.fetchNews, data, fetchNewsJobOptions(data));
   } finally {
     await queue.close();
     await connection.quit();
@@ -107,7 +141,11 @@ export async function enqueueSummarizeArticle(data: SummarizeArticleJobData, sou
   const queue = createPipelineQueue(connection, source);
 
   try {
-    return await queue.add(JOB_NAMES.summarizeArticle, data);
+    return await queue.add(
+      JOB_NAMES.summarizeArticle,
+      data,
+      summarizeArticleJobOptions(data)
+    );
   } finally {
     await queue.close();
     await connection.quit();
@@ -119,7 +157,7 @@ export async function enqueueGenerateAudio(data: GenerateAudioJobData, source?: 
   const queue = createAudioQueue(connection, source);
 
   try {
-    return await queue.add(JOB_NAMES.generateAudio, data);
+    return await queue.add(JOB_NAMES.generateAudio, data, generateAudioJobOptions(data));
   } finally {
     await queue.close();
     await connection.quit();
@@ -148,10 +186,11 @@ export async function clearQueues(source?: EnvSource) {
 export interface WorkerRuntime {
   connection: QueueConnection;
   pipelineWorker: Worker;
-  audioWorker: Worker;
+  audioWorker: Worker | null;
 }
 
 export function createWorkers(source?: EnvSource): WorkerRuntime {
+  const { workerAudioQueueEnabled } = resolveWorkerRuntimeEnv(source);
   const connection = createRedisConnection(source);
 
   const pipelineWorker = new Worker(
@@ -163,14 +202,16 @@ export function createWorkers(source?: EnvSource): WorkerRuntime {
 
       return summarizeJob(job.data as SummarizeArticleJobData, source);
     },
-    { connection }
+    defaultWorkerOptions(connection)
   );
 
-  const audioWorker = new Worker(
-    AUDIO_QUEUE,
-    job => generateAudioJob(job.data as GenerateAudioJobData),
-    { connection }
-  );
+  const audioWorker = workerAudioQueueEnabled
+    ? new Worker(
+        AUDIO_QUEUE,
+        job => generateAudioJob(job.data as GenerateAudioJobData),
+        defaultWorkerOptions(connection)
+      )
+    : null;
 
   return {
     connection,
@@ -182,7 +223,7 @@ export function createWorkers(source?: EnvSource): WorkerRuntime {
 export async function closeWorkerRuntime(runtime: WorkerRuntime) {
   await Promise.all([
     runtime.pipelineWorker.close(),
-    runtime.audioWorker.close(),
+    runtime.audioWorker?.close(),
   ]);
   await runtime.connection.quit();
 }

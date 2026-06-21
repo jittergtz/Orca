@@ -4,6 +4,7 @@ export interface WorkerRuntimeEnv {
   workerPollCron: string;
   workerSchedulerEnabled: boolean;
   workerQueueEnabled: boolean;
+  workerAudioQueueEnabled: boolean;
   workerManualTriggerMode: "queue" | "inline";
   workerJobAttempts: number;
   workerMaxArticlesPerFetch: number;
@@ -61,6 +62,7 @@ export function resolveWorkerRuntimeEnv(source: EnvSource = defaultEnvSource()):
     workerPollCron: readEnvValue(source, "WORKER_POLL_CRON") ?? "*/15 * * * *",
     workerSchedulerEnabled: readBooleanEnvValue(source, "WORKER_SCHEDULER_ENABLED"),
     workerQueueEnabled: readBooleanEnvValue(source, "WORKER_QUEUE_ENABLED", true),
+    workerAudioQueueEnabled: readBooleanEnvValue(source, "WORKER_AUDIO_QUEUE_ENABLED"),
     workerManualTriggerMode: readManualTriggerMode(source),
     workerJobAttempts: Math.max(1, readNumberEnvValue(source, "WORKER_JOB_ATTEMPTS", 1)),
     workerMaxArticlesPerFetch: Math.max(1, readNumberEnvValue(source, "WORKER_MAX_ARTICLES_PER_FETCH", 1)),

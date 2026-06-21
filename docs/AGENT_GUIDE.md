@@ -6,9 +6,10 @@ This file is for future agents working in the Orca repo. It is deliberately prac
 
 1. Read [README](./README.md) for the short map.
 2. Read [Architecture](./ARCHITECTURE.md) for ownership and flows.
-3. Read [Roadmap](./ROADMAP.md) before making product-shaping decisions.
-4. Use `rg` before opening lots of files.
-5. Check `git status --short` before editing. There may be user changes already present.
+3. Read [Worker Architecture And Operations](./WORKER.md) before changing worker queues, scheduler, Redis, or article generation.
+4. Read [Roadmap](./ROADMAP.md) before making product-shaping decisions.
+5. Use `rg` before opening lots of files.
+6. Check `git status --short` before editing. There may be user changes already present.
 
 ## App And Package Ownership
 
@@ -180,4 +181,3 @@ Pick the smallest meaningful checks for the change:
 - Worker/pipeline: `npm run build -w @newsflow/worker`
 
 For content pipeline behavior, a build is not enough. Run the worker and trigger a fetch for a known topic.
-

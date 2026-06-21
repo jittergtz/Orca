@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, nativeImage } from "electron";
 import * as http from "http";
 import * as path from "path";
 import { registerAuthHandlers } from "./handlers/auth";
@@ -190,6 +190,13 @@ if (!isPrimaryInstance) {
     console.log("[ORCA-MAIN] app ready");
     registerOAuthProtocol();
     registerIpc();
+
+    if (process.platform === "darwin" && app.dock) {
+      const iconFile = isDev ? "icon-dev.png" : "icon.png";
+      const iconPath = path.join(__dirname, "..", "..", "build", iconFile);
+      app.dock.setIcon(nativeImage.createFromPath(iconPath));
+    }
+
     createWindow();
 
     // Start local HTTP OAuth server in dev mode

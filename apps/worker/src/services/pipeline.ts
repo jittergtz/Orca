@@ -92,6 +92,10 @@ export async function executeFetchPipeline(
     return { topicId: data.topicId, queued: 0, skipped: true };
   }
 
+  if (!options?.dryRun && data.initiatedBy === "schedule") {
+    await updateTopicFetchTimestamp(supabase, topic.id);
+  }
+
   const articles = dedupeBySourceUrl(
     await runWorkerNewsSearch(
       {
@@ -126,7 +130,9 @@ export async function executeFetchPipeline(
       );
     }
 
-    await updateTopicFetchTimestamp(supabase, topic.id);
+    if (data.initiatedBy !== "schedule") {
+      await updateTopicFetchTimestamp(supabase, topic.id);
+    }
 
     // Send digest email for daily/weekly topics
     if (runtimeEnv.workerDigestEmailEnabled && topic.frequency !== 'realtime' && articles.length > 0) {

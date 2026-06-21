@@ -9,6 +9,7 @@ Orca is becoming a personalized news and research app. Users subscribe to broad 
 - [Architecture](./ARCHITECTURE.md): system overview, app/package ownership, data flow, billing flow, and report-generation flow.
 - [Agent Guide](./AGENT_GUIDE.md): practical navigation guide for future agents: where to edit, common workflows, and gotchas.
 - [Local Dev Setup](./LOCAL_DEV_SETUP.md): safe local startup guide for desktop, worker, web, and low-cost manual article tests.
+- [Worker Architecture And Operations](./WORKER.md): detailed worker setup, queue architecture, env modes, Redis incident notes, and future investigation backlog.
 - [Roadmap](./ROADMAP.md): product direction, milestones, and technical design areas still to solve.
 
 ## Repository Shape

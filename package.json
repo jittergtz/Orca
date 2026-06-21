@@ -5,13 +5,18 @@
   "engines": {
     "node": ">=20.9.0"
   },
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "icons:generate": "node scripts/generate-icons.mjs"
   },
   "devDependencies": {
+    "to-ico": "^1.1.5",
     "turbo": "latest",
     "typescript": "latest"
   }

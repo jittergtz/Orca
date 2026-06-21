@@ -178,6 +178,8 @@ REDIS_URL=redis://localhost:6379
 | `UPSTASH_REDIS_REST_URL` | Yes | Upstash REST API URL |
 | `UPSTASH_REDIS_REST_TOKEN` | Yes | Upstash REST API token |
 | `WORKER_POLL_CRON` | No | Cron expression for scheduler (default: `*/15 * * * *`) |
+| `WORKER_QUEUE_ENABLED` | No | Enables BullMQ workers. Disable for inline/manual-only runs to avoid idle Redis commands. |
+| `WORKER_AUDIO_QUEUE_ENABLED` | No | Enables the audio BullMQ worker. Defaults off because no current code enqueues audio jobs. |
 | `WORKER_AUTH_TOKEN` | No | Bearer token for `/trigger-fetch` endpoint (optional, recommended for production) |
 | `PORT` | No | HTTP server port (default: `3001`) |
 

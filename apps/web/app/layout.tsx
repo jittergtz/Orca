@@ -12,9 +12,27 @@ const instrumentSerif = Instrument_Serif({
   variable: '--font-instrument-serif' 
 });
 
+const isDev = process.env.NODE_ENV === 'development';
+
 export const metadata: Metadata = {
   title: 'Orca',
-  description: 'Stay Informed about what matters to you'
+  description: 'Stay Informed about what matters to you',
+  icons: {
+    icon: [
+      { url: isDev ? '/favicon-dev.ico' : '/favicon.ico' },
+      {
+        url: isDev ? '/favicon-32x32-dev.png' : '/favicon-32x32.png',
+        sizes: '32x32',
+        type: 'image/png',
+      },
+      {
+        url: isDev ? '/favicon-16x16-dev.png' : '/favicon-16x16.png',
+        sizes: '16x16',
+        type: 'image/png',
+      },
+    ],
+    apple: isDev ? '/apple-touch-icon-dev.png' : '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

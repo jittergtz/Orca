@@ -174,6 +174,7 @@ export default function App() {
       console.log("[AUTH] No session → setting view to 'auth'");
       setSessionEmail(null);
       setSubscriptionStatus(null);
+      void useFeedStore.getState().teardownRealtime();
       setView("auth");
       return;
     }
@@ -254,14 +255,22 @@ export default function App() {
         console.log("[APP-INIT] Step 5 OK: Supabase client created");
 
         // Re-sync auth state only on meaningful auth events, not all changes.
-        const authSubscription = supabase.auth.onAuthStateChange((event) => {
+        const authSubscription = supabase.auth.onAuthStateChange((event, nextSession) => {
           console.log("[APP-INIT] Auth state change event:", event);
-          if (
-            event === "SIGNED_OUT" ||
-            event === "SIGNED_IN" ||
-            event === "TOKEN_REFRESHED" ||
-            event === "USER_UPDATED"
-          ) {
+          if (event === "TOKEN_REFRESHED") {
+            setSessionEmail(nextSession?.user.email ?? null);
+            return;
+          }
+
+          if (event === "SIGNED_OUT") {
+            setSessionEmail(null);
+            setSubscriptionStatus(null);
+            setView("auth");
+            void useFeedStore.getState().teardownRealtime();
+            return;
+          }
+
+          if (event === "SIGNED_IN" || event === "USER_UPDATED") {
             void syncAuthState().catch((error: any) => {
               console.error("[APP-INIT] syncAuthState error in auth listener:", error);
               setView(`error: ${error.message || String(error)}`);
@@ -519,6 +528,7 @@ export default function App() {
       await supabase.auth.signOut();
       setSessionEmail(null);
       setSubscriptionStatus(null);
+      await useFeedStore.getState().teardownRealtime();
       setView("auth");
     } finally {
       setSignOutLoading(false);
