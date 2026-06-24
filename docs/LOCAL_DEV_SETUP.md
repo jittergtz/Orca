@@ -146,11 +146,16 @@ In inline mode this is usually not needed because manual fetches do not enqueue 
 Only use this when intentionally testing Redis/BullMQ behavior:
 
 ```bash
+WORKER_ENVIRONMENT=development
 WORKER_QUEUE_ENABLED=true
+WORKER_ALLOW_DEV_QUEUE=true
 WORKER_MANUAL_TRIGGER_MODE=queue
 WORKER_SCHEDULER_ENABLED=false
 WORKER_JOB_ATTEMPTS=1
 WORKER_MAX_ARTICLES_PER_FETCH=1
+WORKER_PIPELINE_CONCURRENCY=1
+WORKER_QUEUE_RATE_LIMIT_MAX=2
+WORKER_QUEUE_RATE_LIMIT_DURATION_MS=60000
 ```
 
 This mode will use Upstash Redis commands even for manual tests.
@@ -158,8 +163,11 @@ This mode will use Upstash Redis commands even for manual tests.
 For scheduled production behavior, enable the scheduler only when you are ready:
 
 ```bash
+WORKER_ENVIRONMENT=development
 WORKER_SCHEDULER_ENABLED=true
+WORKER_ALLOW_DEV_SCHEDULER=true
 WORKER_QUEUE_ENABLED=true
+WORKER_ALLOW_DEV_QUEUE=true
 WORKER_MANUAL_TRIGGER_MODE=queue
 ```
 
@@ -172,6 +180,7 @@ Before any rough E2E test, confirm:
 - `WORKER_SCHEDULER_ENABLED=false`
 - `WORKER_QUEUE_ENABLED=false` for local manual testing
 - `WORKER_MANUAL_TRIGGER_MODE=inline` for local manual testing
+- `WORKER_TEST_MODE=true` for endpoint-only tests that must not call Redis, Serper, or OpenAI
 - worker logs show `mode:inline`
 - worker logs show `attempted:1`
 - worker logs show `articleCount:1`
@@ -290,4 +299,3 @@ UPSTASH_REDIS_URL=rediss://...
 UPSTASH_REDIS_REST_URL=https://...
 UPSTASH_REDIS_REST_TOKEN=...
 ```
-

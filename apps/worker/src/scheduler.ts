@@ -14,18 +14,32 @@ import {
 } from "./queue";
 
 export function startScheduler(source?: EnvSource) {
-  const { workerPollCron } = resolveWorkerRuntimeEnv(source);
+  const { workerPollCron, workerSchedulerMaxDueTopics } = resolveWorkerRuntimeEnv(source);
+  let runInProgress = false;
+
   const task = cron.schedule(workerPollCron, async () => {
+    if (runInProgress) {
+      logger.warn("Scheduler tick skipped because previous run is still active", {
+        workerPollCron,
+      });
+      return;
+    }
+
+    runInProgress = true;
+
     try {
       const supabase = createServiceRoleClient(source);
       const topics = await listDueTopics(supabase);
+      const topicsToQueue = topics.slice(0, workerSchedulerMaxDueTopics);
 
       logger.info("Scheduler discovered due topics", {
         count: topics.length,
+        enqueueCount: topicsToQueue.length,
+        maxDueTopics: workerSchedulerMaxDueTopics,
         workerPollCron,
       });
 
-      if (topics.length === 0) {
+      if (topicsToQueue.length === 0) {
         return;
       }
 
@@ -34,7 +48,7 @@ export function startScheduler(source?: EnvSource) {
 
       try {
         await queue.addBulk(
-          topics.map(topic => {
+          topicsToQueue.map(topic => {
             const data = {
               topicId: topic.id,
               initiatedBy: "schedule",
@@ -55,6 +69,8 @@ export function startScheduler(source?: EnvSource) {
       logger.error("Scheduler run failed", {
         message: error instanceof Error ? error.message : String(error),
       });
+    } finally {
+      runInProgress = false;
     }
   });
 

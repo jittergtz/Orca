@@ -1,7 +1,7 @@
 import { SCRAPE_TIMEOUT_MS, type EnvSource } from "@newsflow/config";
 import { JSDOM, VirtualConsole } from "jsdom";
 import { ArticleAssetSchema, type ArticleAsset } from "@newsflow/db";
-import { readEnvValue } from "../lib/env";
+import { readEnvValue, resolveWorkerRuntimeEnv } from "../lib/env";
 import { logger } from "../lib/logger";
 
 const UNSPLASH_SEARCH_ENDPOINT = "https://api.unsplash.com/search/photos";
@@ -69,7 +69,8 @@ export async function acquireArticleAsset(
   },
   source?: EnvSource
 ): Promise<ArticleAsset> {
-  const unsplashAsset = input.imageSearchQuery
+  const runtimeEnv = resolveWorkerRuntimeEnv(source);
+  const unsplashAsset = runtimeEnv.workerUnsplashEnabled && input.imageSearchQuery
     ? await fetchUnsplashAsset(input.imageSearchQuery, source)
     : null;
 

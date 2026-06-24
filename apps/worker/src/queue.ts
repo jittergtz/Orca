@@ -87,11 +87,38 @@ export function generateAudioJobOptions(data: GenerateAudioJobData): JobsOptions
   };
 }
 
-function defaultWorkerOptions(connection: QueueConnection): WorkerOptions {
+function queueBaseOptions(connection: QueueConnection, source: EnvSource = defaultEnvSource()) {
+  const { workerQueuePrefix } = resolveWorkerRuntimeEnv(source);
+
   return {
     connection,
-    drainDelay: 60,
-    stalledInterval: 5 * 60 * 1000,
+    ...(workerQueuePrefix ? { prefix: workerQueuePrefix } : {}),
+  };
+}
+
+function defaultWorkerOptions(
+  connection: QueueConnection,
+  source: EnvSource = defaultEnvSource(),
+  concurrency = resolveWorkerRuntimeEnv(source).workerPipelineConcurrency
+): WorkerOptions {
+  const {
+    workerJobAttempts,
+    workerQueueDrainDelaySeconds,
+    workerQueueRateLimitDurationMs,
+    workerQueueRateLimitMax,
+    workerQueueStalledIntervalMs,
+  } = resolveWorkerRuntimeEnv(source);
+
+  return {
+    ...queueBaseOptions(connection, source),
+    concurrency,
+    drainDelay: workerQueueDrainDelaySeconds,
+    maxStartedAttempts: workerJobAttempts,
+    stalledInterval: workerQueueStalledIntervalMs,
+    limiter: {
+      max: workerQueueRateLimitMax,
+      duration: workerQueueRateLimitDurationMs,
+    },
   };
 }
 
@@ -109,8 +136,13 @@ export function createPipelineQueue(
   source: EnvSource = defaultEnvSource()
 ) {
   return new Queue<FetchNewsJobData | SummarizeArticleJobData>(PIPELINE_QUEUE, {
-    connection,
+    ...queueBaseOptions(connection, source),
     defaultJobOptions: defaultJobOptions(source),
+    streams: {
+      events: {
+        maxLen: 1_000,
+      },
+    },
   });
 }
 
@@ -119,8 +151,13 @@ export function createAudioQueue(
   source: EnvSource = defaultEnvSource()
 ) {
   return new Queue<GenerateAudioJobData>(AUDIO_QUEUE, {
-    connection,
+    ...queueBaseOptions(connection, source),
     defaultJobOptions: defaultJobOptions(source),
+    streams: {
+      events: {
+        maxLen: 1_000,
+      },
+    },
   });
 }
 
@@ -145,6 +182,28 @@ export async function enqueueSummarizeArticle(data: SummarizeArticleJobData, sou
       JOB_NAMES.summarizeArticle,
       data,
       summarizeArticleJobOptions(data)
+    );
+  } finally {
+    await queue.close();
+    await connection.quit();
+  }
+}
+
+export async function enqueueSummarizeArticles(data: SummarizeArticleJobData[], source?: EnvSource) {
+  if (data.length === 0) {
+    return [];
+  }
+
+  const connection = createRedisConnection(source);
+  const queue = createPipelineQueue(connection, source);
+
+  try {
+    return await queue.addBulk(
+      data.map(summarizeJob => ({
+        name: JOB_NAMES.summarizeArticle,
+        data: summarizeJob,
+        opts: summarizeArticleJobOptions(summarizeJob),
+      }))
     );
   } finally {
     await queue.close();
@@ -190,7 +249,11 @@ export interface WorkerRuntime {
 }
 
 export function createWorkers(source?: EnvSource): WorkerRuntime {
-  const { workerAudioQueueEnabled } = resolveWorkerRuntimeEnv(source);
+  const {
+    workerAudioConcurrency,
+    workerAudioQueueEnabled,
+    workerPipelineConcurrency,
+  } = resolveWorkerRuntimeEnv(source);
   const connection = createRedisConnection(source);
 
   const pipelineWorker = new Worker(
@@ -202,14 +265,14 @@ export function createWorkers(source?: EnvSource): WorkerRuntime {
 
       return summarizeJob(job.data as SummarizeArticleJobData, source);
     },
-    defaultWorkerOptions(connection)
+    defaultWorkerOptions(connection, source, workerPipelineConcurrency)
   );
 
   const audioWorker = workerAudioQueueEnabled
     ? new Worker(
         AUDIO_QUEUE,
         job => generateAudioJob(job.data as GenerateAudioJobData),
-        defaultWorkerOptions(connection)
+        defaultWorkerOptions(connection, source, workerAudioConcurrency)
       )
     : null;
 

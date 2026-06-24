@@ -2,6 +2,8 @@ import { create } from "zustand";
 import {
   listArticlesForTopic,
   listTopicsForUser,
+  markArticleRead,
+  type ArticleRead,
   type Article,
   type Topic,
 } from "@newsflow/db";
@@ -29,6 +31,26 @@ async function loadArticlesForTopics(topicIds: string[]) {
   }, {});
 }
 
+async function loadArticleReadIdsForUser(userId: string) {
+  const { data, error } = await getDesktopSupabaseClient()
+    .from("article_reads")
+    .select("article_id")
+    .eq("user_id", userId);
+
+  if (error) {
+    console.warn("Failed to load article read state", error);
+    return {};
+  }
+
+  return ((data as Pick<ArticleRead, "article_id">[]) ?? []).reduce<Record<string, true>>(
+    (readIds, row) => {
+      readIds[row.article_id] = true;
+      return readIds;
+    },
+    {}
+  );
+}
+
 async function disposeRealtimeSubscription(subscription: FeedRealtimeSubscription | null) {
   if (!subscription) {
     return;
@@ -42,6 +64,7 @@ interface FeedStore {
   realtimeStatus: RealtimeStatus;
   topics: Topic[];
   articlesByTopic: Record<string, Article[]>;
+  readArticleIds: Record<string, true>;
   activeTopicId: string | null;
   activeArticleIndex: number;
   bootstrappedUserId: string | null;
@@ -52,6 +75,8 @@ interface FeedStore {
   setActiveArticleIndex: (index: number) => void;
   refreshTopic: (topicId: string) => Promise<void>;
   refreshTopics: (userId: string) => Promise<void>;
+  refreshArticleReads: (userId?: string) => Promise<void>;
+  markArticleAsRead: (articleId: string) => Promise<void>;
   subscribeRealtime: (userId: string) => Promise<void>;
   teardownRealtime: () => Promise<void>;
 }
@@ -61,6 +86,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
   realtimeStatus: "idle",
   topics: [],
   articlesByTopic: {},
+  readArticleIds: {},
   activeTopicId: null,
   activeArticleIndex: 0,
   bootstrappedUserId: null,
@@ -79,16 +105,17 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
 
     try {
       const topics = await listTopicsForUser(getDesktopSupabaseClient(), userId);
-      const activeTopicId = topics[0]?.id ?? null;
       const articlesByTopic = await loadArticlesForTopics(topics.map(topic => topic.id));
+      const readArticleIds = await loadArticleReadIdsForUser(userId);
 
       set({
         status: "ready",
         topics,
-        activeTopicId,
+        activeTopicId: null,
         activeArticleIndex: 0,
         bootstrappedUserId: userId,
         articlesByTopic,
+        readArticleIds,
       });
 
       await get().subscribeRealtime(userId);
@@ -135,7 +162,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     const nextActiveTopicId =
       activeTopicId && topics.some(topic => topic.id === activeTopicId)
         ? activeTopicId
-        : topics[0]?.id ?? null;
+        : null;
     const nextArticleCount = nextActiveTopicId ? articlesByTopic[nextActiveTopicId]?.length ?? 0 : 0;
 
     set({
@@ -147,6 +174,36 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
           : 0,
       articlesByTopic,
     });
+  },
+  refreshArticleReads: async (userId?: string) => {
+    const targetUserId = userId ?? get().bootstrappedUserId;
+
+    if (!targetUserId) {
+      return;
+    }
+
+    const readArticleIds = await loadArticleReadIdsForUser(targetUserId);
+    set({ readArticleIds });
+  },
+  markArticleAsRead: async (articleId: string) => {
+    const userId = get().bootstrappedUserId;
+
+    if (!userId || get().readArticleIds[articleId]) {
+      return;
+    }
+
+    set(state => ({
+      readArticleIds: {
+        ...state.readArticleIds,
+        [articleId]: true,
+      },
+    }));
+
+    try {
+      await markArticleRead(getDesktopSupabaseClient(), { userId, articleId });
+    } catch (error) {
+      console.warn("Failed to persist article read state", error);
+    }
   },
   subscribeRealtime: async (userId: string) => {
     await disposeRealtimeSubscription(get().realtimeSubscription);
@@ -180,6 +237,13 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
 
           void get().refreshTopic(topicId);
         }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "article_reads", filter: `user_id=eq.${userId}` },
+        () => {
+          void get().refreshArticleReads(userId);
+        }
       );
 
     channel.subscribe(status => {
@@ -203,6 +267,9 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
       realtimeSubscription: null,
       realtimeStatus: "idle",
       bootstrappedUserId: null,
+      readArticleIds: {},
+      activeTopicId: null,
+      activeArticleIndex: 0,
     });
   },
 }));

@@ -17,7 +17,7 @@ import { resolveWorkerRuntimeEnv } from "../lib/env";
 import { errorMessage, errorMetadata } from "../lib/errors";
 import { logger } from "../lib/logger";
 import {
-  enqueueSummarizeArticle,
+  enqueueSummarizeArticles,
   type FetchNewsJobData,
   type SummarizeArticleJobData,
 } from "../queue";
@@ -92,6 +92,21 @@ export async function executeFetchPipeline(
     return { topicId: data.topicId, queued: 0, skipped: true };
   }
 
+  if (!runtimeEnv.workerExternalCallsEnabled) {
+    logger.warn("Fetch pipeline skipped because external calls are disabled", {
+      topicId: data.topicId,
+      initiatedBy: data.initiatedBy,
+    });
+    return {
+      topicId: data.topicId,
+      topicName: topic.name,
+      queued: 0,
+      skipped: true,
+      reason: "external_calls_disabled" as const,
+      initiatedBy: data.initiatedBy,
+    };
+  }
+
   if (!options?.dryRun && data.initiatedBy === "schedule") {
     await updateTopicFetchTimestamp(supabase, topic.id);
   }
@@ -123,11 +138,7 @@ export async function executeFetchPipeline(
         await executeSummarizePipeline(summarizeJob, source);
       }
     } else {
-      await Promise.all(
-        summarizeJobs.map(summarizeJob =>
-          enqueueSummarizeArticle(summarizeJob, source)
-        )
-      );
+      await enqueueSummarizeArticles(summarizeJobs, source);
     }
 
     if (data.initiatedBy !== "schedule") {
@@ -172,8 +183,22 @@ export async function executeFetchPipeline(
 }
 
 export async function executeSummarizePipeline(data: SummarizeArticleJobData, source?: EnvSource) {
-  const supabase = createServiceRoleClient(source);
   const runtimeEnv = resolveWorkerRuntimeEnv(source);
+
+  if (!runtimeEnv.workerExternalCallsEnabled) {
+    logger.warn("Summarize pipeline skipped because external calls are disabled", {
+      topicId: data.topicId,
+      sourceUrl: data.sourceUrl,
+    });
+    return {
+      topicId: data.topicId,
+      sourceUrl: data.sourceUrl,
+      contentMode: "skipped" as const,
+      reason: "external_calls_disabled" as const,
+    };
+  }
+
+  const supabase = createServiceRoleClient(source);
 
   if (runtimeEnv.articleMdxPipelineEnabled) {
     try {
@@ -231,7 +256,7 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
         | Awaited<ReturnType<typeof indexArticleMemory>>
         | null = null;
 
-      if (topic?.user_id) {
+      if (topic?.user_id && runtimeEnv.workerMemoryIndexingEnabled) {
         try {
           memoryResult = await indexArticleMemory(
             supabase,
@@ -256,6 +281,13 @@ export async function executeSummarizePipeline(data: SummarizeArticleJobData, so
             error: errorMetadata(error),
           });
         }
+      } else if (topic?.user_id) {
+        logger.info("Article memory indexing skipped", {
+          topicId: article.topic_id,
+          articleId: article.id,
+          sourceUrl: article.source_url,
+          reason: "memory_indexing_disabled",
+        });
       }
 
       logger.info("MDX summarize pipeline completed", {

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Settings, PanelLeft, LogOut, ExternalLink } from "lucide-react";
+import { LogOut, ExternalLink } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import ArticleView from "./components/ArticleView";
+import DashboardHome from "./components/DashboardHome";
 import { getDesktopSupabaseClient, refreshSessionOnFocus } from "./lib/supabase";
 import { useFeedStore } from "./stores/feedStore";
 
@@ -68,12 +69,12 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftContent, setDraftContent] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mainView, setMainView] = useState<"home" | "overview" | "article">("home");
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsCategory, setSettingsCategory] = useState("profile");
   const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [searchMode, setSearchMode] = useState("Auto");
   const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [authEmail, setAuthEmail] = useState("");
@@ -147,6 +148,7 @@ export default function App() {
   const enterApp = useCallback(
     async (selectId: string | null = null, userId?: string) => {
       await refreshNotes(selectId);
+      setMainView("home");
       setView("app");
       // Bootstrap feed store with user's topics
       if (userId) {
@@ -425,13 +427,6 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [modeDropdownOpen]);
 
-  const createNote = async () => {
-    const created = await window.orca.notes.create();
-    await refreshNotes(created.id);
-  };
-
-
-
   const changeTheme = async (value: string) => {
     setTheme(value);
     await window.orca.settings.setTheme(value);
@@ -529,49 +524,50 @@ export default function App() {
       setSessionEmail(null);
       setSubscriptionStatus(null);
       await useFeedStore.getState().teardownRealtime();
+      setMainView("home");
       setView("auth");
     } finally {
       setSignOutLoading(false);
     }
   };
 
+  const handleShowHome = useCallback(() => {
+    setMainView("home");
+  }, []);
+
+  const handleShowOverview = useCallback(() => {
+    setMainView("overview");
+  }, []);
+
+  const handleOpenArticle = useCallback((topicId: string, articleIndex: number) => {
+    void (async () => {
+      const feedStore = useFeedStore.getState();
+      await feedStore.setActiveTopic(topicId);
+      feedStore.setActiveArticleIndex(articleIndex);
+      setMainView("article");
+    })();
+  }, []);
+
   const appReady = view === "app";
 
   return (
     <div className="h-screen  w-screen text-neutral-900 dark:text-neutral-100">
       {appReady ? (
-        <div className="h-full flex flex-col relative">
-          <header 
-            className="h-[40px] flex-shrink-0 flex items-center justify-between px-3 pl-[72px]  border-white/20 dark:border-white/10"
-            style={{ WebkitAppRegion: 'drag' }}
-          >
-            <div className="flex items-center " style={{ WebkitAppRegion: 'no-drag' }}>
-              <button 
-                className="p-1 z-50 rounded-full  dark:text-neutral-600 text-neutral-400 hover:text-black dark:hover:text-white/90 transition-colors flex items-center justify-center auto-cols-auto" 
-                onClick={() => setSidebarOpen(prev => !prev)}
-                title="Toggle Sidebar (Cmd+B)"
-              >
-                <PanelLeft size={15} strokeWidth={2.5} />
-              </button>
-            </div>
-            <div className="flex items-center pt-2 gap-1.5" style={{ WebkitAppRegion: 'no-drag' }}>
-            
-              <button 
-              style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.4)" }}
-                className="p-2  border border-white/10 rounded-full  dark:text-neutral-400 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors flex items-center justify-center auto-cols-auto"
-                onClick={() => setSettingsOpen(true)}
-                title="Settings"
-              >
-                <Settings size={15} strokeWidth={2} />
-              </button>
-            </div>
-          </header>
-            <Sidebar 
-              isOpen={sidebarOpen}
-              onNewTopic={() => setOnboardingOpen(true)}
-            />
+        <div className="h-full relative overflow-hidden">
+          <div
+            className={`absolute right-0 top-0 z-40 h-11 ${sidebarOpen ? "left-[226px]" : "left-0"}`}
+            style={{ WebkitAppRegion: "drag" }}
+          />
+          <Sidebar
+            isOpen={sidebarOpen}
+            onHome={handleShowHome}
+            onOverview={handleShowOverview}
+            onNewTopic={() => setOnboardingOpen(true)}
+            onSettings={() => setSettingsOpen(true)}
+            onSelectArticle={() => setMainView("article")}
+          />
 
-          <div className="flex flex-1  w-full relative">
+          <div className={`relative h-full min-h-0 transition-[padding] duration-200 ${sidebarOpen ? "pl-[226px]" : "pl-0"}`}>
           {onboardingOpen && (
             <div className="absolute inset-0 z-50 bg-white dark:bg-[#08090f] overflow-y-auto w-full h-full flex pt-10">
                <OnboardingFlow 
@@ -644,15 +640,23 @@ export default function App() {
                     } catch (e) {
                       console.error("Error saving topic", e);
                     }
+                    setMainView("home");
                     setOnboardingOpen(false);
                  }}
                  onCancel={() => setOnboardingOpen(false)}
                />
             </div>
           )}
-          <main className="flex flex-1  min-h-0 w-full relative">
-         
-            <ArticleView />
+          <main className="h-full min-h-0 w-full relative" style={{ WebkitAppRegion: "no-drag" }}>
+            {mainView === "article" ? (
+              <ArticleView />
+            ) : (
+              <DashboardHome
+                userEmail={sessionEmail}
+                mode={mainView === "overview" ? "overview" : "home"}
+                onOpenArticle={handleOpenArticle}
+              />
+            )}
           </main>
         </div>
       </div>

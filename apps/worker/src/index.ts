@@ -5,17 +5,162 @@ import { startScheduler } from "./scheduler";
 import { resolveWorkerRuntimeEnv } from "./lib/env";
 import { executeFetchPipeline } from "./services/pipeline";
 
+type HttpError = Error & { statusCode?: number };
+
+const manualTriggerTimestamps = new Map<string, number>();
+
+function createHttpError(statusCode: number, message: string): HttpError {
+  const error = new Error(message) as HttpError;
+  error.statusCode = statusCode;
+  return error;
+}
+
+function sendJson(res: ServerResponse, statusCode: number, payload: unknown) {
+  res.writeHead(statusCode);
+  res.end(JSON.stringify(payload));
+}
+
+function readJsonBody(req: IncomingMessage, limitBytes: number) {
+  return new Promise<unknown>((resolve, reject) => {
+    let body = "";
+    let receivedBytes = 0;
+    let settled = false;
+
+    const fail = (error: HttpError) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      reject(error);
+    };
+
+    req.on("data", (chunk: Buffer | string) => {
+      receivedBytes += Buffer.byteLength(chunk);
+
+      if (receivedBytes > limitBytes) {
+        fail(createHttpError(413, "Request body too large"));
+        return;
+      }
+
+      body += chunk.toString();
+    });
+
+    req.on("end", () => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+
+      try {
+        resolve(body.length > 0 ? JSON.parse(body) : {});
+      } catch {
+        reject(createHttpError(400, "Request body must be valid JSON"));
+      }
+    });
+
+    req.on("error", error => {
+      fail(error);
+    });
+  });
+}
+
+function readTriggerPayload(payload: unknown) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw createHttpError(400, "Request body must be a JSON object");
+  }
+
+  const record = payload as Record<string, unknown>;
+  const topicId = typeof record.topicId === "string" ? record.topicId.trim() : "";
+
+  if (!topicId) {
+    throw createHttpError(400, "topicId is required");
+  }
+
+  const initiatedBy: "manual" | "schedule" =
+    record.initiatedBy === "schedule" || record.initiatedBy === "manual"
+      ? record.initiatedBy
+      : "manual";
+
+  return { topicId, initiatedBy };
+}
+
+function readTriggerCooldown(topicId: string, minIntervalMs: number) {
+  if (minIntervalMs <= 0) {
+    return null;
+  }
+
+  const now = Date.now();
+  const lastTriggeredAt = manualTriggerTimestamps.get(topicId);
+
+  if (lastTriggeredAt && now - lastTriggeredAt < minIntervalMs) {
+    return Math.ceil((minIntervalMs - (now - lastTriggeredAt)) / 1000);
+  }
+
+  manualTriggerTimestamps.set(topicId, now);
+
+  if (manualTriggerTimestamps.size > 1_000) {
+    for (const [storedTopicId, timestamp] of manualTriggerTimestamps) {
+      if (now - timestamp > minIntervalMs) {
+        manualTriggerTimestamps.delete(storedTopicId);
+      }
+    }
+  }
+
+  return null;
+}
+
 async function bootstrap() {
+  const runtimeEnv = resolveWorkerRuntimeEnv();
   const {
     port,
     workerAuthToken,
+    workerEnvironment,
+    workerExternalCallsEnabled,
+    workerManualTriggerMinIntervalMs,
     workerSchedulerEnabled,
+    workerSchedulerRequested,
     workerQueueEnabled,
+    workerQueueRequested,
     workerAudioQueueEnabled,
     workerManualTriggerMode,
-  } = resolveWorkerRuntimeEnv();
+    workerPipelineConcurrency,
+    workerQueueRateLimitDurationMs,
+    workerQueueRateLimitMax,
+    workerRequestBodyLimitBytes,
+    workerTestModeEnabled,
+  } = runtimeEnv;
   const runtime = workerQueueEnabled ? createWorkers() : null;
-  const scheduler = workerSchedulerEnabled && workerQueueEnabled ? startScheduler() : null;
+  const scheduler = workerSchedulerEnabled ? startScheduler() : null;
+
+  logger.info("Worker runtime config resolved", {
+    environment: workerEnvironment,
+    testMode: workerTestModeEnabled,
+    queueEnabled: workerQueueEnabled,
+    schedulerEnabled: workerSchedulerEnabled,
+    manualTriggerMode: workerManualTriggerMode,
+    externalCallsEnabled: workerExternalCallsEnabled,
+    pipelineConcurrency: workerPipelineConcurrency,
+    queueRateLimitMax: workerQueueRateLimitMax,
+    queueRateLimitDurationMs: workerQueueRateLimitDurationMs,
+    manualTriggerMinIntervalMs: workerManualTriggerMinIntervalMs,
+  });
+
+  if (workerQueueRequested && !workerQueueEnabled) {
+    logger.warn("Worker queue was requested but not started by runtime safety guards", {
+      environment: workerEnvironment,
+      testMode: workerTestModeEnabled,
+    });
+  }
+
+  if (workerSchedulerRequested && !workerSchedulerEnabled) {
+    logger.warn("Worker scheduler was requested but not started by runtime safety guards", {
+      environment: workerEnvironment,
+      queueEnabled: workerQueueEnabled,
+      testMode: workerTestModeEnabled,
+    });
+  }
 
   if (!workerSchedulerEnabled) {
     logger.info("Worker scheduler disabled");
@@ -46,73 +191,114 @@ async function bootstrap() {
     }
 
     if (req.method === "GET" && req.url === "/health") {
-      res.writeHead(200);
-      res.end(JSON.stringify({ status: "ok", uptime: process.uptime() }));
+      sendJson(res, 200, {
+        status: "ok",
+        uptime: process.uptime(),
+        runtime: {
+          environment: workerEnvironment,
+          testMode: workerTestModeEnabled,
+          queueEnabled: workerQueueEnabled,
+          schedulerEnabled: workerSchedulerEnabled,
+          manualTriggerMode: workerManualTriggerMode,
+          externalCallsEnabled: workerExternalCallsEnabled,
+        },
+      });
       return;
     }
 
     if (req.method === "POST" && req.url === "/trigger-fetch") {
       const authHeader = req.headers["authorization"] ?? "";
       if (workerAuthToken && authHeader !== `Bearer ${workerAuthToken}`) {
-        res.writeHead(401);
-        res.end(JSON.stringify({ error: "Unauthorized" }));
+        sendJson(res, 401, { error: "Unauthorized" });
         return;
       }
 
-      let body = "";
-      req.on("data", (chunk) => { body += chunk.toString(); });
-      req.on("end", async () => {
-        try {
-          const payload = JSON.parse(body);
-          if (!payload.topicId) {
-            res.writeHead(400);
-            res.end(JSON.stringify({ error: "topicId is required" }));
-            return;
-          }
+      try {
+        const payload = readTriggerPayload(
+          await readJsonBody(req, workerRequestBodyLimitBytes)
+        );
 
-          logger.info("Manual fetch trigger received", {
+        if (workerTestModeEnabled) {
+          logger.info("Manual fetch trigger accepted in worker test mode", {
             topicId: payload.topicId,
-            initiatedBy: payload.initiatedBy ?? "manual",
-            mode: workerManualTriggerMode,
+            initiatedBy: payload.initiatedBy,
           });
 
-          const jobData = {
-            topicId: payload.topicId,
-            initiatedBy: (payload.initiatedBy as "manual" | "schedule") ?? "manual",
-          };
-
-          const result =
-            workerManualTriggerMode === "inline"
-              ? await executeFetchPipeline(jobData, undefined, { inlineSummarize: true })
-              : await enqueueFetchNews(jobData);
-
-          res.writeHead(200);
-          res.end(JSON.stringify({
+          sendJson(res, 200, {
             ok: true,
             topicId: payload.topicId,
-            mode: workerManualTriggerMode,
-            result,
-            message:
-              workerManualTriggerMode === "inline"
-                ? "Fetch pipeline completed inline"
-                : "Fetch job enqueued",
-          }));
-        } catch (error) {
-          logger.error("Failed to enqueue fetch job", {
-            error: error instanceof Error ? error.message : String(error),
+            mode: "test",
+            result: {
+              topicId: payload.topicId,
+              queued: 0,
+              skipped: true,
+              reason: "worker_test_mode",
+            },
+            message: "Worker test mode accepted the trigger without Redis or external API calls",
           });
-          res.writeHead(500);
-          res.end(JSON.stringify({
-            error: "Failed to enqueue fetch job",
-            message: error instanceof Error ? error.message : String(error),
-          }));
+          return;
         }
-      });
+
+        const retryAfterSeconds = readTriggerCooldown(
+          payload.topicId,
+          workerManualTriggerMinIntervalMs
+        );
+
+        if (retryAfterSeconds) {
+          res.setHeader("Retry-After", String(retryAfterSeconds));
+          sendJson(res, 429, {
+            error: "Trigger rate limit exceeded",
+            retryAfterSeconds,
+          });
+          return;
+        }
+
+        logger.info("Manual fetch trigger received", {
+          topicId: payload.topicId,
+          initiatedBy: payload.initiatedBy,
+          mode: workerManualTriggerMode,
+        });
+
+        const jobData = {
+          topicId: payload.topicId,
+          initiatedBy: payload.initiatedBy,
+        };
+
+        const result =
+          workerManualTriggerMode === "inline"
+            ? await executeFetchPipeline(jobData, undefined, { inlineSummarize: true })
+            : await enqueueFetchNews(jobData);
+
+        sendJson(res, 200, {
+          ok: true,
+          topicId: payload.topicId,
+          mode: workerManualTriggerMode,
+          result,
+          message:
+            workerManualTriggerMode === "inline"
+              ? "Fetch pipeline completed inline"
+              : "Fetch job enqueued",
+        });
+      } catch (error) {
+        const statusCode =
+          error instanceof Error && "statusCode" in error && typeof error.statusCode === "number"
+            ? error.statusCode
+            : 500;
+        const message = error instanceof Error ? error.message : String(error);
+
+        logger.error("Failed to handle fetch trigger", {
+          statusCode,
+          error: message,
+        });
+        sendJson(res, statusCode, {
+          error: statusCode >= 500 ? "Failed to handle fetch trigger" : message,
+          message,
+        });
+      }
       return;
     }
 
-    res.writeHead(404);
-    res.end(JSON.stringify({ error: "Not found" }));
+    sendJson(res, 404, { error: "Not found" });
   });
 
   server.listen(port, () => {

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useFeedStore } from "../stores/feedStore";
 import { ExternalLink } from "lucide-react";
 import { MdxArticleRenderer } from "./mdx/MdxArticleRenderer";
@@ -10,7 +11,19 @@ export default function ArticleView() {
     topics,
     status,
     setActiveArticleIndex,
+    markArticleAsRead,
   } = useFeedStore();
+  const articles = activeTopicId ? articlesByTopic[activeTopicId] ?? [] : [];
+  const activeTopic = topics.find((t) => t.id === activeTopicId);
+  const article = articles[activeArticleIndex] ?? articles[0] ?? null;
+
+  useEffect(() => {
+    if (!article?.id) {
+      return;
+    }
+
+    void markArticleAsRead(article.id);
+  }, [article?.id, markArticleAsRead]);
 
   // No active topic
   if (!activeTopicId) {
@@ -25,9 +38,6 @@ export default function ArticleView() {
       </div>
     );
   }
-
-  const articles = articlesByTopic[activeTopicId] ?? [];
-  const activeTopic = topics.find((t) => t.id === activeTopicId);
 
   // Loading state
   if (status === "loading") {
@@ -56,13 +66,16 @@ export default function ArticleView() {
     );
   }
 
+  if (!article) {
+    return null;
+  }
+
   // Show the selected article, falling back to the newest one if the index is stale.
-  const article = articles[activeArticleIndex] ?? articles[0];
   const articleContent = article.content_mdx?.trim() ? article.content_mdx : article.body;
 
   return (
     <div className="absolute inset-0 overflow-y-auto scroll-smooth bg-transparent text-neutral-900 dark:text-neutral-100 flex justify-center">
-      <div className="max-w-2xl px-8 w-full flex flex-col pb-24">
+      <div className="max-w-2xl px-8 w-full flex flex-col pb-12">
 
         {/* Top Header Row */}
         <div className="flex items-center justify-between mb-6">
@@ -208,12 +221,6 @@ export default function ArticleView() {
         )}
       </div>
 
-      {/* Floating Pill Player Placeholder */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center p-1.5 bg-white/70 dark:bg-[#161616] backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full w-64 h-12 z-50">
-        <div className="w-full h-full bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center text-xs font-medium text-neutral-500 opacity-60">
-          
-        </div>
-      </div>
     </div>
   );
 }

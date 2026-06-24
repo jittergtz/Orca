@@ -172,14 +172,19 @@ REDIS_URL=redis://localhost:6379
 |----------|----------|-------------|
 | `SUPABASE_URL` | Yes | Supabase project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Service role key (for writes) |
-| `OPENAI_API_KEY` | Yes | For article summarization |
-| `SERPER_API_KEY` | Yes | For Google news search |
-| `UPSTASH_REDIS_URL` | Yes | Redis connection string |
-| `UPSTASH_REDIS_REST_URL` | Yes | Upstash REST API URL |
-| `UPSTASH_REDIS_REST_TOKEN` | Yes | Upstash REST API token |
+| `OPENAI_API_KEY` | Yes* | For article summarization. Not required for `WORKER_TEST_MODE=true` or `WORKER_EXTERNAL_CALLS_ENABLED=false`. |
+| `SERPER_API_KEY` | Yes* | For Google news search. Not required for `WORKER_TEST_MODE=true` or `WORKER_EXTERNAL_CALLS_ENABLED=false`. |
+| `UPSTASH_REDIS_URL` | Queue only | Redis connection string for BullMQ queue mode |
+| `UPSTASH_REDIS_REST_URL` | No | Optional Upstash REST API URL for queue-mode health checks |
+| `UPSTASH_REDIS_REST_TOKEN` | No | Optional Upstash REST API token for queue-mode health checks |
+| `WORKER_ENVIRONMENT` | No | `development`, `production`, or `test`; controls safety defaults |
+| `WORKER_TEST_MODE` | No | No-cost trigger smoke test mode; skips Redis and external API calls |
 | `WORKER_POLL_CRON` | No | Cron expression for scheduler (default: `*/15 * * * *`) |
-| `WORKER_QUEUE_ENABLED` | No | Enables BullMQ workers. Disable for inline/manual-only runs to avoid idle Redis commands. |
+| `WORKER_QUEUE_ENABLED` | No | Requests BullMQ workers. Non-production also requires `WORKER_ALLOW_DEV_QUEUE=true`. |
+| `WORKER_ALLOW_DEV_QUEUE` | No | Explicit opt-in for queue mode outside production |
+| `WORKER_SCHEDULER_ENABLED` | No | Requests cron scheduling. Non-production also requires `WORKER_ALLOW_DEV_SCHEDULER=true`. |
 | `WORKER_AUDIO_QUEUE_ENABLED` | No | Enables the audio BullMQ worker. Defaults off because no current code enqueues audio jobs. |
+| `WORKER_EXTERNAL_CALLS_ENABLED` | No | Kill switch for Serper/OpenAI-backed pipeline work |
 | `WORKER_AUTH_TOKEN` | No | Bearer token for `/trigger-fetch` endpoint (optional, recommended for production) |
 | `PORT` | No | HTTP server port (default: `3001`) |
 
