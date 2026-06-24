@@ -164,9 +164,6 @@
     @apply glass-input  h-10 w-10 rounded-xl text-center text-2xl font-semibold tracking-wider;
   }
 
-  .modal-overlay {
-    @apply fixed inset-0 grid place-items-center bg-black/20 p-5 ;
-  }
 }
 
 

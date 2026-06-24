@@ -43,8 +43,7 @@ function devBadgeSvg(size) {
 async function squareIcon(source, size, withDevBadge = false) {
   let pipeline = sharp(source)
     .resize(size, size, {
-      fit: "contain",
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
+      fit: "fill",
     })
     .png();
 

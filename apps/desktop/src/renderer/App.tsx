@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { LogOut, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import ArticleView from "./components/ArticleView";
 import DashboardHome from "./components/DashboardHome";
+import SettingsPage from "./components/SettingsPage";
 import { getDesktopSupabaseClient, refreshSessionOnFocus } from "./lib/supabase";
 import { useFeedStore } from "./stores/feedStore";
 
@@ -70,10 +71,8 @@ export default function App() {
   const [draftTitle, setDraftTitle] = useState("");
   const [draftContent, setDraftContent] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mainView, setMainView] = useState<"home" | "overview" | "article">("home");
+  const [mainView, setMainView] = useState<"home" | "overview" | "article" | "settings">("home");
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsCategory, setSettingsCategory] = useState("profile");
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
@@ -563,7 +562,7 @@ export default function App() {
             onHome={handleShowHome}
             onOverview={handleShowOverview}
             onNewTopic={() => setOnboardingOpen(true)}
-            onSettings={() => setSettingsOpen(true)}
+            onSettings={() => setMainView("settings")}
             onSelectArticle={() => setMainView("article")}
           />
 
@@ -648,7 +647,16 @@ export default function App() {
             </div>
           )}
           <main className="h-full min-h-0 w-full relative" style={{ WebkitAppRegion: "no-drag" }}>
-            {mainView === "article" ? (
+            {mainView === "settings" ? (
+              <SettingsPage
+                theme={theme}
+                sessionEmail={sessionEmail}
+                subscriptionStatus={subscriptionStatus}
+                signOutLoading={signOutLoading}
+                onThemeChange={changeTheme}
+                onSignOut={handleSignOut}
+              />
+            ) : mainView === "article" ? (
               <ArticleView />
             ) : (
               <DashboardHome
@@ -780,81 +788,6 @@ export default function App() {
         </div>
       )}
 
-      {settingsOpen ? (
-        <div className="modal-overlay flex items-center justify-center p-4">
-          <div className="  dark:bg-black/40 bg-white/40 rounded-2xl  w-full max-w-3xl flex overflow-hidden p-0 h-[500px]">
-            <div className="w-48 backdrop-blur-xl border-r border-neutral-200 dark:border-white/10 p-4 flex flex-col gap-2">
-              <h2 className="text-sm  mb-2 px-2 text-neutral-900 dark:text-white/90 uppercase tracking-wider">Settings</h2>
-              {["profile", "themes", "api-key"].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setSettingsCategory(cat);
-                  }}
-                  className={`text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    settingsCategory === cat
-                      ? "bg-neutral-200 dark:bg-white/10 text-neutral-900 dark:text-white"
-                      : "text-neutral-500 dark:text-white/60 hover:bg-neutral-100 dark:hover:bg-white/5 hover:text-neutral-900 dark:hover:text-white"
-                  }`}
-                >
-                  {cat === "api-key" ? "API Key" : cat.charAt(0).toUpperCase() + cat.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex-1 dark:bg-neutral-900 bg-neutral-100 p-6 flex flex-col relative overflow-y-auto">
-              <button 
-                className="absolute top-4 right-4 text-neutral-400 dark:text-white/40 hover:text-neutral-900 dark:hover:text-white transition-colors"
-                onClick={() => setSettingsOpen(false)}
-              >
-                Close
-              </button>
-
-              {settingsCategory === "profile" && (
-                <div>
-                  <h2 className="text-xl font-medium">Profile Settings</h2>
-                  <p className="mt-2 text-sm opacity-80">Profile management coming soon.</p>
-                    <button
-                onClick={() => void handleSignOut()}
-                disabled={signOutLoading}
-                className=" mt-2 px-3 py-1 rounded-full border border-black/20 text-xs dark:text-neutral-300 text-neutral-700 hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
-              >
-                <LogOut size={12} />
-                {signOutLoading ? "Signing out..." : "Sign Out"}
-              </button>
-                </div>
-              )}
-
-              {settingsCategory === "themes" && (
-                <div>
-                  <h2 className="text-xl font-medium">Appearance</h2>
-                  <p className="mt-2 text-sm opacity-80 mb-6">Customize how Orca looks.</p>
-                  
-                  <label className="flex items-center gap-3 text-sm flex-row">
-                    <span>Theme mode:</span>
-                    <select
-                      className="glass-input bg-neutral-200  h-9 w-32 rounded-xl px-3 text-sm outline-none"
-                      value={theme}
-                      onChange={(event) => void changeTheme(event.target.value)}
-                    >
-                      <option value="system">System</option>
-                      <option value="light">Light</option>
-                      <option value="dark">Dark</option>
-                    </select>
-                  </label>
-                </div>
-              )}
-
-              {settingsCategory === "api-key" && (
-                <div>
-                  <h2 className="text-xl font-medium">API Keys</h2>
-                  <p className="mt-2 text-sm opacity-80">API configuration coming soon.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
