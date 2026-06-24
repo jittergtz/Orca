@@ -89,7 +89,7 @@ export function FeedGridSkeleton({ mode = "home" }: { mode?: "home" | "overview"
 export function ArticleSkeleton() {
   return (
     <div className="absolute inset-0 flex justify-center overflow-y-auto bg-transparent text-neutral-900 dark:text-neutral-100">
-      <div className="flex w-full max-w-[720px] flex-col px-8 py-10 pb-16 sm:px-10 sm:py-12 lg:px-12 lg:pb-20">
+      <div className="flex w-full max-w-[720px] flex-col px-8 pt-10 pb-16 sm:px-10 sm:pt-12 sm:pb-16 lg:px-12 lg:pb-20">
         <div className="mb-7 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Skeleton className="h-3 w-3 rounded-full" />
