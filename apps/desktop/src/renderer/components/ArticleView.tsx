@@ -1,7 +1,9 @@
 import { useEffect } from "react";
+import { ExternalLink, Newspaper, Timer } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { useFeedStore } from "../stores/feedStore";
-import { ExternalLink } from "lucide-react";
 import { MdxArticleRenderer } from "./mdx/MdxArticleRenderer";
+import { ArticleSkeleton } from "./ui/skeleton";
 
 export default function ArticleView() {
   const {
@@ -10,12 +12,27 @@ export default function ArticleView() {
     articlesByTopic,
     topics,
     status,
+    error,
+    pendingTopicIds,
     setActiveArticleIndex,
     markArticleAsRead,
-  } = useFeedStore();
+  } = useFeedStore(
+    useShallow((state) => ({
+      activeTopicId: state.activeTopicId,
+      activeArticleIndex: state.activeArticleIndex,
+      articlesByTopic: state.articlesByTopic,
+      topics: state.topics,
+      status: state.status,
+      error: state.error,
+      pendingTopicIds: state.pendingTopicIds,
+      setActiveArticleIndex: state.setActiveArticleIndex,
+      markArticleAsRead: state.markArticleAsRead,
+    }))
+  );
   const articles = activeTopicId ? articlesByTopic[activeTopicId] ?? [] : [];
   const activeTopic = topics.find((t) => t.id === activeTopicId);
   const article = articles[activeArticleIndex] ?? articles[0] ?? null;
+  const isTopicLoading = activeTopicId ? Boolean(pendingTopicIds[activeTopicId]) : false;
 
   useEffect(() => {
     if (!article?.id) {
@@ -29,7 +46,9 @@ export default function ArticleView() {
   if (!activeTopicId) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center text-center px-8">
-        <div className="text-4xl mb-4 opacity-20">📰</div>
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/35 text-neutral-400 shadow-sm backdrop-blur dark:bg-white/[0.06] dark:text-neutral-500">
+          <Newspaper size={22} strokeWidth={1.8} />
+        </div>
         <div className="text-neutral-400 dark:text-neutral-500 text-sm leading-relaxed max-w-xs">
           {topics.length === 0
             ? "Create your first topic to start receiving curated news."
@@ -40,12 +59,18 @@ export default function ArticleView() {
   }
 
   // Loading state
-  if (status === "loading") {
+  if (status === "idle" || status === "loading" || (isTopicLoading && articles.length === 0)) {
+    return <ArticleSkeleton />;
+  }
+
+  if (status === "error" && articles.length === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-neutral-400">
-        <div className="flex items-center gap-2 text-sm">
-          <div className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-pulse" />
-          Loading feed...
+      <div className="w-full h-full flex flex-col items-center justify-center text-center px-8">
+        <div className="text-neutral-500 dark:text-neutral-400 text-sm font-medium mb-1">
+          Could not load this article
+        </div>
+        <div className="text-neutral-400 dark:text-neutral-500 text-xs leading-relaxed max-w-xs">
+          {error ?? "The feed failed to refresh. Try opening the topic again in a moment."}
         </div>
       </div>
     );
@@ -55,7 +80,9 @@ export default function ArticleView() {
   if (articles.length === 0) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center text-center px-8">
-        <div className="text-4xl mb-4 opacity-20">⏳</div>
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/35 text-neutral-400 shadow-sm backdrop-blur dark:bg-white/[0.06] dark:text-neutral-500">
+          <Timer size={21} strokeWidth={1.8} />
+        </div>
         <div className="text-neutral-500 dark:text-neutral-400 text-sm font-medium mb-1">
           No articles yet for {activeTopic?.name ?? "this topic"}
         </div>
@@ -75,10 +102,10 @@ export default function ArticleView() {
 
   return (
     <div className="absolute inset-0 overflow-y-auto scroll-smooth bg-transparent text-neutral-900 dark:text-neutral-100 flex justify-center">
-      <div className="max-w-2xl px-8 w-full flex flex-col pb-12">
+      <div className="w-full max-w-[720px] px-8 pt-10 pb-16 sm:px-10 sm:pt-12 sm:pb-16 lg:px-12 lg:pb-20 flex flex-col">
 
         {/* Top Header Row */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-7">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 bg-[#5db8ef] rounded-full border-2 border-white dark:border-[#08090f] shadow-[0_0_0_1px_rgba(93,184,239,0.3)]" />
             <span className="text-[11px] font-medium text-neutral-500 tracking-wide uppercase">
@@ -97,8 +124,8 @@ export default function ArticleView() {
         </div>
 
         {/* Title */}
-        <div className="border-b border-black/10 dark:border-white/10 pb-6 mb-6">
-          <h1 className="font-instrument-serif italic text-4xl sm:text-5xl leading-tight text-neutral-900 dark:text-neutral-50 tracking-tight">
+        <div className="border-b border-black/10 dark:border-white/10 pb-7 mb-8">
+          <h1 className="font-instrument-serif italic text-4xl sm:text-5xl leading-[1.06] text-neutral-900 dark:text-neutral-50 tracking-tight">
             {article.title}
           </h1>
           {/* Source + read time */}
@@ -144,14 +171,14 @@ export default function ArticleView() {
 
         {/* TL;DR Bullets */}
         {article.tldr_bullets && article.tldr_bullets.length > 0 && (
-          <div className="mb-8 p-5 rounded-2xl bg-neutral-50 dark:bg-white/[0.03] border border-neutral-200/60 dark:border-white/5">
-            <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#79e8b0] mb-3">
+          <div className="mb-9 rounded-[22px] border border-white/55 bg-white/45 p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06] dark:shadow-[0_18px_50px_rgba(0,0,0,0.28)]">
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
               TL;DR
             </div>
             <ul className="space-y-2.5">
               {article.tldr_bullets.map((bullet: string, idx: number) => (
-                <li key={idx} className="flex gap-2.5 items-start text-[14px] leading-relaxed text-neutral-700 dark:text-neutral-300">
-                  <span className="text-[#79e8b0] text-[9px] mt-[7px] flex-shrink-0">▸</span>
+                <li key={idx} className="flex gap-3 items-start text-[14px] leading-relaxed text-neutral-700 dark:text-neutral-300">
+                  <span className="mt-[9px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-neutral-400/80 shadow-[0_0_0_3px_rgba(255,255,255,0.45)] dark:bg-neutral-300/70 dark:shadow-[0_0_0_3px_rgba(255,255,255,0.08)]" />
                   <span>{bullet}</span>
                 </li>
               ))}

@@ -4,7 +4,9 @@ import {
   ChevronRight,
   Folder,
 } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { useFeedStore } from "../stores/feedStore";
+import { SidebarSkeleton } from "./ui/skeleton";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,14 +19,26 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onHome, onOverview, onNewTopic, onSettings, onSelectArticle }: SidebarProps) {
   const {
+    status,
     topics,
     activeTopicId,
     activeArticleIndex,
     setActiveTopic,
     setActiveArticleIndex,
     articlesByTopic,
-  } = useFeedStore();
+  } = useFeedStore(
+    useShallow((state) => ({
+      status: state.status,
+      topics: state.topics,
+      activeTopicId: state.activeTopicId,
+      activeArticleIndex: state.activeArticleIndex,
+      setActiveTopic: state.setActiveTopic,
+      setActiveArticleIndex: state.setActiveArticleIndex,
+      articlesByTopic: state.articlesByTopic,
+    }))
+  );
   const [expandedTopicIds, setExpandedTopicIds] = useState<Set<string>>(new Set());
+  const isInitialLoading = (status === "idle" || status === "loading") && topics.length === 0;
 
   useEffect(() => {
     setExpandedTopicIds(previousIds => {
@@ -130,7 +144,13 @@ export default function Sidebar({ isOpen, onHome, onOverview, onNewTopic, onSett
       </div>
 
       <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-2">
-        {topics.length === 0 && (
+        {isInitialLoading ? (
+          <li>
+            <SidebarSkeleton />
+          </li>
+        ) : null}
+
+        {!isInitialLoading && topics.length === 0 && (
           <li className="py-8 text-left">
             <div className="text-xs leading-relaxed text-neutral-400 dark:text-neutral-600">
               No topics yet.
@@ -144,7 +164,7 @@ export default function Sidebar({ isOpen, onHome, onOverview, onNewTopic, onSett
           </li>
         )}
 
-        {topics.map(topic => {
+        {!isInitialLoading && topics.map(topic => {
           const isActiveTopic = topic.id === activeTopicId;
           const articles = articlesByTopic[topic.id] ?? [];
           const visibleArticles = articles.slice(0, 4);

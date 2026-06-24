@@ -1,7 +1,9 @@
 import { FormEvent, useMemo, useState } from "react";
 import { ArrowUp, Clock } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import type { Article, Topic } from "@newsflow/db";
 import { useFeedStore } from "../stores/feedStore";
+import { FeedGridSkeleton } from "./ui/skeleton";
 
 type DashboardHomeProps = {
   userEmail: string | null;
@@ -78,7 +80,13 @@ function ArticleImage({ article, index }: { article: Article; index: number }) {
   );
 }
 
-function ChatInput({ compact = false }: { compact?: boolean }) {
+function ChatInput({
+  compact = false,
+  placeholder = "Ask Orca about your briefing",
+}: {
+  compact?: boolean;
+  placeholder?: string;
+}) {
   const [prompt, setPrompt] = useState("");
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -89,20 +97,20 @@ function ChatInput({ compact = false }: { compact?: boolean }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className={`mx-auto flex h-[44px] w-full max-w-[492px] items-center gap-2 rounded-full border border-white/80 bg-white/90 px-4 py-1.5 shadow-[0_1px_10px_rgba(0,0,0,0.08)] dark:border-white/10 dark:bg-white/[0.08] ${
-        compact ? "max-w-[492px]" : ""
+      className={`mx-auto flex min-h-[50px] w-full items-center gap-2 rounded-[24px] border border-black/[0.07] bg-white/75 py-2 pl-5 pr-2 shadow-[0_16px_38px_rgba(15,23,42,0.12)] backdrop-blur-2xl transition focus-within:border-black/15 focus-within:bg-white/90 focus-within:shadow-[0_20px_44px_rgba(15,23,42,0.16)] dark:border-white/[0.12] dark:bg-white/[0.08] dark:shadow-[0_18px_42px_rgba(0,0,0,0.24)] dark:focus-within:border-white/20 dark:focus-within:bg-white/[0.12] ${
+        compact ? "max-w-[520px]" : "max-w-[560px]"
       }`}
     >
       <input
         value={prompt}
         onChange={event => setPrompt(event.target.value)}
-        placeholder="Tldr of the last Nvidia report"
-        className="min-w-0 flex-1 bg-transparent text-[14px] text-neutral-800 outline-none placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
+        placeholder={placeholder}
+        className="min-w-0 flex-1 bg-transparent text-[14px] leading-6 text-neutral-800 outline-none placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
       />
       <button
         type="submit"
         disabled={!prompt.trim()}
-        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white transition hover:bg-neutral-700 disabled:opacity-80 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-neutral-900 text-white shadow-[0_8px_18px_rgba(0,0,0,0.18)] transition hover:bg-neutral-700 disabled:cursor-default disabled:bg-neutral-300 disabled:text-neutral-500 disabled:shadow-none dark:bg-white dark:text-black dark:hover:bg-neutral-200 dark:disabled:bg-white/20 dark:disabled:text-white/40"
         aria-label="Send"
       >
         <ArrowUp size={16} strokeWidth={2.4} />
@@ -112,7 +120,27 @@ function ChatInput({ compact = false }: { compact?: boolean }) {
 }
 
 export default function DashboardHome({ userEmail, onOpenArticle, mode = "home" }: DashboardHomeProps) {
-  const { topics, articlesByTopic, readArticleIds, status } = useFeedStore();
+  const {
+    topics,
+    articlesByTopic,
+    readArticleIds,
+    status,
+    error,
+    isRefreshing,
+    bootstrappedUserId,
+    bootstrap,
+  } = useFeedStore(
+    useShallow((state) => ({
+      topics: state.topics,
+      articlesByTopic: state.articlesByTopic,
+      readArticleIds: state.readArticleIds,
+      status: state.status,
+      error: state.error,
+      isRefreshing: state.isRefreshing,
+      bootstrappedUserId: state.bootstrappedUserId,
+      bootstrap: state.bootstrap,
+    }))
+  );
   const firstName = getFirstName(userEmail);
   const articleCards = useMemo<ArticleCard[]>(() => {
     return topics
@@ -140,10 +168,30 @@ export default function DashboardHome({ userEmail, onOpenArticle, mode = "home" 
   const newArticleCount = unreadCards.length;
   const articleCount = cards.length;
 
-  if (status === "loading") {
+  if (status === "idle" || status === "loading") {
+    return <FeedGridSkeleton mode={mode} />;
+  }
+
+  if (status === "error") {
     return (
-      <section className="flex h-full w-full items-center justify-center text-sm text-neutral-500 dark:text-neutral-400">
-        Loading your briefing...
+      <section className="flex h-full w-full items-center justify-center px-8">
+        <div className="max-w-sm text-center">
+          <div className="font-instrument-serif text-[30px] italic leading-none text-neutral-950 dark:text-neutral-50">
+            Briefing paused
+          </div>
+          <p className="mt-3 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
+            {error ?? "Could not load your feed. Check your connection and try again."}
+          </p>
+          {bootstrappedUserId ? (
+            <button
+              type="button"
+              onClick={() => void bootstrap(bootstrappedUserId)}
+              className="mt-5 rounded-full bg-neutral-900 px-4 py-2 text-[13px] font-medium text-white transition hover:bg-neutral-700 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+            >
+              Try again
+            </button>
+          ) : null}
+        </div>
       </section>
     );
   }
@@ -167,7 +215,7 @@ export default function DashboardHome({ userEmail, onOpenArticle, mode = "home" 
   }
 
   return (
-    <section className={`relative flex h-full w-full flex-col px-7 pt-7 ${isOverview ? "overflow-y-auto pb-12" : "overflow-hidden pb-24"}`}>
+    <section className={`relative flex h-full w-full flex-col px-7 pt-7 ${isOverview ? "overflow-y-auto pb-0" : "overflow-hidden pb-24"}`}>
       <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
         <div className="font-instrument-serif text-[30px] italic leading-none text-neutral-950 dark:text-neutral-50">
           {isOverview ? "Overview" : `Welcome ${firstName}`}
@@ -177,7 +225,7 @@ export default function DashboardHome({ userEmail, onOpenArticle, mode = "home" 
             {isOverview ? "Latest" : "This Week"}
           </span>
           <span className="text-neutral-400 dark:text-neutral-500">
-            {isOverview ? "All Topics" : "Today"}
+            {isRefreshing ? "Updating" : isOverview ? "All Topics" : "Today"}
           </span>
         </div>
         <div className="justify-self-end text-[20px] text-black dark:text-white">
@@ -228,13 +276,19 @@ export default function DashboardHome({ userEmail, onOpenArticle, mode = "home" 
         ))}
       </div>
 
-      {!isOverview ? (
+      {isOverview ? (
+        <div className="pointer-events-none sticky bottom-0 z-20 -mx-7 mt-auto flex justify-center bg-gradient-to-t from-white/55 via-white/30 to-transparent px-7 pb-5 pt-9 dark:from-black/35 dark:via-black/20">
+          <div className="pointer-events-auto w-full">
+            <ChatInput compact placeholder="Ask Orca about the overview" />
+          </div>
+        </div>
+      ) : (
         <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center px-6">
           <div className="pointer-events-auto w-full">
             <ChatInput compact />
           </div>
         </div>
-      ) : null}
+      )}
     </section>
   );
 }

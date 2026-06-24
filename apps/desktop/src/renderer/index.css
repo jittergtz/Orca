@@ -47,6 +47,33 @@
       linear-gradient(135deg, #e4e7ec 0%, #000000 100%); */
 
 @layer components {
+  .orca-skeleton {
+    @apply relative overflow-hidden bg-black/[0.06] dark:bg-white/[0.08];
+  }
+
+  .orca-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.58),
+      transparent
+    );
+    animation: orca-skeleton-shimmer 1.45s ease-in-out infinite;
+  }
+
+  .dark .orca-skeleton::after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.11),
+      transparent
+    );
+  }
+
   .glass-shell {
     @apply grid h-full grid-rows-[auto_1fr] overflow-hidden border border-white/20 bg-white/80 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/80;
     border-radius: var(--mac-window-radius);
@@ -164,6 +191,18 @@
     @apply glass-input  h-10 w-10 rounded-xl text-center text-2xl font-semibold tracking-wider;
   }
 
+}
+
+@keyframes orca-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orca-skeleton::after {
+    animation: none;
+  }
 }
 
 

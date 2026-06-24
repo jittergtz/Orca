@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import Sidebar from "./components/Sidebar";
 import OnboardingFlow from "./components/onboarding/OnboardingFlow";
 import ArticleView from "./components/ArticleView";
 import DashboardHome from "./components/DashboardHome";
 import SettingsPage from "./components/SettingsPage";
+import { AppBootSkeleton } from "./components/ui/skeleton";
 import { getDesktopSupabaseClient, refreshSessionOnFocus } from "./lib/supabase";
+import { useAppStore } from "./stores/appStore";
 import { useFeedStore } from "./stores/feedStore";
 
 export interface Note {
@@ -51,30 +54,66 @@ async function fetchBillingStatusFromApi(baseUrl: string, accessToken: string) {
 }
 
 export default function App() {
-  console.log("[APP] ════ App component rendering ════");
   const appBaseUrl = useMemo(
     () => {
       const url = import.meta.env.VITE_APP_URL ||
         (import.meta.env.DEV ? "http://localhost:3000" : "https://orca.app");
-      console.log("[APP] appBaseUrl:", url, "DEV:", import.meta.env.DEV);
       return url;
     },
     []
   );
-  const [view, setView] = useState("loading");
-  console.log("[APP] Initial view state:", "loading");
-  console.log("[APP] Initial view state:", "loading");
-  const [theme, setTheme] = useState("system");
-  const [systemTheme, setSystemTheme] = useState("light");
+  const {
+    bootView,
+    bootError,
+    theme,
+    systemTheme,
+    sidebarOpen,
+    mainView,
+    onboardingOpen,
+    sessionEmail,
+    subscriptionStatus,
+    pricingLoading,
+    signOutLoading,
+    setBootView,
+    setBootError,
+    setTheme,
+    setSystemTheme,
+    setSidebarOpen,
+    setMainView,
+    setOnboardingOpen,
+    setSession,
+    clearSession,
+    setPending,
+  } = useAppStore(
+    useShallow((state) => ({
+      bootView: state.bootView,
+      bootError: state.bootError,
+      theme: state.theme,
+      systemTheme: state.systemTheme,
+      sidebarOpen: state.sidebarOpen,
+      mainView: state.mainView,
+      onboardingOpen: state.onboardingOpen,
+      sessionEmail: state.sessionEmail,
+      subscriptionStatus: state.subscriptionStatus,
+      pricingLoading: state.pending.pricing,
+      signOutLoading: state.pending.signOut,
+      setBootView: state.setBootView,
+      setBootError: state.setBootError,
+      setTheme: state.setTheme,
+      setSystemTheme: state.setSystemTheme,
+      setSidebarOpen: state.setSidebarOpen,
+      setMainView: state.setMainView,
+      setOnboardingOpen: state.setOnboardingOpen,
+      setSession: state.setSession,
+      clearSession: state.clearSession,
+      setPending: state.setPending,
+    }))
+  );
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftContent, setDraftContent] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mainView, setMainView] = useState<"home" | "overview" | "article" | "settings">("home");
 
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [modeDropdownOpen, setModeDropdownOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -82,11 +121,6 @@ export default function App() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
-  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
-  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
-  const [pricingLoading, setPricingLoading] = useState(false);
-  const [signOutLoading, setSignOutLoading] = useState(false);
-  const modeDropdownRef = useRef<HTMLDivElement>(null);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notesRef = useRef<Note[]>([]);
@@ -146,15 +180,19 @@ export default function App() {
 
   const enterApp = useCallback(
     async (selectId: string | null = null, userId?: string) => {
+      if (userId) {
+        useFeedStore.getState().prepareForUser(userId);
+      }
+
       await refreshNotes(selectId);
       setMainView("home");
-      setView("app");
-      // Bootstrap feed store with user's topics
+      setBootView("app");
+
       if (userId) {
         void useFeedStore.getState().bootstrap(userId);
       }
     },
-    [refreshNotes]
+    [refreshNotes, setBootView, setMainView]
   );
 
   const syncAuthState = useCallback(async () => {
@@ -173,15 +211,14 @@ export default function App() {
 
     if (!session) {
       console.log("[AUTH] No session → setting view to 'auth'");
-      setSessionEmail(null);
-      setSubscriptionStatus(null);
+      clearSession();
       void useFeedStore.getState().teardownRealtime();
-      setView("auth");
+      setBootView("auth");
       return;
     }
 
     console.log("[AUTH] Step 2: Session exists, email=", session.user.email);
-    setSessionEmail(session.user.email ?? null);
+    setSession({ email: session.user.email ?? null });
     console.log("[AUTH] Step 3: Resolving billing status for user_id=", session.user.id);
     let nextSubscriptionStatus = "canceled";
 
@@ -206,7 +243,10 @@ export default function App() {
         String((sub as { status?: string } | null)?.status ?? "canceled").toLowerCase();
     }
     console.log("[AUTH] Step 4: nextSubscriptionStatus=", nextSubscriptionStatus);
-    setSubscriptionStatus(nextSubscriptionStatus);
+    setSession({
+      email: session.user.email ?? null,
+      subscriptionStatus: nextSubscriptionStatus,
+    });
 
     if (hasActivePlan(nextSubscriptionStatus)) {
       console.log("[AUTH] Active plan detected → calling enterApp with userId=", session.user.id);
@@ -216,8 +256,8 @@ export default function App() {
     }
 
     console.log("[AUTH] No active plan → setting view to 'paywall'");
-    setView("paywall");
-  }, [appBaseUrl, enterApp]);
+    setBootView("paywall");
+  }, [appBaseUrl, clearSession, enterApp, setBootView, setSession]);
 
   useEffect(() => {
     console.log("[APP-INIT] ════ useEffect init running ════");
@@ -249,7 +289,7 @@ export default function App() {
 
         console.log("[APP-INIT] Step 4: Calling syncAuthState...");
         await syncAuthState();
-        console.log("[APP-INIT] Step 4 OK: syncAuthState completed, current view:", view);
+        console.log("[APP-INIT] Step 4 OK: syncAuthState completed");
         
         console.log("[APP-INIT] Step 5: Setting up Supabase auth listener...");
         const supabase = getDesktopSupabaseClient();
@@ -259,14 +299,13 @@ export default function App() {
         const authSubscription = supabase.auth.onAuthStateChange((event, nextSession) => {
           console.log("[APP-INIT] Auth state change event:", event);
           if (event === "TOKEN_REFRESHED") {
-            setSessionEmail(nextSession?.user.email ?? null);
+            setSession({ email: nextSession?.user.email ?? null });
             return;
           }
 
           if (event === "SIGNED_OUT") {
-            setSessionEmail(null);
-            setSubscriptionStatus(null);
-            setView("auth");
+            clearSession();
+            setBootView("auth");
             void useFeedStore.getState().teardownRealtime();
             return;
           }
@@ -274,7 +313,7 @@ export default function App() {
           if (event === "SIGNED_IN" || event === "USER_UPDATED") {
             void syncAuthState().catch((error: any) => {
               console.error("[APP-INIT] syncAuthState error in auth listener:", error);
-              setView(`error: ${error.message || String(error)}`);
+              setBootError(error.message || String(error));
             });
           }
         });
@@ -353,7 +392,7 @@ export default function App() {
       } catch (error: any) {
         console.error("[APP-INIT] ════ INITIALIZATION FAILED ════", error);
         console.error("[APP-INIT] Error stack:", error.stack);
-        setView(`error: ${error.message || String(error)}`);
+        setBootError(error.message || String(error));
       }
     };
 
@@ -374,7 +413,7 @@ export default function App() {
   }, [syncAuthState]);
 
   useEffect(() => {
-    if (view !== "app" || !activeNote) {
+    if (bootView !== "app" || !activeNote) {
       return undefined;
     }
 
@@ -413,18 +452,7 @@ export default function App() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [view, activeNote, draftTitle, draftContent]);
-
-  useEffect(() => {
-    if (!modeDropdownOpen) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modeDropdownRef.current && !modeDropdownRef.current.contains(event.target as Node)) {
-        setModeDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [modeDropdownOpen]);
+  }, [bootView, activeNote, draftTitle, draftContent]);
 
   const changeTheme = async (value: string) => {
     setTheme(value);
@@ -507,26 +535,25 @@ export default function App() {
   };
 
   const handleOpenPricing = async () => {
-    setPricingLoading(true);
+    setPending("pricing", true);
     try {
       await window.orca.settings.openExternal(getPricingUrl(appBaseUrl, sessionEmail));
     } finally {
-      setPricingLoading(false);
+      setPending("pricing", false);
     }
   };
 
   const handleSignOut = async () => {
-    setSignOutLoading(true);
+    setPending("signOut", true);
     try {
       const supabase = getDesktopSupabaseClient();
       await supabase.auth.signOut();
-      setSessionEmail(null);
-      setSubscriptionStatus(null);
+      clearSession();
       await useFeedStore.getState().teardownRealtime();
       setMainView("home");
-      setView("auth");
+      setBootView("auth");
     } finally {
-      setSignOutLoading(false);
+      setPending("signOut", false);
     }
   };
 
@@ -547,7 +574,7 @@ export default function App() {
     })();
   }, []);
 
-  const appReady = view === "app";
+  const appReady = bootView === "app";
 
   return (
     <div className="h-screen  w-screen text-neutral-900 dark:text-neutral-100">
@@ -670,17 +697,14 @@ export default function App() {
       </div>
     ) : (
         <div className="auth-layer ">
-          {view === "loading" ? (
-            <div className=" backdrop-blur-md max-w-sm">
-              <h1 className="text-2xl font-semibold">Orca</h1>
-              <p className="mt-2 text-sm opacity-80">Loading...</p>
-            </div>
-          ) : view.startsWith("error:") ? (
+          {bootView === "loading" ? (
+            <AppBootSkeleton />
+          ) : bootView === "error" ? (
             <div className=" backdrop-blur-md max-w-sm border border-red-200/50">
               <h1 className="text-2xl font-semibold text-red-700">Error Hook</h1>
-              <p className="mt-2 text-sm opacity-80 font-mono text-neutral-400">{view.replace("error: ", "")}</p>
+              <p className="mt-2 text-sm opacity-80 font-mono text-neutral-400">{bootError}</p>
             </div>
-          ) : view === "auth" ? (
+          ) : bootView === "auth" ? (
             <div className="max-w-md  ">
               <div className="mb-5">
                 <h1 className="font-instrument-serif italic text-5xl leading-[52px] bg-clip-text text-transparent bg-gradient-to-br from-stone-900 to-stone-500 dark:from-white dark:to-stone-300">
@@ -760,7 +784,7 @@ export default function App() {
                 </button>
               </div>
             </div>
-          ) : view === "paywall" ? (
+          ) : bootView === "paywall" ? (
             <div className="  max-w-sm">
               <h1 className="text-2xl font-serif italic mb-1">Plan inactive</h1>
               <p className="text-sm opacity-80 mb-4">

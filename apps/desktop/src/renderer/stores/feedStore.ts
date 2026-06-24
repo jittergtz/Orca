@@ -9,17 +9,70 @@ import {
 } from "@newsflow/db";
 import { getDesktopSupabaseClient } from "../lib/supabase";
 
-type FeedStatus = "idle" | "loading" | "ready" | "error";
-type RealtimeStatus = "idle" | "connecting" | "subscribed" | "error";
+export type FeedStatus = "idle" | "loading" | "ready" | "error";
+export type RealtimeStatus = "idle" | "connecting" | "subscribed" | "error";
 
 type FeedRealtimeSubscription = {
   unsubscribe: () => Promise<unknown>;
 };
 
+type FeedSnapshot = {
+  topics: Topic[];
+  articlesByTopic: Record<string, Article[]>;
+  readArticleIds: Record<string, true>;
+};
+
+let bootstrapRequestId = 0;
+let topicsRefreshRequestId = 0;
+let topicRefreshRequestIds: Record<string, number> = {};
+let topicsRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+const topicRefreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function hasLoadedTopic(
+  articlesByTopic: Record<string, Article[]>,
+  topicId: string
+) {
+  return Object.prototype.hasOwnProperty.call(articlesByTopic, topicId);
+}
+
+function addPendingId(ids: Record<string, true>, id: string) {
+  const nextIds: Record<string, true> = { ...ids };
+  nextIds[id] = true;
+  return nextIds;
+}
+
+function removePendingId(ids: Record<string, true>, id: string) {
+  const nextIds = { ...ids };
+  delete nextIds[id];
+  return nextIds;
+}
+
+function clearScheduledRefreshes() {
+  if (topicsRefreshTimer) {
+    clearTimeout(topicsRefreshTimer);
+    topicsRefreshTimer = null;
+  }
+
+  topicRefreshTimers.forEach((timer) => clearTimeout(timer));
+  topicRefreshTimers.clear();
+}
+
+async function disposeRealtimeSubscription(subscription: FeedRealtimeSubscription | null) {
+  if (!subscription) {
+    return;
+  }
+
+  await subscription.unsubscribe();
+}
+
 async function loadArticlesForTopics(topicIds: string[]) {
   const client = getDesktopSupabaseClient();
   const entries = await Promise.all(
-    topicIds.map(async topicId => {
+    topicIds.map(async (topicId) => {
       const articles = await listArticlesForTopic(client, topicId);
       return [topicId, articles] as const;
     })
@@ -51,12 +104,14 @@ async function loadArticleReadIdsForUser(userId: string) {
   );
 }
 
-async function disposeRealtimeSubscription(subscription: FeedRealtimeSubscription | null) {
-  if (!subscription) {
-    return;
-  }
+async function loadFeedSnapshot(userId: string): Promise<FeedSnapshot> {
+  const topics = await listTopicsForUser(getDesktopSupabaseClient(), userId);
+  const [articlesByTopic, readArticleIds] = await Promise.all([
+    loadArticlesForTopics(topics.map((topic) => topic.id)),
+    loadArticleReadIdsForUser(userId),
+  ]);
 
-  await subscription.unsubscribe();
+  return { topics, articlesByTopic, readArticleIds };
 }
 
 interface FeedStore {
@@ -65,11 +120,16 @@ interface FeedStore {
   topics: Topic[];
   articlesByTopic: Record<string, Article[]>;
   readArticleIds: Record<string, true>;
+  pendingTopicIds: Record<string, true>;
+  pendingReadArticleIds: Record<string, true>;
   activeTopicId: string | null;
   activeArticleIndex: number;
   bootstrappedUserId: string | null;
+  isRefreshing: boolean;
+  lastSyncedAt: number | null;
   error: string | null;
   realtimeSubscription: FeedRealtimeSubscription | null;
+  prepareForUser: (userId: string) => void;
   bootstrap: (userId: string) => Promise<void>;
   setActiveTopic: (topicId: string | null) => Promise<void>;
   setActiveArticleIndex: (index: number) => void;
@@ -87,12 +147,44 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
   topics: [],
   articlesByTopic: {},
   readArticleIds: {},
+  pendingTopicIds: {},
+  pendingReadArticleIds: {},
   activeTopicId: null,
   activeArticleIndex: 0,
   bootstrappedUserId: null,
+  isRefreshing: false,
+  lastSyncedAt: null,
   error: null,
   realtimeSubscription: null,
-  bootstrap: async (userId: string) => {
+  prepareForUser: (userId) => {
+    const currentState = get();
+    const isSameReadyUser =
+      currentState.status === "ready" && currentState.bootstrappedUserId === userId;
+
+    if (isSameReadyUser) {
+      return;
+    }
+
+    bootstrapRequestId += 1;
+    topicsRefreshRequestId += 1;
+    topicRefreshRequestIds = {};
+    clearScheduledRefreshes();
+
+    set({
+      status: "loading",
+      error: null,
+      isRefreshing: false,
+      bootstrappedUserId: userId,
+      topics: [],
+      articlesByTopic: {},
+      readArticleIds: {},
+      pendingTopicIds: {},
+      pendingReadArticleIds: {},
+      activeTopicId: null,
+      activeArticleIndex: 0,
+    });
+  },
+  bootstrap: async (userId) => {
     const currentState = get();
     const isAlreadyBootstrapped =
       currentState.status === "ready" && currentState.bootstrappedUserId === userId;
@@ -101,81 +193,159 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
       return;
     }
 
-    set({ status: "loading", error: null });
+    get().prepareForUser(userId);
+    const requestId = ++bootstrapRequestId;
 
     try {
-      const topics = await listTopicsForUser(getDesktopSupabaseClient(), userId);
-      const articlesByTopic = await loadArticlesForTopics(topics.map(topic => topic.id));
-      const readArticleIds = await loadArticleReadIdsForUser(userId);
+      const snapshot = await loadFeedSnapshot(userId);
+
+      if (requestId !== bootstrapRequestId) {
+        return;
+      }
 
       set({
         status: "ready",
-        topics,
+        topics: snapshot.topics,
         activeTopicId: null,
         activeArticleIndex: 0,
         bootstrappedUserId: userId,
-        articlesByTopic,
-        readArticleIds,
+        articlesByTopic: snapshot.articlesByTopic,
+        readArticleIds: snapshot.readArticleIds,
+        pendingTopicIds: {},
+        pendingReadArticleIds: {},
+        isRefreshing: false,
+        lastSyncedAt: Date.now(),
+        error: null,
       });
 
       await get().subscribeRealtime(userId);
     } catch (error) {
+      if (requestId !== bootstrapRequestId) {
+        return;
+      }
+
       set({
         status: "error",
-        error: error instanceof Error ? error.message : "Could not load topics",
+        isRefreshing: false,
+        error: getErrorMessage(error, "Could not load topics"),
       });
     }
   },
-  setActiveTopic: async (topicId: string | null) => {
+  setActiveTopic: async (topicId) => {
     set({ activeTopicId: topicId, activeArticleIndex: 0 });
 
-    if (topicId && !get().articlesByTopic[topicId]) {
+    if (
+      topicId &&
+      !hasLoadedTopic(get().articlesByTopic, topicId) &&
+      !get().pendingTopicIds[topicId]
+    ) {
       await get().refreshTopic(topicId);
     }
   },
-  setActiveArticleIndex: (index: number) => {
+  setActiveArticleIndex: (index) => {
     const activeTopicId = get().activeTopicId;
     const articleCount = activeTopicId ? get().articlesByTopic[activeTopicId]?.length ?? 0 : 0;
     const nextIndex = articleCount > 0 ? Math.max(0, Math.min(index, articleCount - 1)) : 0;
 
     set({ activeArticleIndex: nextIndex });
   },
-  refreshTopic: async (topicId: string) => {
-    const client = getDesktopSupabaseClient();
-    const articles = await listArticlesForTopic(client, topicId);
+  refreshTopic: async (topicId) => {
+    const requestId = (topicRefreshRequestIds[topicId] ?? 0) + 1;
+    topicRefreshRequestIds = { ...topicRefreshRequestIds, [topicId]: requestId };
 
-    set(state => ({
-      activeArticleIndex:
-        state.activeTopicId === topicId
-          ? Math.min(state.activeArticleIndex, Math.max(articles.length - 1, 0))
-          : state.activeArticleIndex,
-      articlesByTopic: {
-        ...state.articlesByTopic,
-        [topicId]: articles,
-      },
+    set((state) => ({
+      pendingTopicIds: addPendingId(state.pendingTopicIds, topicId),
+      error: null,
     }));
+
+    try {
+      const articles = await listArticlesForTopic(getDesktopSupabaseClient(), topicId);
+
+      if (topicRefreshRequestIds[topicId] !== requestId) {
+        return;
+      }
+
+      set((state) => ({
+        activeArticleIndex:
+          state.activeTopicId === topicId
+            ? Math.min(state.activeArticleIndex, Math.max(articles.length - 1, 0))
+            : state.activeArticleIndex,
+        articlesByTopic: {
+          ...state.articlesByTopic,
+          [topicId]: articles,
+        },
+        lastSyncedAt: Date.now(),
+      }));
+    } catch (error) {
+      if (topicRefreshRequestIds[topicId] !== requestId) {
+        return;
+      }
+
+      set({
+        error: getErrorMessage(error, "Could not refresh topic"),
+      });
+    } finally {
+      if (topicRefreshRequestIds[topicId] === requestId) {
+        set((state) => ({
+          pendingTopicIds: removePendingId(state.pendingTopicIds, topicId),
+        }));
+      }
+    }
   },
-  refreshTopics: async (userId: string) => {
-    const topics = await listTopicsForUser(getDesktopSupabaseClient(), userId);
-    const articlesByTopic = await loadArticlesForTopics(topics.map(topic => topic.id));
-    const { activeArticleIndex, activeTopicId } = get();
-    const nextActiveTopicId =
-      activeTopicId && topics.some(topic => topic.id === activeTopicId)
-        ? activeTopicId
-        : null;
-    const nextArticleCount = nextActiveTopicId ? articlesByTopic[nextActiveTopicId]?.length ?? 0 : 0;
+  refreshTopics: async (userId) => {
+    const requestId = ++topicsRefreshRequestId;
+    const hadReadyData = get().status === "ready";
 
     set({
-      topics,
-      activeTopicId: nextActiveTopicId,
-      activeArticleIndex:
-        nextActiveTopicId === activeTopicId
-          ? Math.min(activeArticleIndex, Math.max(nextArticleCount - 1, 0))
-          : 0,
-      articlesByTopic,
+      status: hadReadyData ? "ready" : "loading",
+      isRefreshing: hadReadyData,
+      error: null,
+      bootstrappedUserId: userId,
     });
+
+    try {
+      const snapshot = await loadFeedSnapshot(userId);
+
+      if (requestId !== topicsRefreshRequestId) {
+        return;
+      }
+
+      const { activeArticleIndex, activeTopicId } = get();
+      const nextActiveTopicId =
+        activeTopicId && snapshot.topics.some((topic) => topic.id === activeTopicId)
+          ? activeTopicId
+          : null;
+      const nextArticleCount = nextActiveTopicId
+        ? snapshot.articlesByTopic[nextActiveTopicId]?.length ?? 0
+        : 0;
+
+      set({
+        status: "ready",
+        topics: snapshot.topics,
+        activeTopicId: nextActiveTopicId,
+        activeArticleIndex:
+          nextActiveTopicId === activeTopicId
+            ? Math.min(activeArticleIndex, Math.max(nextArticleCount - 1, 0))
+            : 0,
+        articlesByTopic: snapshot.articlesByTopic,
+        readArticleIds: snapshot.readArticleIds,
+        isRefreshing: false,
+        lastSyncedAt: Date.now(),
+        error: null,
+      });
+    } catch (error) {
+      if (requestId !== topicsRefreshRequestId) {
+        return;
+      }
+
+      set({
+        status: hadReadyData ? "ready" : "error",
+        isRefreshing: false,
+        error: getErrorMessage(error, "Could not refresh topics"),
+      });
+    }
   },
-  refreshArticleReads: async (userId?: string) => {
+  refreshArticleReads: async (userId) => {
     const targetUserId = userId ?? get().bootstrappedUserId;
 
     if (!targetUserId) {
@@ -183,30 +353,40 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     }
 
     const readArticleIds = await loadArticleReadIdsForUser(targetUserId);
-    set({ readArticleIds });
+    set({ readArticleIds, lastSyncedAt: Date.now() });
   },
-  markArticleAsRead: async (articleId: string) => {
+  markArticleAsRead: async (articleId) => {
     const userId = get().bootstrappedUserId;
 
-    if (!userId || get().readArticleIds[articleId]) {
+    if (!userId || get().readArticleIds[articleId] || get().pendingReadArticleIds[articleId]) {
       return;
     }
 
-    set(state => ({
-      readArticleIds: {
-        ...state.readArticleIds,
-        [articleId]: true,
-      },
+    set((state) => ({
+      readArticleIds: addPendingId(state.readArticleIds, articleId),
+      pendingReadArticleIds: addPendingId(state.pendingReadArticleIds, articleId),
     }));
 
     try {
       await markArticleRead(getDesktopSupabaseClient(), { userId, articleId });
     } catch (error) {
       console.warn("Failed to persist article read state", error);
+      set((state) => ({
+        readArticleIds: removePendingId(state.readArticleIds, articleId),
+        error: getErrorMessage(error, "Could not save read state"),
+      }));
+    } finally {
+      set((state) => ({
+        pendingReadArticleIds: removePendingId(state.pendingReadArticleIds, articleId),
+      }));
     }
   },
-  subscribeRealtime: async (userId: string) => {
+  subscribeRealtime: async (userId) => {
     await disposeRealtimeSubscription(get().realtimeSubscription);
+
+    if (get().bootstrappedUserId !== userId) {
+      return;
+    }
 
     const client = getDesktopSupabaseClient();
     set({ realtimeStatus: "connecting", realtimeSubscription: null });
@@ -217,25 +397,36 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
         "postgres_changes",
         { event: "*", schema: "public", table: "topics", filter: `user_id=eq.${userId}` },
         () => {
-          void get().refreshTopics(userId);
+          if (topicsRefreshTimer) {
+            clearTimeout(topicsRefreshTimer);
+          }
+
+          topicsRefreshTimer = setTimeout(() => {
+            void get().refreshTopics(userId);
+          }, 140);
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "articles" },
-        payload => {
+        (payload) => {
           const record = (payload.new || payload.old || {}) as { topic_id?: string };
           const topicId = record.topic_id;
 
-          if (!topicId) {
+          if (!topicId || !get().topics.some((topic) => topic.id === topicId)) {
             return;
           }
 
-          if (!get().topics.some(topic => topic.id === topicId)) {
-            return;
+          const existingTimer = topicRefreshTimers.get(topicId);
+          if (existingTimer) {
+            clearTimeout(existingTimer);
           }
 
-          void get().refreshTopic(topicId);
+          const nextTimer = setTimeout(() => {
+            topicRefreshTimers.delete(topicId);
+            void get().refreshTopic(topicId);
+          }, 120);
+          topicRefreshTimers.set(topicId, nextTimer);
         }
       )
       .on(
@@ -246,7 +437,7 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
         }
       );
 
-    channel.subscribe(status => {
+    channel.subscribe((status) => {
       if (status === "SUBSCRIBED") {
         set({ realtimeStatus: "subscribed" });
         return;
@@ -262,14 +453,26 @@ export const useFeedStore = create<FeedStore>((set, get) => ({
     });
   },
   teardownRealtime: async () => {
+    bootstrapRequestId += 1;
+    topicsRefreshRequestId += 1;
+    topicRefreshRequestIds = {};
+    clearScheduledRefreshes();
     await disposeRealtimeSubscription(get().realtimeSubscription);
     set({
+      status: "idle",
       realtimeSubscription: null,
       realtimeStatus: "idle",
-      bootstrappedUserId: null,
+      topics: [],
+      articlesByTopic: {},
       readArticleIds: {},
+      pendingTopicIds: {},
+      pendingReadArticleIds: {},
+      bootstrappedUserId: null,
       activeTopicId: null,
       activeArticleIndex: 0,
+      isRefreshing: false,
+      lastSyncedAt: null,
+      error: null,
     });
   },
 }));
