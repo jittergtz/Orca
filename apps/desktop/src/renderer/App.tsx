@@ -824,7 +824,7 @@ export default function App() {
               {settingsCategory === "themes" && (
                 <div>
                   <h2 className="text-xl font-medium">Appearance</h2>
-                  <p className="mt-2 text-sm opacity-80 mb-6">Customize how Orca Notes looks.</p>
+                  <p className="mt-2 text-sm opacity-80 mb-6">Customize how Orca looks.</p>
                   
                   <label className="flex items-center gap-3 text-sm flex-row">
                     <span>Theme mode:</span>

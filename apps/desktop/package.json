@@ -63,7 +63,8 @@
   },
   "build": {
     "appId": "com.orcanotes.app",
-    "productName": "Orca Notes",
+    "productName": "Orca",
+    "electronVersion": "36.9.5",
     "directories": {
       "output": "dist-electron"
     },

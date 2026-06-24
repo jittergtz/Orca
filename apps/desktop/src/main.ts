@@ -193,7 +193,9 @@ if (!isPrimaryInstance) {
 
     if (process.platform === "darwin" && app.dock) {
       const iconFile = isDev ? "icon-dev.png" : "icon.png";
-      const iconPath = path.join(__dirname, "..", "..", "build", iconFile);
+      const iconPath = isDev
+        ? path.join(__dirname, "..", "public", iconFile)
+        : path.join(__dirname, "..", "dist", iconFile);
       app.dock.setIcon(nativeImage.createFromPath(iconPath));
     }
 

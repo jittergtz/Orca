@@ -134,10 +134,13 @@ async function loadRenderer(window: BrowserWindow) {
 
 export function createWindow() {
   const iconFile = isDev ? "icon-dev.png" : "icon.png";
+  const iconPath = isDev
+    ? path.join(__dirname, "..", "public", iconFile)
+    : path.join(__dirname, "..", "dist", iconFile);
   mainWindow = new BrowserWindow({
     width: 980,
     height: 660,
-    icon: path.join(__dirname, "..", "..", "build", iconFile),
+    icon: iconPath,
     minWidth: 400,
     minHeight: 450,
     titleBarStyle: "hiddenInset",

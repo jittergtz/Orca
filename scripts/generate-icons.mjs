@@ -80,6 +80,7 @@ async function writeDesktopIcons(withDevBadge) {
   const desktopName = withDevBadge ? "icon-dev.png" : "icon.png";
   const desktopBuffer = await squareIcon(SOURCE, 1024, withDevBadge);
   await fs.writeFile(path.join(DESKTOP_BUILD, desktopName), desktopBuffer);
+  await fs.writeFile(path.join(DESKTOP_PUBLIC, desktopName), desktopBuffer);
 }
 
 async function copyWebFaviconsToDesktopPublic() {
